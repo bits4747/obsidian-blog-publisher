@@ -1,0 +1,215 @@
+# Obsidian 静态博客
+
+把 Obsidian 笔记发布成 GitHub Pages 网站。含有两部分：
+
+**发布管理器**——本地网页，跑在 `localhost:3457`。连上你的 Obsidian 库，逐篇勾选要公开的笔记，一键建 GitHub 仓库并推送。
+
+**博客站点**——推送后自动构建的静态网站。读者打开网址看到的就是它。
+
+不需要为了发布另建一个库：私人笔记和公开笔记放一起，管理器统一管理。公开与否只是笔记 frontmatter 里的一个 `public: true` 字段，Obsidian 和管理器都能看到。私密笔记不会被读取，也不会进仓库。
+
+## 管理器
+
+本地网页，管笔记的公开状态和发布。
+
+| 功能 | 说明 |
+|---|---|
+| 多库多博客 | 可连接多个 Obsidian 库，一个库对应一个仓库，卡片式列出随时切换，每个站点独立 |
+| 逐篇开关 | 每篇一个开关，写进 frontmatter，改完提示「已把《标题》设为公开」 |
+| 批量操作 | 文件夹标题栏有「全部公开 / 全部私密」，顶部另有全局按钮 |
+| 搜索筛选 | 按标题和路径过滤，先筛再批量 |
+| 折叠 | 每个文件夹可收起，另有「一键展开 / 一键收起」 |
+| 建仓库 | 调 GitHub API 一键建好并启用 Pages；也可粘贴已有仓库地址 |
+| 库校验 | 选择文件夹时要求含 `.obsidian`，选错会拒绝 |
+| 发布 | 「⟳ 发布到 GitHub」完成提交推送；发布前预检网络，失败时红色横幅区分「连不上 GitHub」和其它错误 |
+| 变更三栏 | 新增 / 修改 / 删除三类改动，在全部文件夹上方分三栏列出；新增的可在这一栏直接打开公开开关（与文件夹里那个是同一个）。**只列需要你手动处理的**：自动同步开关开着的类别由后台自己发，不进三栏、也不提示，改由下面的流水说明；如果最近一次自动同步推送失败，那几类会重新回到三栏提醒 |
+| 自动同步 | 三类改动各一个开关，勾选后该类改动自动发布，不必再点「发布」；默认「修改」开，「新增 / 删除」关。改了文件约 2.5 秒后自动提交推送，但**只在管理器进程开着时生效**（关掉了就不再自动同步，这是有意的：自动推 git 不该在没人看着时跑） |
+| 自动同步流水 | 「自动同步」那一行下方列出最近几次后台动作：**开始推送的时刻**、动了哪些文件、推没推上去、**成功更新的时刻**、两者相隔多久。推送失败、构建失败、构建超时都会各留一条记录（不是「一片空白」）。默认只占 4 行高度，多了在里面滚动，右上角「清空」可清掉。存本地配置，重启不丢；重启后还会接着盯上次没等到结论的记录 |
+| 构建诊断 | 推送成功后不只看线上产物，还会查 GitHub Actions 这次构建的结论：卡住/失败能明确说「构建失败」或「构建超时」并可直接点开 Actions 页面，而不是永远显示「等构建」 |
+| 上线进度 | 手动发布后自动轮询线上的 `data/index.json`，状态栏显示「GitHub 正在构建部署…已等 N 秒」；部署完成变成「已上线（用时 N 秒）」并附打开链接；4 分钟仍未上线会提示去仓库 Actions 页面查看 |
+| 授权引导 | 内置令牌获取步骤与权限说明，未授权时顶部显示提示条 |
+
+界面支持中英切换与明暗主题。
+
+## 博客站点
+
+生成的静态网站。阅读体验以复刻 Obsidian 的呈现为目标。
+
+**首页**
+
+- 顶部显示 `共 N 篇公开`
+- 按文件夹分组，每行显示标题、日期、公开状态
+- 分组标题可折叠，另有「全部展开 / 全部收起」
+- 标签栏筛选，显示 `标签筛选：（N 篇）`
+- 搜索匹配标题、正文、路径、标签四个字段，可与标签筛选叠加，显示 `· 筛选出 N 篇`
+- 命中**正文**的结果会在标题下带一行上下文片段，点开后自动滚到那句话并高亮（`src/lib/find-text.ts`）；只命中标题 / 路径时从头读
+- 更新及时性：索引按分钟级 URL 取（`/data/index.json?b=<分钟数>`），即使 HTML 文档被 GitHub Pages 缓存 10 分钟，也能在 1 分钟内看到新内容；随后用索引里的 `releaseTag` 给笔记数据拼 `?v=<tag>`，同样绕开旧缓存（`src/lib/api.ts`）
+
+**笔记页**
+
+- `N 字` 字数
+- 右侧可拖拽悬浮大纲，当前章节高亮
+- 字号缩放
+
+**Obsidian 语法**
+
+| 语法 | 效果 |
+|---|---|
+| `[[笔记]]` | 可点击跳转，悬停弹出预览浮窗 |
+| 出链 / 反链 | 文末列出 `链接到本文的笔记` 与 `本文的出链` |
+| 未创建 / 未公开 | 出链里区分这两种目标，指向私密笔记的会显示锁 |
+| `![[附件]]` | 图片等附件正常显示 |
+| `[!note]` 等 | 13 种 callout 类型 |
+| `==高亮==` | 高亮 |
+| `#标签` | 可点击筛选 |
+| `^块引用` | 定位到具体段落，目标不存在时回退为全文 |
+| `$公式$` | KaTeX 渲染，大纲里的公式同样渲染 |
+
+站点支持中英切换与明暗主题，阅读偏好（字号、折叠、筛选）本地记住。纯静态，无数据库、无账号、无服务端。
+
+## 快速开始
+
+需要 [Node.js](https://nodejs.org) 20.9+、[Git](https://git-scm.com)、GitHub 账号。
+
+```bash
+git clone <本项目地址> blog-static
+cd blog-static
+npm install
+npm run manage
+```
+
+Windows 可直接双击 `启动管理器.bat`。浏览器打开 `http://localhost:3457`。
+
+点「＋ 新建博客」，三步：
+
+1. **选择本地库文件夹**——你的 Obsidian 库，必须含 `.obsidian` 目录
+2. **填名字**——管理器里显示，也是网页标题和左上角站名
+3. **建仓库**——切到「帮我新建一个仓库」，填仓库名，点「在 GitHub 上创建」，建好自动启用 Pages
+
+首次需要授权：点「GitHub 授权」，按弹窗生成 Personal access token (classic)，勾选 `repo` 和 `workflow`，粘贴保存。
+
+有效期选「No expiration」。令牌过期后发布、建仓库、自动建站会一起失败，报错看不出是过期。令牌只存在本机。
+
+然后打开要公开的笔记开关，点「⟳ 发布到 GitHub」。1~2 分钟后访问 `https://你的用户名.github.io/仓库名/`。
+
+已有仓库：第 3 步切到「我已经有仓库了」粘贴地址。Pages 不必手动开——首次发布成功后管理器会自动启用；已经开过的不会重复创建。
+
+## 工作原理
+
+```
+你的 Obsidian 库（私人笔记 + 公开笔记混放）
+   │  ① 只读取 public: true 的笔记及其引用的附件
+   ▼
+发布管理器（本机 localhost:3457）
+   │  ② git add / commit / push
+   ▼
+GitHub 内容仓库（Markdown 原文）
+   │  ③ GitHub Actions 跑 npm run build
+   ▼
+GitHub Pages
+```
+
+公开与否只是 frontmatter 里的一个字段，所以同一个库既能当私人知识库，也能当公开博客。
+
+仓库里只存 Markdown 原文，diff 就是笔记的改动，可读可回滚。代价是发布后要等 1~2 分钟 CI 跑完。
+
+**源码与数据分开**：源码目录只放程序代码，个人数据（连接、令牌、笔记镜像、构建产物）都在系统用户目录。升级或重装程序，笔记不受影响。详见[数据存放位置](#数据存放位置)。
+
+## 数据存放位置
+
+| 系统 | 路径 |
+|---|---|
+| Windows | `%APPDATA%\obsidian-blog` |
+| macOS | `~/Library/Application Support/obsidian-blog` |
+| Linux | `~/.config/obsidian-blog` |
+
+内含：
+
+- `connections.json`——博客连接清单
+- `local.json`——GitHub 令牌、各连接的本地库路径
+- `repos/<连接id>/`——仓库工作副本
+- `content/`——公开笔记镜像
+- `build/`——构建产物
+
+改到别处（U 盘、同步盘）：设环境变量 `OBSIDIAN_BLOG_DATA` 后重启管理器。旧版本曾把数据放在源码目录，首次启动管理器会自动迁移。
+
+## 项目结构
+
+```
+blog-static/
+├── README.md / LICENSE / 启动管理器.bat
+├── package.json                 依赖与脚本入口
+├── next.config.ts               Next 配置（output: 'export'，basePath 支持）
+├── tsconfig.json / postcss.config.mjs / components.json / next-env.d.ts
+│
+├── .github/workflows/deploy.yml 构建并部署到 Pages
+├── public/.gitkeep              占位（构建产物会搬到用户数据目录）
+│
+├── scripts/
+│   ├── manager.mjs              ★ 发布管理器（HTTP 服务 + 内嵌网页 UI）
+│   ├── build-content.mjs        ★ 内容编译器（Markdown → JSON）+ 产物搬运
+│   ├── serve.mjs                本地静态预览服务器
+│   ├── e2e-test.mjs             端到端回归测试
+│   └── e2e-run.sh               测试一键运行（独立临时数据目录）
+│
+└── src/
+    ├── app/                     根布局、入口页、全局样式（明暗主题变量）
+    ├── components/blog/         ★ 应用外壳 / 首页 / 详情页 / 悬浮预览 / Markdown 管线
+    ├── components/ui/           shadcn/ui 基础组件
+    └── lib/
+        ├── obsidian.ts          ★ 数据模型：标题提取、公式切分、路径映射
+        ├── remark-obsidian.ts   ★ remark 插件：wikilink/嵌入/callout/高亮/标签
+        ├── rehype-safety.ts     安全净化：挡危险链接与内联脚本
+        ├── api.ts / store.ts    站点取数与视图状态
+        ├── i18n.ts / site.ts    中英文字典、站名与 basePath 解析
+        └── release-tag.ts / site-name.generated.ts  构建时生成
+```
+
+★ = 核心文件
+
+**两个核心脚本**
+
+- `build-content.mjs`：读 `content/`（公开笔记镜像 + 附件），解析 frontmatter、提取标签与双链，生成 `public/data/` 与 `public/assets/`。笔记文件名是 slug 的 base64url 编码（slug 常是中文路径，不能直接当文件名）。本地构建后把产物搬到用户数据目录，CI 上原地保留（Actions 需要 `out/`）。
+- `manager.mjs`：单文件 Node HTTP 服务，内嵌整个管理界面。发布流程：收集公开笔记 → 找引用附件 → 同步附件 → 删除过期内容 → git 提交推送 → 确保 Pages 已启用。
+
+## 本地开发
+
+```bash
+npm run dev        # 开发服务器 → http://localhost:3010
+npm run build      # 完整构建（生成内容 + 静态导出 + 搬运产物）
+npm run preview    # 预览构建产物 → http://localhost:8080
+npm run manage     # 启动发布管理器 → http://localhost:3457
+npm test           # 端到端回归测试
+```
+
+`npm run dev` 需要内容已生成——全新克隆先跑一次 `npm run build`，或用管理器连接一个库。
+
+`npm test`（即 `bash scripts/e2e-run.sh`）用独立的临时数据目录起一个管理器实例跑完整回归，不会碰你已有的连接、令牌与本地库。
+
+部署到自己的服务器：`npm run build` 后，把用户数据目录下 `build/site/` 的内容拷到任意静态服务器。
+
+## 技术栈
+
+| 层 | 选型 | 理由 |
+|---|---|---|
+| 框架 | Next.js 16（App Router，静态导出） | 组件化写 UI，同时能导出成纯静态文件 |
+| UI | React 19 + Tailwind CSS v4 + shadcn/ui | 无运行时样式引擎，产物小 |
+| Markdown | react-markdown + remark/rehype 插件链 | 标准 AST 管线，Obsidian 语法以插件接入 |
+| 公式 | KaTeX | 能同步渲染，大纲也要用 |
+| 状态 | zustand + persist | 阅读偏好持久化，无账号体系 |
+| 管理界面 | 原生 JS（内嵌在 manager.mjs） | 本地工具，不值得再引一套构建链 |
+| 部署 | GitHub Actions + Pages | 免费，无需服务器 |
+
+渲染管线：`remark-gfm`（表格/任务列表/删除线）→ `remark-math`（公式）→ **`remark-obsidian`**（双链/嵌入/callout/高亮/标签）→ `rehype-raw` → **`rehype-safety`**（安全净化）→ `rehype-highlight`（代码高亮）→ `rehype-katex`（公式渲染）。加粗的两个是本项目插件。
+
+## 许可
+
+[MIT](LICENSE) © 2026 bits47
+
+可自由使用、修改、商用、再发布，唯一要求是保留版权声明。软件按「原样」提供，不承担担保责任。
+
+MIT 只覆盖本项目的代码——你用这个工具生成的博客站点与笔记内容，版权归你所有。
+
+## 致谢
+
+构建于 Next.js、React、Tailwind CSS、KaTeX、remark/rehype 生态之上。

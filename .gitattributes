@@ -1,0 +1,31 @@
+# 行尾统一由仓库决定，不跟随各机器 core.autocrlf 设置。
+# 原因：本机 core.autocrlf=true，若不管，checkout 时会把 shell 脚本转成 CRLF，
+# 在 Git Bash 下执行会报 "$'\r': command not found"。
+* text=auto
+
+# 脚本必须 LF，否则在 Git Bash / sh 下无法执行
+*.sh   text eol=lf
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+
+# 源码与文档统一 LF（本机文件本来就是 LF，保持一致可避免整文件伪 diff）
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.mjs  text eol=lf
+*.cjs  text eol=lf
+*.js   text eol=lf
+*.css  text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+
+# 二进制资源不要做行尾转换
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
