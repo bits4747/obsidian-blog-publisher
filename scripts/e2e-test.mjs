@@ -174,13 +174,15 @@ console.log('\n=== 11. 回归：发布按钮必须能用「无 body 的 POST」�
 console.log('\n=== 12. 回归：所有内部 api() 调用点都不退化成 GET ===')
 // 静态扫描 UI 源码：除查询型端点（/api/state）外，其余调用必须带 body 或显式 method。
 {
-  const src = fs.readFileSync(path.join(process.cwd(), 'scripts', 'manager.mjs'), 'utf8')
-  const ui = src.slice(src.indexOf('async function api(path, body, method)'))
+  // 界面与服务端分在两个文件里：UI 在 scripts/ui-template.mjs，路由在 scripts/manager-core.mjs。
+  const uiSrc = fs.readFileSync(path.join(process.cwd(), 'scripts', 'ui-template.mjs'), 'utf8')
+  const coreSrc = fs.readFileSync(path.join(process.cwd(), 'scripts', 'manager-core.mjs'), 'utf8')
+  const ui = uiSrc.slice(uiSrc.indexOf('async function api(path, body, method)'))
   const calls = [...ui.matchAll(/api\(\s*'([^']+)'\s*(,[^)]*)?\)/g)].map((m) => ({ ep: m[1], rest: (m[2] || '').trim() }))
   // 允许「无 body 无 method」= 走 GET 的端点，直接从服务端注册处读出来，
   // 而不是在这里手抄一份白名单 —— 手抄的白名单会和真实路由脱节
   // （/api/auth/status 就是这么被误报成写接口的）。
-  const GET_OK = new Set([...src.matchAll(/req\.method === 'GET' && url === '([^']+)'/g)].map((m) => m[1]))
+  const GET_OK = new Set([...coreSrc.matchAll(/req\.method === 'GET' && url === '([^']+)'/g)].map((m) => m[1]))
   ok(GET_OK.size >= 2, '从服务端读出 GET 端点白名单，实际 ' + JSON.stringify([...GET_OK]))
   const bad = calls.filter((c) => !GET_OK.has(c.ep) && c.rest === '')
   ok(bad.length === 0, '无「无 body 且无 method」的写接口调用', JSON.stringify(bad))
