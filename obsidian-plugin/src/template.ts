@@ -1,0 +1,46 @@
+/**
+ * 站点模板：把打包进插件的模板文件写到一个目录里。
+ *
+ * manager-core 的 initTemplate() 需要一个「模板根目录」（里面有 package.json、
+ * src/、scripts/build-content.mjs、.github/ 等），新建连接时从它复制到仓库工作副本。
+ * 命令行版的模板根目录就是 blog-static 源码目录；插件版没有源码目录，
+ * 所以首次需要时把打包进来的文件表铺到一个缓存目录，再把那个目录当作 toolRoot。
+ */
+
+// 由 esbuild.config.mjs 生成
+import { TEMPLATE_FILES } from './_template-files.js'
+
+export type TemplateFile = { t: 'utf8'; v: string } | { t: 'base64'; v: string }
+
+export function templateFileCount(): number {
+  return Object.keys(TEMPLATE_FILES as Record<string, TemplateFile>).length
+}
+
+/**
+ * 把模板铺到 destDir（幂等：已存在的文件用内容覆盖）。
+ *
+ * @param fs  Obsidian 环境里用 node:fs
+ * @param path node:path
+ */
+export function materializeTemplate(
+  fs: typeof import('node:fs'),
+  path: typeof import('node:path'),
+  destDir: string,
+): void {
+  const files = TEMPLATE_FILES as Record<string, TemplateFile>
+  for (const [rel, f] of Object.entries(files)) {
+    const abs = path.join(destDir, rel)
+    fs.mkdirSync(path.dirname(abs), { recursive: true })
+    if (f.t === 'base64') {
+      fs.writeFileSync(abs, Buffer.from(f.v, 'base64'))
+    } else {
+      fs.writeFileSync(abs, f.v, 'utf8')
+    }
+  }
+}
+
+/** 模板是否已经铺好（抽查几个关键文件，避免每次启动都全量重写） */
+export function templateReady(fs: typeof import('node:fs'), path: typeof import('node:path'), dir: string): boolean {
+  const must = ['package.json', 'next.config.ts', 'scripts/build-content.mjs', 'src/lib/api.ts']
+  return must.every((m) => fs.existsSync(path.join(dir, m)))
+}

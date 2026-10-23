@@ -2455,24 +2455,24 @@ export function createManager(opts) {
           reject(new Error("服务启动失败：" + String((e && e.message) || e)))
         }
       }
-      const onListening = () => {
-        server.removeListener("error", onError)
-
-        const { conn, vaultPath } = activeConfig()
-        console.log(`[manager] Publish manager: http://localhost:${PORT}`)
-        console.log(`[manager] Active connection: ${conn ? conn.name : '(none)'}; vault path: ${vaultPath || '(not set)'}`)
-        console.log(`[manager] Source directory: ${TOOL_ROOT}`)
-        console.log(`[manager] Data directory:   ${DATA_DIR}`)
-        restartWatcher()
-        // 上次关掉时可能还有「推了但没等到上线」的记录，接着盯（定时器随进程消失）
-        try {
-        resumeAutoLiveWatch()
-        } catch {
-        /* 补盯失败不影响管理器启动 */
+        const onListening = () => {
+          server.removeListener("error", onError)
+          // port 传 0 时由系统分配，此时 PORT 仍是 0，日志与返回值都要用实际端口
+          const actualPort = server.address() ? server.address().port : PORT
+          const { conn, vaultPath } = activeConfig()
+          log(`[manager] Publish manager: http://localhost:${actualPort}`)
+          log(`[manager] Active connection: ${conn ? conn.name : '(none)'}; vault path: ${vaultPath || '(not set)'}`)
+          log(`[manager] Source directory: ${TOOL_ROOT}`)
+          log(`[manager] Data directory:   ${DATA_DIR}`)
+          restartWatcher()
+          // 上次关掉时可能还有「推了但没等到上线」的记录，接着盯（定时器随进程消失）
+          try {
+            resumeAutoLiveWatch()
+          } catch {
+            /* 补盯失败不影响管理器启动 */
+          }
+          resolve(actualPort)
         }
-
-        resolve(server.address().port)
-      }
       server.once("error", onError)
       server.once("listening", onListening)
       server.listen(PORT, "127.0.0.1")
