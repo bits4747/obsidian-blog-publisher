@@ -9,33 +9,64 @@ const VIEW_TYPE = 'blog-publisher-view'
 
 /** 文件树上「公开 / 私密」开关的样式。注入一次，跟随 Obsidian 主题变量。 */
 const EXPLORER_CSS = `
-/* 开关本体：和管理器界面里那个 .sw 同一个造型（胶囊 + 圆钮），
-   不是「公开 / 私密」两个按钮。 */
+/* 单篇开关：和管理器界面里那个 .sw 同一个造型（胶囊 + 圆钮），
+   但缩到 24×13，因为在 250px 宽的文件树里 30×16 太占地方。 */
 .blog-pub-sw {
   position: relative; flex-shrink: 0; margin-left: 6px;
-  width: 30px; height: 16px; border-radius: 999px;
+  width: 24px; height: 13px; border-radius: 999px;
   background: var(--background-modifier-border);
   cursor: pointer; user-select: none;
   transition: background-color .15s ease;
 }
 .blog-pub-sw::after {
-  content: ''; position: absolute; top: 2px; left: 2px;
-  width: 12px; height: 12px; border-radius: 50%;
+  content: ''; position: absolute; top: 1.5px; left: 2px;
+  width: 10px; height: 10px; border-radius: 50%;
   background: var(--text-on-accent, #fff);
   box-shadow: 0 1px 2px rgba(0,0,0,.25);
   transition: left .15s ease;
 }
 .blog-pub-sw.on { background: var(--interactive-accent); }
-.blog-pub-sw.on::after { left: 16px; }
-/* 部分公开：钮停在中间，和「全公开 / 全私密」区分开 */
-.blog-pub-sw.part { background: var(--interactive-accent); opacity: .55; }
-.blog-pub-sw.part::after { left: 9px; }
+.blog-pub-sw.on::after { left: 12px; }
 .blog-pub-sw:hover { box-shadow: 0 0 0 2px var(--background-modifier-hover); }
 
 /* 文件行：开关贴到行尾（和文件夹行对齐，不然它紧跟在标题后面） */
 .nav-file-title .blog-pub-sw { margin-left: auto; }
 
-/* 文件夹行尾：计数常驻（不悬停也能看到公开了几篇），开关跟后面 */
+/* 批量滑块（文件夹 / 全库）：三态，左端=全部私密，右端=全部公开。
+   单篇用开关是因为它只有两态；批量必须能选方向 —— 部分公开的文件夹
+   要一键变全私密，开关那个「只有一个方向」的推断做不到。
+   所以批量做成可以左右拖的滑块，而且比单篇开关大一点好按。 */
+.blog-pub-slider {
+  position: relative; flex-shrink: 0; margin-left: 6px;
+  width: 44px; height: 15px; border-radius: 999px;
+  background: var(--background-modifier-border);
+  cursor: grab; user-select: none;
+  touch-action: none; /* 手机上拖动时不要把页面一起滚了 */
+  transition: background-color .15s ease;
+}
+.blog-pub-slider.on { background: var(--interactive-accent); }
+.blog-pub-slider.off { background: var(--background-modifier-border); }
+/* 部分公开：底色只填一半，一眼看出「不是整齐的」 */
+.blog-pub-slider.part {
+  background: linear-gradient(
+    to right,
+    var(--interactive-accent) 0 50%,
+    var(--background-modifier-border) 50% 100%
+  );
+}
+.blog-pub-slider .blog-pub-knob {
+  position: absolute; top: 1.5px; left: 1px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--text-on-accent, #fff);
+  box-shadow: 0 1px 2px rgba(0,0,0,.3);
+  pointer-events: none;
+}
+.blog-pub-slider:hover { box-shadow: 0 0 0 2px var(--background-modifier-hover); }
+.blog-pub-slider:active { cursor: grabbing; }
+/* 拖动中给个描边，让用户知道抓住了 */
+.blog-pub-slider:focus-visible { box-shadow: 0 0 0 2px var(--interactive-accent); }
+
+/* 文件夹行尾：计数常驻（不悬停也能看到公开了几篇），滑块跟后面 */
 .blog-pub-folder {
   margin-left: auto; flex-shrink: 0;
   display: flex; align-items: center; gap: 4px;
@@ -44,6 +75,8 @@ const EXPLORER_CSS = `
   font-size: 10px; line-height: 15px; color: var(--text-faint);
   font-variant-numeric: tabular-nums;
 }
+/* 顶部工具条里的滑块：跟着 nav-action-button 的尺寸走 */
+.blog-pub-navwrap { display: inline-flex; align-items: center; padding: 0 4px; }
 `
 
 /** 后台服务子进程的通信句柄（utilityProcess 或 child_process 的统一外观） */
