@@ -3513,33 +3513,34 @@ var ExplorerBadges = class {
   decorate() {
     const root = this.watched;
     if (!root) return;
-    this.addNavButtons();
+    this.addNavSwitch();
+    this.updateNavSwitch();
     for (const el of Array.from(root.querySelectorAll(".nav-file-title[data-path]"))) {
       const path = (el.getAttribute("data-path") || "").replace(/\\/g, "/");
       if (!/\.(md|markdown)$/i.test(path)) continue;
       const pub = this.notes.get(path);
-      let dot = el.querySelector(".blog-pub-toggle");
+      let sw = el.querySelector(".blog-pub-sw");
       if (pub === void 0) {
-        if (dot) dot.remove();
+        if (sw) sw.remove();
         continue;
       }
-      if (!dot) {
-        dot = document.createElement("span");
-        dot.className = "blog-pub-toggle";
-        dot.setAttribute(MARK_FILE, "1");
-        dot.addEventListener("click", (ev) => {
+      if (!sw) {
+        sw = document.createElement("span");
+        sw.className = "blog-pub-sw";
+        sw.setAttribute(MARK_FILE, "1");
+        sw.setAttribute("role", "switch");
+        sw.addEventListener("click", (ev) => {
           ev.preventDefault();
           ev.stopPropagation();
           const now = this.notes.get(path) === true;
           void this.toggle(path, !now);
         });
-        el.appendChild(dot);
+        el.appendChild(sw);
       }
-      dot.classList.toggle("is-pub", pub);
-      dot.classList.toggle("is-pri", !pub);
-      dot.textContent = pub ? "\u516C\u5F00" : "\u79C1\u5BC6";
-      dot.setAttribute("aria-label", pub ? "\u5DF2\u516C\u5F00\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u79C1\u5BC6" : "\u79C1\u5BC6\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u516C\u5F00");
-      dot.title = pub ? "\u5DF2\u516C\u5F00\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u79C1\u5BC6" : "\u79C1\u5BC6\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u516C\u5F00";
+      sw.classList.toggle("on", pub);
+      sw.setAttribute("aria-checked", pub ? "true" : "false");
+      sw.setAttribute("aria-label", pub ? "\u5DF2\u516C\u5F00\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u79C1\u5BC6" : "\u79C1\u5BC6\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u516C\u5F00");
+      sw.title = pub ? "\u5DF2\u516C\u5F00\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u79C1\u5BC6" : "\u79C1\u5BC6\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u516C\u5F00";
     }
     for (const el of Array.from(root.querySelectorAll(".nav-folder-title[data-path]"))) {
       const folder = (el.getAttribute("data-path") || "").replace(/\\/g, "/");
@@ -3553,38 +3554,39 @@ var ExplorerBadges = class {
         box = document.createElement("span");
         box.className = "blog-pub-folder";
         box.setAttribute(MARK_FOLDER, "1");
-        const mk = (label, pub) => {
-          const b = document.createElement("span");
-          b.className = "blog-pub-fbtn";
-          b.textContent = label;
-          b.addEventListener("click", (ev) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-            const targets = this.pathsUnder(folder).filter((p) => this.notes.get(p) !== pub);
-            if (targets.length === 0) {
-              new import_obsidian.Notice("\u8FD9\u4E2A\u6587\u4EF6\u5939\u91CC\u7684\u7B14\u8BB0\u5DF2\u7ECF\u90FD\u662F" + (pub ? "\u516C\u5F00" : "\u79C1\u5BC6") + "\u4E86", 3e3);
-              return;
-            }
-            void this.toggleMany(targets, pub);
-          });
-          return b;
-        };
-        const cnt = document.createElement("span");
-        cnt.className = "blog-pub-fcount";
-        box.appendChild(cnt);
-        box.appendChild(mk("\u516C\u5F00", true));
-        box.appendChild(mk("\u79C1\u5BC6", false));
+        const sw2 = document.createElement("span");
+        sw2.className = "blog-pub-sw";
+        sw2.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const paths = this.pathsUnder(folder);
+          const allPub2 = paths.length > 0 && paths.every((p) => this.notes.get(p) === true);
+          void this.toggleMany(paths, !allPub2);
+        });
+        const cnt2 = document.createElement("span");
+        cnt2.className = "blog-pub-fcount";
+        box.appendChild(cnt2);
+        box.appendChild(sw2);
         el.appendChild(box);
       }
       const pubCount = inFolder.filter((p) => this.notes.get(p) === true).length;
-      const cntEl = box.querySelector(".blog-pub-fcount");
-      if (cntEl) {
-        cntEl.textContent = `${pubCount}/${inFolder.length}`;
-        cntEl.title = `${folder}\uFF1A${inFolder.length} \u7BC7\u91CC ${pubCount} \u7BC7\u516C\u5F00`;
+      const allPub = pubCount === inFolder.length;
+      const nonePub = pubCount === 0;
+      const sw = box.querySelector(".blog-pub-sw");
+      if (sw) {
+        sw.classList.toggle("on", allPub);
+        sw.classList.toggle("part", !allPub && !nonePub);
+        sw.title = allPub ? `${folder}\uFF1A${inFolder.length} \u7BC7\u5168\u90E8\u516C\u5F00\uFF0C\u70B9\u51FB\u5168\u90E8\u8BBE\u4E3A\u79C1\u5BC6` : `${folder}\uFF1A${inFolder.length} \u7BC7\u91CC ${pubCount} \u7BC7\u516C\u5F00\uFF0C\u70B9\u51FB\u5168\u90E8\u8BBE\u4E3A\u516C\u5F00`;
+        sw.setAttribute("aria-label", sw.title);
+        sw.setAttribute("role", "switch");
+        sw.setAttribute("aria-checked", allPub ? "true" : "false");
+      }
+      const cnt = box.querySelector(".blog-pub-fcount");
+      if (cnt) {
+        cnt.textContent = `${pubCount}/${inFolder.length}`;
+        cnt.title = `${folder}\uFF1A${inFolder.length} \u7BC7\u91CC ${pubCount} \u7BC7\u516C\u5F00`;
       }
       box.title = `${folder}\uFF1A${pubCount}/${inFolder.length} \u7BC7\u516C\u5F00`;
-      box.classList.toggle("all-pub", pubCount === inFolder.length && inFolder.length > 0);
-      box.classList.toggle("none-pub", pubCount === 0);
     }
   }
   /** 某文件夹下所有已纳入管理的笔记路径 */
@@ -3596,42 +3598,80 @@ var ExplorerBadges = class {
     }
     return out;
   }
-  /** 顶部工具条：全部公开 / 全部私密 */
-  addNavButtons() {
+  /** 顶部工具条：一个开关管全库（不是「全部公开 / 全部私密」两个按钮） */
+  addNavSwitch() {
     const leaf = this.app.workspace.getLeavesOfType("file-explorer")[0];
     const bar = leaf?.view.containerEl.querySelector(".nav-buttons-container");
     if (!bar || bar.querySelector(`[${MARK_NAV}]`)) return;
-    const mk = (label, pub) => {
-      const b = document.createElement("div");
-      b.className = "clickable-icon nav-action-button";
-      b.setAttribute(MARK_NAV, pub ? "all-pub" : "all-pri");
-      b.setAttribute("aria-label", label);
-      b.title = label;
-      b.textContent = pub ? "\u516C" : "\u79C1";
-      b.style.fontSize = "11px";
-      b.style.fontWeight = "600";
-      b.addEventListener("click", (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        const all = Array.from(this.notes.keys()).filter((p) => this.notes.get(p) !== pub);
-        if (all.length === 0) {
-          new import_obsidian.Notice("\u5DF2\u7ECF\u5168\u90E8\u662F" + (pub ? "\u516C\u5F00" : "\u79C1\u5BC6") + "\u4E86", 3e3);
-          return;
-        }
-        void this.toggleMany(all, pub);
-      });
-      return b;
-    };
-    bar.appendChild(mk("\u5168\u90E8\u516C\u5F00", true));
-    bar.appendChild(mk("\u5168\u90E8\u79C1\u5BC6", false));
+    const wrap = document.createElement("div");
+    wrap.className = "clickable-icon nav-action-button blog-pub-navwrap";
+    wrap.setAttribute(MARK_NAV, "all");
+    const sw = document.createElement("span");
+    sw.className = "blog-pub-sw";
+    sw.setAttribute("role", "switch");
+    sw.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const paths = Array.from(this.notes.keys());
+      const allPub = paths.length > 0 && paths.every((p) => this.notes.get(p) === true);
+      const target = !allPub;
+      new ConfirmModal(this.app, {
+        title: target ? "\u628A\u5168\u5E93\u7B14\u8BB0\u8BBE\u4E3A\u516C\u5F00\uFF1F" : "\u628A\u5168\u5E93\u7B14\u8BB0\u8BBE\u4E3A\u79C1\u5BC6\uFF1F",
+        body: `\u8FD9\u4F1A\u6539\u52A8 ${paths.length} \u7BC7\u7B14\u8BB0\u7684 public \u5B57\u6BB5\u3002` + (target ? "" : "\u8BBE\u4E3A\u79C1\u5BC6\u540E\u5B83\u4EEC\u4F1A\u4ECE\u7EBF\u4E0A\u535A\u5BA2\u4E0B\u7EBF\uFF0C\u9700\u8981\u91CD\u65B0\u516C\u5F00\u5E76\u53D1\u5E03\u624D\u4F1A\u56DE\u6765\u3002"),
+        cta: target ? "\u5168\u90E8\u516C\u5F00" : "\u5168\u90E8\u79C1\u5BC6",
+        onConfirm: () => void this.toggleMany(paths, target)
+      }).open();
+    });
+    wrap.appendChild(sw);
+    bar.appendChild(wrap);
+  }
+  /** 刷新顶部开关的状态（全公开 / 全私密 / 部分公开） */
+  updateNavSwitch() {
+    const sw = document.querySelector(`[${MARK_NAV}] .blog-pub-sw`);
+    if (!sw) return;
+    const all = Array.from(this.notes.values());
+    const pubCount = all.filter(Boolean).length;
+    const allPub = all.length > 0 && pubCount === all.length;
+    const nonePub = pubCount === 0;
+    sw.classList.toggle("on", allPub);
+    sw.classList.toggle("part", !allPub && !nonePub);
+    sw.setAttribute("aria-checked", allPub ? "true" : "false");
+    const label = allPub ? `\u5168\u5E93 ${all.length} \u7BC7\u5168\u90E8\u516C\u5F00\uFF0C\u70B9\u51FB\u5168\u90E8\u8BBE\u4E3A\u79C1\u5BC6` : `\u5168\u5E93 ${all.length} \u7BC7\u91CC ${pubCount} \u7BC7\u516C\u5F00\uFF0C\u70B9\u51FB\u5168\u90E8\u8BBE\u4E3A\u516C\u5F00`;
+    sw.title = label;
+    sw.setAttribute("aria-label", label);
   }
   /** 停用时把注入的东西都摘掉，别留一堆点了没反应的开关 */
   stripAll() {
     for (const el of Array.from(
-      document.querySelectorAll(".blog-pub-toggle, .blog-pub-folder, [data-blog-pub-nav]")
+      document.querySelectorAll(
+        ".blog-pub-sw, .blog-pub-folder, [data-blog-pub], [data-blog-pub-folder], [data-blog-pub-nav]"
+      )
     )) {
       el.remove();
     }
+  }
+};
+var ConfirmModal = class extends import_obsidian.Modal {
+  opts;
+  constructor(app, opts) {
+    super(app);
+    this.opts = opts;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.createEl("h3", { text: this.opts.title });
+    contentEl.createEl("p", { text: this.opts.body });
+    const row = contentEl.createDiv({ cls: "modal-button-container" });
+    const yes = row.createEl("button", { text: this.opts.cta, cls: "mod-warning" });
+    yes.addEventListener("click", () => {
+      this.close();
+      this.opts.onConfirm();
+    });
+    const no = row.createEl("button", { text: "\u53D6\u6D88" });
+    no.addEventListener("click", () => this.close());
+  }
+  onClose() {
+    this.contentEl.empty();
   }
 };
 function normalize(p) {
@@ -3641,29 +3681,41 @@ function normalize(p) {
 // src/main.ts
 var VIEW_TYPE = "blog-publisher-view";
 var EXPLORER_CSS = `
-.blog-pub-toggle {
-  margin-left: auto; flex-shrink: 0; padding: 0 5px; border-radius: 4px;
-  font-size: 10px; line-height: 15px; cursor: pointer; user-select: none;
-  border: 1px solid var(--background-modifier-border);
-  color: var(--text-muted); background: var(--background-secondary);
+/* \u5F00\u5173\u672C\u4F53\uFF1A\u548C\u7BA1\u7406\u5668\u754C\u9762\u91CC\u90A3\u4E2A .sw \u540C\u4E00\u4E2A\u9020\u578B\uFF08\u80F6\u56CA + \u5706\u94AE\uFF09\uFF0C
+   \u4E0D\u662F\u300C\u516C\u5F00 / \u79C1\u5BC6\u300D\u4E24\u4E2A\u6309\u94AE\u3002 */
+.blog-pub-sw {
+  position: relative; flex-shrink: 0; margin-left: 6px;
+  width: 30px; height: 16px; border-radius: 999px;
+  background: var(--background-modifier-border);
+  cursor: pointer; user-select: none;
+  transition: background-color .15s ease;
 }
-.blog-pub-toggle:hover { border-color: var(--interactive-accent); color: var(--text-normal); }
-.blog-pub-toggle.is-pub { color: var(--text-on-accent); background: var(--interactive-accent); border-color: var(--interactive-accent); }
-.blog-pub-toggle.is-pri { opacity: .55; }
-.blog-pub-folder { margin-left: auto; flex-shrink: 0; display: flex; gap: 3px; align-items: center; }
+.blog-pub-sw::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--text-on-accent, #fff);
+  box-shadow: 0 1px 2px rgba(0,0,0,.25);
+  transition: left .15s ease;
+}
+.blog-pub-sw.on { background: var(--interactive-accent); }
+.blog-pub-sw.on::after { left: 16px; }
+/* \u90E8\u5206\u516C\u5F00\uFF1A\u94AE\u505C\u5728\u4E2D\u95F4\uFF0C\u548C\u300C\u5168\u516C\u5F00 / \u5168\u79C1\u5BC6\u300D\u533A\u5206\u5F00 */
+.blog-pub-sw.part { background: var(--interactive-accent); opacity: .55; }
+.blog-pub-sw.part::after { left: 9px; }
+.blog-pub-sw:hover { box-shadow: 0 0 0 2px var(--background-modifier-hover); }
+
+/* \u6587\u4EF6\u884C\uFF1A\u5F00\u5173\u8D34\u5230\u884C\u5C3E\uFF08\u548C\u6587\u4EF6\u5939\u884C\u5BF9\u9F50\uFF0C\u4E0D\u7136\u5B83\u7D27\u8DDF\u5728\u6807\u9898\u540E\u9762\uFF09 */
+.nav-file-title .blog-pub-sw { margin-left: auto; }
+
+/* \u6587\u4EF6\u5939\u884C\u5C3E\uFF1A\u8BA1\u6570\u5E38\u9A7B\uFF08\u4E0D\u60AC\u505C\u4E5F\u80FD\u770B\u5230\u516C\u5F00\u4E86\u51E0\u7BC7\uFF09\uFF0C\u5F00\u5173\u8DDF\u540E\u9762 */
+.blog-pub-folder {
+  margin-left: auto; flex-shrink: 0;
+  display: flex; align-items: center; gap: 4px;
+}
 .blog-pub-folder .blog-pub-fcount {
   font-size: 10px; line-height: 15px; color: var(--text-faint);
-  font-variant-numeric: tabular-nums; padding-right: 1px;
+  font-variant-numeric: tabular-nums;
 }
-.blog-pub-folder .blog-pub-fbtn {
-  padding: 0 4px; border-radius: 4px; font-size: 10px; line-height: 14px;
-  cursor: pointer; user-select: none; opacity: 0; transition: opacity .12s;
-  border: 1px solid var(--background-modifier-border); color: var(--text-muted);
-}
-.nav-folder-title:hover .blog-pub-folder .blog-pub-fbtn { opacity: 1; }
-.blog-pub-folder .blog-pub-fbtn:hover { border-color: var(--interactive-accent); color: var(--text-normal); }
-.blog-pub-folder.all-pub .blog-pub-fbtn:first-child { opacity: .45; color: var(--interactive-accent); border-color: var(--interactive-accent); }
-.blog-pub-folder.none-pub .blog-pub-fbtn:last-child { opacity: .45; color: var(--interactive-accent); border-color: var(--interactive-accent); }
 `;
 function getUtilityProcess() {
   try {

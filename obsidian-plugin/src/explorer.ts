@@ -1,4 +1,4 @@
-import { App, Notice, requestUrl } from 'obsidian'
+import { App, Modal, Notice, requestUrl } from 'obsidian'
 
 /**
  * 把「是否公开」直接做进 Obsidian 原生文件浏览器。
@@ -216,36 +216,37 @@ export class ExplorerBadges {
   private decorate(): void {
     const root = this.watched
     if (!root) return
-    this.addNavButtons()
+    this.addNavSwitch()
+    this.updateNavSwitch()
 
     // ---- 文件行 ----
     for (const el of Array.from(root.querySelectorAll('.nav-file-title[data-path]'))) {
       const path = (el.getAttribute('data-path') || '').replace(/\\/g, '/')
       if (!/\.(md|markdown)$/i.test(path)) continue
       const pub = this.notes.get(path)
-      let dot = el.querySelector<HTMLElement>('.' + 'blog-pub-toggle')
+      let sw = el.querySelector<HTMLElement>('.' + 'blog-pub-sw')
       if (pub === undefined) {
         // 不是这个库的笔记（或还没读到状态）：不显示，免得给出错的状态
-        if (dot) dot.remove()
+        if (sw) sw.remove()
         continue
       }
-      if (!dot) {
-        dot = document.createElement('span')
-        dot.className = 'blog-pub-toggle'
-        dot.setAttribute(MARK_FILE, '1')
-        dot.addEventListener('click', (ev) => {
+      if (!sw) {
+        sw = document.createElement('span')
+        sw.className = 'blog-pub-sw'
+        sw.setAttribute(MARK_FILE, '1')
+        sw.setAttribute('role', 'switch')
+        sw.addEventListener('click', (ev) => {
           ev.preventDefault()
           ev.stopPropagation()
           const now = this.notes.get(path) === true
           void this.toggle(path, !now)
         })
-        el.appendChild(dot)
+        el.appendChild(sw)
       }
-      dot.classList.toggle('is-pub', pub)
-      dot.classList.toggle('is-pri', !pub)
-      dot.textContent = pub ? '公开' : '私密'
-      dot.setAttribute('aria-label', pub ? '已公开，点击设为私密' : '私密，点击设为公开')
-      dot.title = pub ? '已公开，点击设为私密' : '私密，点击设为公开'
+      sw.classList.toggle('on', pub)
+      sw.setAttribute('aria-checked', pub ? 'true' : 'false')
+      sw.setAttribute('aria-label', pub ? '已公开，点击设为私密' : '私密，点击设为公开')
+      sw.title = pub ? '已公开，点击设为私密' : '私密，点击设为公开'
     }
 
     // ---- 文件夹行 ----
@@ -261,39 +262,44 @@ export class ExplorerBadges {
         box = document.createElement('span')
         box.className = 'blog-pub-folder'
         box.setAttribute(MARK_FOLDER, '1')
-        const mk = (label: string, pub: boolean) => {
-          const b = document.createElement('span')
-          b.className = 'blog-pub-fbtn'
-          b.textContent = label
-          b.addEventListener('click', (ev) => {
-            ev.preventDefault()
-            ev.stopPropagation()
-            const targets = this.pathsUnder(folder).filter((p) => this.notes.get(p) !== pub)
-            if (targets.length === 0) {
-              new Notice('这个文件夹里的笔记已经都是' + (pub ? '公开' : '私密') + '了', 3000)
-              return
-            }
-            void this.toggleMany(targets, pub)
-          })
-          return b
-        }
-        // 常驻的「已公开数」：不然按钮只在 hover 时出现，用户根本不知道这里能点。
+        // 一个开关（和管理器里逐篇那个长得一样），不是「公开 / 私密」两个按钮。
+        // 点一下切到相反状态：没全公开 → 全公开；已全公开 → 全私密。
+        const sw = document.createElement('span')
+        sw.className = 'blog-pub-sw'
+        sw.addEventListener('click', (ev) => {
+          ev.preventDefault()
+          ev.stopPropagation()
+          const paths = this.pathsUnder(folder)
+          const allPub = paths.length > 0 && paths.every((p) => this.notes.get(p) === true)
+          void this.toggleMany(paths, !allPub)
+        })
+        // 计数不是按钮，只是让「这个文件夹公开了几篇」不用悬停也能看到
         const cnt = document.createElement('span')
         cnt.className = 'blog-pub-fcount'
         box.appendChild(cnt)
-        box.appendChild(mk('公开', true))
-        box.appendChild(mk('私密', false))
+        box.appendChild(sw)
         el.appendChild(box)
       }
       const pubCount = inFolder.filter((p) => this.notes.get(p) === true).length
-      const cntEl = box.querySelector<HTMLElement>('.blog-pub-fcount')
-      if (cntEl) {
-        cntEl.textContent = `${pubCount}/${inFolder.length}`
-        cntEl.title = `${folder}：${inFolder.length} 篇里 ${pubCount} 篇公开`
+      const allPub = pubCount === inFolder.length
+      const nonePub = pubCount === 0
+      const sw = box.querySelector<HTMLElement>('.blog-pub-sw')
+      if (sw) {
+        sw.classList.toggle('on', allPub)
+        sw.classList.toggle('part', !allPub && !nonePub)
+        sw.title = allPub
+          ? `${folder}：${inFolder.length} 篇全部公开，点击全部设为私密`
+          : `${folder}：${inFolder.length} 篇里 ${pubCount} 篇公开，点击全部设为公开`
+        sw.setAttribute('aria-label', sw.title)
+        sw.setAttribute('role', 'switch')
+        sw.setAttribute('aria-checked', allPub ? 'true' : 'false')
+      }
+      const cnt = box.querySelector<HTMLElement>('.blog-pub-fcount')
+      if (cnt) {
+        cnt.textContent = `${pubCount}/${inFolder.length}`
+        cnt.title = `${folder}：${inFolder.length} 篇里 ${pubCount} 篇公开`
       }
       box.title = `${folder}：${pubCount}/${inFolder.length} 篇公开`
-      box.classList.toggle('all-pub', pubCount === inFolder.length && inFolder.length > 0)
-      box.classList.toggle('none-pub', pubCount === 0)
     }
   }
 
@@ -307,43 +313,89 @@ export class ExplorerBadges {
     return out
   }
 
-  /** 顶部工具条：全部公开 / 全部私密 */
-  private addNavButtons(): void {
+  /** 顶部工具条：一个开关管全库（不是「全部公开 / 全部私密」两个按钮） */
+  private addNavSwitch(): void {
     const leaf = this.app.workspace.getLeavesOfType('file-explorer')[0]
     const bar = leaf?.view.containerEl.querySelector('.nav-buttons-container')
     if (!bar || bar.querySelector(`[${MARK_NAV}]`)) return
-    const mk = (label: string, pub: boolean) => {
-      const b = document.createElement('div')
-      b.className = 'clickable-icon nav-action-button'
-      b.setAttribute(MARK_NAV, pub ? 'all-pub' : 'all-pri')
-      b.setAttribute('aria-label', label)
-      b.title = label
-      b.textContent = pub ? '公' : '私'
-      b.style.fontSize = '11px'
-      b.style.fontWeight = '600'
-      b.addEventListener('click', (ev) => {
-        ev.preventDefault()
-        ev.stopPropagation()
-        const all = Array.from(this.notes.keys()).filter((p) => this.notes.get(p) !== pub)
-        if (all.length === 0) {
-          new Notice('已经全部是' + (pub ? '公开' : '私密') + '了', 3000)
-          return
-        }
-        void this.toggleMany(all, pub)
-      })
-      return b
-    }
-    bar.appendChild(mk('全部公开', true))
-    bar.appendChild(mk('全部私密', false))
+    const wrap = document.createElement('div')
+    wrap.className = 'clickable-icon nav-action-button blog-pub-navwrap'
+    wrap.setAttribute(MARK_NAV, 'all')
+    const sw = document.createElement('span')
+    sw.className = 'blog-pub-sw'
+    sw.setAttribute('role', 'switch')
+    sw.addEventListener('click', (ev) => {
+      ev.preventDefault()
+      ev.stopPropagation()
+      const paths = Array.from(this.notes.keys())
+      const allPub = paths.length > 0 && paths.every((p) => this.notes.get(p) === true)
+      const target = !allPub
+      // 一次改全库是重动作（116 篇），给一次确认，别让误点把整站下线
+      new ConfirmModal(this.app, {
+        title: target ? '把全库笔记设为公开？' : '把全库笔记设为私密？',
+        body:
+          `这会改动 ${paths.length} 篇笔记的 public 字段。` +
+          (target ? '' : '设为私密后它们会从线上博客下线，需要重新公开并发布才会回来。'),
+        cta: target ? '全部公开' : '全部私密',
+        onConfirm: () => void this.toggleMany(paths, target),
+      }).open()
+    })
+    wrap.appendChild(sw)
+    bar.appendChild(wrap)
+  }
+
+  /** 刷新顶部开关的状态（全公开 / 全私密 / 部分公开） */
+  private updateNavSwitch(): void {
+    const sw = document.querySelector<HTMLElement>(`[${MARK_NAV}] .blog-pub-sw`)
+    if (!sw) return
+    const all = Array.from(this.notes.values())
+    const pubCount = all.filter(Boolean).length
+    const allPub = all.length > 0 && pubCount === all.length
+    const nonePub = pubCount === 0
+    sw.classList.toggle('on', allPub)
+    sw.classList.toggle('part', !allPub && !nonePub)
+    sw.setAttribute('aria-checked', allPub ? 'true' : 'false')
+    const label = allPub
+      ? `全库 ${all.length} 篇全部公开，点击全部设为私密`
+      : `全库 ${all.length} 篇里 ${pubCount} 篇公开，点击全部设为公开`
+    sw.title = label
+    sw.setAttribute('aria-label', label)
   }
 
   /** 停用时把注入的东西都摘掉，别留一堆点了没反应的开关 */
   private stripAll(): void {
     for (const el of Array.from(
-      document.querySelectorAll('.blog-pub-toggle, .blog-pub-folder, [data-blog-pub-nav]'),
+      document.querySelectorAll(
+        '.blog-pub-sw, .blog-pub-folder, [data-blog-pub], [data-blog-pub-folder], [data-blog-pub-nav]',
+      ),
     )) {
       el.remove()
     }
+  }
+}
+
+/** 一句确认 + 一个按钮。obsidian 的类型定义里没有 ConfirmModal，自己拼一个。 */
+class ConfirmModal extends Modal {
+  private opts: { title: string; body: string; cta: string; onConfirm: () => void }
+  constructor(app: App, opts: { title: string; body: string; cta: string; onConfirm: () => void }) {
+    super(app)
+    this.opts = opts
+  }
+  onOpen(): void {
+    const { contentEl } = this
+    contentEl.createEl('h3', { text: this.opts.title })
+    contentEl.createEl('p', { text: this.opts.body })
+    const row = contentEl.createDiv({ cls: 'modal-button-container' })
+    const yes = row.createEl('button', { text: this.opts.cta, cls: 'mod-warning' })
+    yes.addEventListener('click', () => {
+      this.close()
+      this.opts.onConfirm()
+    })
+    const no = row.createEl('button', { text: '取消' })
+    no.addEventListener('click', () => this.close())
+  }
+  onClose(): void {
+    this.contentEl.empty()
   }
 }
 

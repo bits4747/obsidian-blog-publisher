@@ -9,29 +9,41 @@ const VIEW_TYPE = 'blog-publisher-view'
 
 /** 文件树上「公开 / 私密」开关的样式。注入一次，跟随 Obsidian 主题变量。 */
 const EXPLORER_CSS = `
-.blog-pub-toggle {
-  margin-left: auto; flex-shrink: 0; padding: 0 5px; border-radius: 4px;
-  font-size: 10px; line-height: 15px; cursor: pointer; user-select: none;
-  border: 1px solid var(--background-modifier-border);
-  color: var(--text-muted); background: var(--background-secondary);
+/* 开关本体：和管理器界面里那个 .sw 同一个造型（胶囊 + 圆钮），
+   不是「公开 / 私密」两个按钮。 */
+.blog-pub-sw {
+  position: relative; flex-shrink: 0; margin-left: 6px;
+  width: 30px; height: 16px; border-radius: 999px;
+  background: var(--background-modifier-border);
+  cursor: pointer; user-select: none;
+  transition: background-color .15s ease;
 }
-.blog-pub-toggle:hover { border-color: var(--interactive-accent); color: var(--text-normal); }
-.blog-pub-toggle.is-pub { color: var(--text-on-accent); background: var(--interactive-accent); border-color: var(--interactive-accent); }
-.blog-pub-toggle.is-pri { opacity: .55; }
-.blog-pub-folder { margin-left: auto; flex-shrink: 0; display: flex; gap: 3px; align-items: center; }
+.blog-pub-sw::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--text-on-accent, #fff);
+  box-shadow: 0 1px 2px rgba(0,0,0,.25);
+  transition: left .15s ease;
+}
+.blog-pub-sw.on { background: var(--interactive-accent); }
+.blog-pub-sw.on::after { left: 16px; }
+/* 部分公开：钮停在中间，和「全公开 / 全私密」区分开 */
+.blog-pub-sw.part { background: var(--interactive-accent); opacity: .55; }
+.blog-pub-sw.part::after { left: 9px; }
+.blog-pub-sw:hover { box-shadow: 0 0 0 2px var(--background-modifier-hover); }
+
+/* 文件行：开关贴到行尾（和文件夹行对齐，不然它紧跟在标题后面） */
+.nav-file-title .blog-pub-sw { margin-left: auto; }
+
+/* 文件夹行尾：计数常驻（不悬停也能看到公开了几篇），开关跟后面 */
+.blog-pub-folder {
+  margin-left: auto; flex-shrink: 0;
+  display: flex; align-items: center; gap: 4px;
+}
 .blog-pub-folder .blog-pub-fcount {
   font-size: 10px; line-height: 15px; color: var(--text-faint);
-  font-variant-numeric: tabular-nums; padding-right: 1px;
+  font-variant-numeric: tabular-nums;
 }
-.blog-pub-folder .blog-pub-fbtn {
-  padding: 0 4px; border-radius: 4px; font-size: 10px; line-height: 14px;
-  cursor: pointer; user-select: none; opacity: 0; transition: opacity .12s;
-  border: 1px solid var(--background-modifier-border); color: var(--text-muted);
-}
-.nav-folder-title:hover .blog-pub-folder .blog-pub-fbtn { opacity: 1; }
-.blog-pub-folder .blog-pub-fbtn:hover { border-color: var(--interactive-accent); color: var(--text-normal); }
-.blog-pub-folder.all-pub .blog-pub-fbtn:first-child { opacity: .45; color: var(--interactive-accent); border-color: var(--interactive-accent); }
-.blog-pub-folder.none-pub .blog-pub-fbtn:last-child { opacity: .45; color: var(--interactive-accent); border-color: var(--interactive-accent); }
 `
 
 /** 后台服务子进程的通信句柄（utilityProcess 或 child_process 的统一外观） */
