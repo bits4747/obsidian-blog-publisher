@@ -2,7 +2,7 @@
 
 把 Obsidian 笔记发布成 GitHub Pages 网站。含有两部分：
 
-**发布管理器**——本地网页，跑在 `localhost:3457`。连上你的 Obsidian 库，逐篇勾选要公开的笔记，一键建 GitHub 仓库并推送。
+**发布管理器**——本地网页，跑在 `localhost:3457`。连上你的 Obsidian 库，逐篇勾选要公开的笔记，一键建 GitHub 仓库并推送。也有 **Obsidian 插件版**，可以直接在 Obsidian 的文件树上开关公开状态，不用另开网页。
 
 **博客站点**——推送后自动构建的静态网站。读者打开网址看到的就是它。
 
@@ -80,6 +80,8 @@ npm run manage
 
 Windows 可直接双击 `启动管理器.bat`。浏览器打开 `http://localhost:3457`。
 
+不想挂后台进程的话，用下面的 **Obsidian 插件版**：开关直接出现在 Obsidian 自己的文件树上。
+
 点「＋ 新建博客」，三步：
 
 1. **选择本地库文件夹**——你的 Obsidian 库，必须含 `.obsidian` 目录
@@ -146,11 +148,22 @@ blog-static/
 ├── public/.gitkeep              占位（构建产物会搬到用户数据目录）
 │
 ├── scripts/
-│   ├── manager.mjs              ★ 发布管理器（HTTP 服务 + 内嵌网页 UI）
+│   ├── manager.mjs              ★ 命令行启动器（解析数据目录 → 起服务）
+│   ├── manager-core.mjs         ★ 发布管理器内核（HTTP 服务 + 全部接口）
+│   ├── ui-template.mjs          ★ 管理界面 HTML/CSS/JS（内核与插件共用同一份）
 │   ├── build-content.mjs        ★ 内容编译器（Markdown → JSON）+ 产物搬运
 │   ├── serve.mjs                本地静态预览服务器
 │   ├── e2e-test.mjs             端到端回归测试
 │   └── e2e-run.sh               测试一键运行（独立临时数据目录）
+│
+├── obsidian-plugin/             Obsidian 插件（复用上面的内核与界面）
+│   ├── manifest.json / package.json / esbuild.config.mjs
+│   └── src/
+│       ├── main.ts              插件入口：utilityProcess 起内核、开视图
+│       ├── worker-entry.ts      内核运行在子进程里（git 是同步调用，不能占主线程）
+│       ├── explorer.ts          原生文件树上的「公开 / 私密」开关
+│       ├── template.ts          首次运行把站点源码模板铺到数据目录
+│       └── _template-files.js   构建时生成：内嵌的站点源码模板
 │
 └── src/
     ├── app/                     根布局、入口页、全局样式（明暗主题变量）
@@ -170,7 +183,31 @@ blog-static/
 **两个核心脚本**
 
 - `build-content.mjs`：读 `content/`（公开笔记镜像 + 附件），解析 frontmatter、提取标签与双链，生成 `public/data/` 与 `public/assets/`。笔记文件名是 slug 的 base64url 编码（slug 常是中文路径，不能直接当文件名）。本地构建后把产物搬到用户数据目录，CI 上原地保留（Actions 需要 `out/`）。
-- `manager.mjs`：单文件 Node HTTP 服务，内嵌整个管理界面。发布流程：收集公开笔记 → 找引用附件 → 同步附件 → 删除过期内容 → git 提交推送 → 确保 Pages 已启用。
+- `manager-core.mjs`：Node HTTP 服务，内嵌整个管理界面（界面 HTML 在 `ui-template.mjs`）。发布流程：收集公开笔记 → 找引用附件 → 同步附件 → 删除过期内容 → git 提交推送 → 确保 Pages 已启用。
+
+## Obsidian 插件
+
+同一个发布管理器也做成了 Obsidian 插件，不必再双击 `启动管理器.bat` 挂一个后台进程。
+
+**装法**：把 `obsidian-plugin/` 下的 `main.js`、`worker.js`、`manifest.json` 拷到 `<你的库>/.obsidian/plugins/blog-publisher/`，在 Obsidian 设置 → 第三方插件里启用「博客发布器」。
+
+**用起来是什么样**
+
+- 左侧文件树里，每篇笔记右边一个「公开 / 私密」标签，点一下就能改（写的就是 frontmatter 里的 `public` 字段，和管理器完全同一份数据）
+- 每个文件夹标题右边有「公开 / 私密」两个小按钮，鼠标移上去才显现，点一下把这个文件夹里的笔记整体设为公开或私密；已经全公开的文件夹会标出来
+- 文件树顶部工具条多了「公」「私」两个按钮，一键全库公开 / 全库私密
+- 主区域开一个「博客发布器」标签页，里面是完整的管理器界面（连接、变更三栏、自动同步、流水、发布），功能与网页版一致
+
+**为什么界面用 iframe 装同一份 HTML**：管理器有近两千行前端逻辑（三栏变更、自动同步流水、拖拽大纲、中英切换）。重写一份给插件用，两边必然慢慢长歪；装同一份就永远一致。
+
+**为什么内核跑在子进程里**：内核的 git / curl 调用是同步阻塞的（`spawnSync`），放在 Obsidian 主线程会边写边卡界面。插件用 Electron 的 `utilityProcess` 起一个 Node 子进程跑内核，`worker_threads` 在这里不可用。
+
+**几点需要知道的**
+
+- 插件版和命令行版**共用同一份数据目录**（`%APPDATA%\obsidian-blog`），连接、令牌、流水都是同一套；两个同时开着会抢同一个端口，只开一个
+- 首次启用时插件会把站点源码模板（39 个文件，388KB）铺到数据目录的 `site-template/`，之后「更新源码」用它来推送站点代码
+- 文件树上的开关只在**当前库就是管理器配置的那个库**时生效；库对不上会提示一次并停用，避免改错库
+- iframe 界面的明暗主题不跟随 Obsidian 自己的主题（用的是管理器自己的主题设置）
 
 ## 本地开发
 

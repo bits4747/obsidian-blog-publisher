@@ -210,6 +210,9 @@ export const UI = `<!DOCTYPE html>
   .authbar .mini { margin-left: auto; }
   .tokenrow { display: flex; gap: 8px; align-items: flex-start; }
   .tokenrow input { flex: 1; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  /* 插件用 iframe 嵌入（?embed=1）：Obsidian 左侧已经是文件树，
+     这里的「搜索 + 文件夹网格」重复且挤，整块隐藏，只留连接 / 变更 / 流水 / 发布。 */
+  body.embed-mode #mainCard { display: none; }
 </style></head><body>
 
 <div class="statusbar"><div class="inner">
@@ -1874,6 +1877,11 @@ async function doUpdateSource() {
   }
 }
 document.getElementById('q').oninput = renderFolders;
+// 插件用 iframe 嵌入时带 ?embed=1：Obsidian 自己的文件树已经承担了「浏览 + 折叠」，
+// 这里的文件夹网格是重复的一套，藏掉它，界面只留发布相关的东西。
+if (new URLSearchParams(location.search).get('embed') === '1') {
+  document.body.classList.add('embed-mode');
+}
 updateThemeBtn();
 applyLang();
 loadState().catch((e) => setResult('err', t('loadFail') + e.message));

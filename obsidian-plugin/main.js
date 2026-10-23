@@ -39,7 +39,7 @@ __export(main_exports, {
   default: () => BlogPublisherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian = require("obsidian");
+var import_obsidian2 = require("obsidian");
 var nodeFs = __toESM(require("node:fs"));
 var nodePath = __toESM(require("node:path"));
 var nodeOs = __toESM(require("node:os"));
@@ -3340,8 +3340,319 @@ function templateReady(fs, path, dir) {
   return must.every((m) => fs.existsSync(path.join(dir, m)));
 }
 
+// src/explorer.ts
+var import_obsidian = require("obsidian");
+var MARK_FILE = "data-blog-pub";
+var MARK_FOLDER = "data-blog-pub-folder";
+var MARK_NAV = "data-blog-pub-nav";
+var ExplorerBadges = class {
+  app;
+  getPort;
+  /** rel 路径（正斜杠）→ 是否公开 */
+  notes = /* @__PURE__ */ new Map();
+  /**
+   * 刚点过的结果，防止 8 秒轮询用「点击之前」的响应把界面改回去。
+   * 实测踩过：点一下变私密，紧接着一次在途的 /api/state 响应把它又刷成公开，
+   * 用户看到的就是「点了没反应 / 自己跳回去」。
+   */
+  overrides = /* @__PURE__ */ new Map();
+  observer = null;
+  watched = null;
+  debounce = null;
+  poll = null;
+  hookTimer = null;
+  busy = false;
+  enabled = true;
+  warnedVault = false;
+  constructor(app, getPort) {
+    this.app = app;
+    this.getPort = getPort;
+  }
+  start() {
+    this.stripAll();
+    this.hook();
+    this.hookTimer = window.setInterval(() => this.hook(), 2e3);
+    this.poll = window.setInterval(() => void this.refresh(), 8e3);
+    void this.refresh();
+  }
+  stop() {
+    this.observer?.disconnect();
+    this.observer = null;
+    this.watched = null;
+    if (this.hookTimer !== null) window.clearInterval(this.hookTimer);
+    if (this.poll !== null) window.clearInterval(this.poll);
+    if (this.debounce !== null) window.clearTimeout(this.debounce);
+    this.hookTimer = this.poll = this.debounce = null;
+    this.stripAll();
+  }
+  /** 找文件浏览器里真正装树节点的容器 */
+  container() {
+    const leaf = this.app.workspace.getLeavesOfType("file-explorer")[0];
+    if (!leaf) return null;
+    const root = leaf.view.containerEl;
+    return root.querySelector(".nav-files-container") || root;
+  }
+  hook() {
+    const el = this.container();
+    if (!el || el === this.watched) return;
+    this.observer?.disconnect();
+    this.watched = el;
+    this.observer = new MutationObserver(() => this.schedule());
+    this.observer.observe(el, { childList: true, subtree: true });
+    this.schedule();
+  }
+  schedule() {
+    if (this.debounce !== null) window.clearTimeout(this.debounce);
+    this.debounce = window.setTimeout(() => {
+      this.debounce = null;
+      this.decorate();
+    }, 120);
+  }
+  async refresh() {
+    if (!this.enabled) return;
+    try {
+      const port = await this.getPort();
+      const r = await (0, import_obsidian.requestUrl)({ url: `http://127.0.0.1:${port}/api/state`, method: "GET" });
+      if (r.status !== 200) return;
+      const j = r.json;
+      const base = this.app.vault.adapter.basePath || "";
+      if (j.vaultPath && base && normalize(j.vaultPath) !== normalize(base)) {
+        if (!this.warnedVault) {
+          this.warnedVault = true;
+          new import_obsidian.Notice("\u535A\u5BA2\u53D1\u5E03\u5668\uFF1A\u7BA1\u7406\u5668\u914D\u7F6E\u7684\u5E93\u4E0D\u662F\u5F53\u524D\u5E93\uFF0C\u6587\u4EF6\u6811\u4E0A\u7684\u516C\u5F00\u5F00\u5173\u5DF2\u505C\u7528\u3002\n\u7BA1\u7406\u5668\uFF1A" + j.vaultPath + "\n\u5F53\u524D\uFF1A" + base, 12e3);
+        }
+        this.enabled = false;
+        this.stripAll();
+        return;
+      }
+      this.notes.clear();
+      for (const n of j.notes || []) this.notes.set(n.path.replace(/\\/g, "/"), !!n.isPublic);
+      const now = Date.now();
+      for (const [p, o] of Array.from(this.overrides)) {
+        if (now - o.at > 3e4) {
+          this.overrides.delete(p);
+          continue;
+        }
+        if (this.notes.get(p) === o.pub) this.overrides.delete(p);
+        else this.notes.set(p, o.pub);
+      }
+      this.decorate();
+    } catch {
+    }
+  }
+  async toggle(path, pub) {
+    if (this.busy) return;
+    this.busy = true;
+    this.overrides.set(path, { pub, at: Date.now() });
+    this.notes.set(path, pub);
+    this.decorate();
+    try {
+      const port = await this.getPort();
+      const r = await (0, import_obsidian.requestUrl)({
+        url: `http://127.0.0.1:${port}/api/toggle`,
+        method: "POST",
+        contentType: "application/json",
+        body: JSON.stringify({ path, pub }),
+        throw: false
+      });
+      if (r.status !== 200) {
+        const j = r.json || {};
+        new import_obsidian.Notice("\u8BBE\u7F6E\u5931\u8D25\uFF1A" + (j.error || "HTTP " + r.status), 6e3);
+        this.overrides.delete(path);
+        this.notes.set(path, !pub);
+        this.decorate();
+        return;
+      }
+      this.notes.set(path, pub);
+      this.decorate();
+    } catch (e) {
+      new import_obsidian.Notice("\u8BBE\u7F6E\u5931\u8D25\uFF1A" + String(e?.message || e), 6e3);
+      this.overrides.delete(path);
+      this.notes.set(path, !pub);
+      this.decorate();
+    } finally {
+      this.busy = false;
+    }
+  }
+  async toggleMany(paths, pub) {
+    if (this.busy || paths.length === 0) return;
+    this.busy = true;
+    let done = 0;
+    const at = Date.now();
+    for (const p of paths) {
+      this.overrides.set(p, { pub, at });
+      this.notes.set(p, pub);
+    }
+    this.decorate();
+    try {
+      const port = await this.getPort();
+      for (const p of paths) {
+        try {
+          const r = await (0, import_obsidian.requestUrl)({
+            url: `http://127.0.0.1:${port}/api/toggle`,
+            method: "POST",
+            contentType: "application/json",
+            body: JSON.stringify({ path: p, pub }),
+            throw: false
+          });
+          if (r.status === 200) {
+            this.overrides.set(p, { pub, at: Date.now() });
+            this.notes.set(p, pub);
+            done++;
+          }
+        } catch {
+        }
+      }
+      new import_obsidian.Notice(`\u5DF2${pub ? "\u516C\u5F00" : "\u8BBE\u4E3A\u79C1\u5BC6"} ${done} \u7BC7`, 4e3);
+      this.decorate();
+    } finally {
+      this.busy = false;
+    }
+  }
+  /** 把树上的节点补齐 / 刷新状态 */
+  decorate() {
+    const root = this.watched;
+    if (!root) return;
+    this.addNavButtons();
+    for (const el of Array.from(root.querySelectorAll(".nav-file-title[data-path]"))) {
+      const path = (el.getAttribute("data-path") || "").replace(/\\/g, "/");
+      if (!/\.(md|markdown)$/i.test(path)) continue;
+      const pub = this.notes.get(path);
+      let dot = el.querySelector(".blog-pub-toggle");
+      if (pub === void 0) {
+        if (dot) dot.remove();
+        continue;
+      }
+      if (!dot) {
+        dot = document.createElement("span");
+        dot.className = "blog-pub-toggle";
+        dot.setAttribute(MARK_FILE, "1");
+        dot.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          const now = this.notes.get(path) === true;
+          void this.toggle(path, !now);
+        });
+        el.appendChild(dot);
+      }
+      dot.classList.toggle("is-pub", pub);
+      dot.classList.toggle("is-pri", !pub);
+      dot.textContent = pub ? "\u516C\u5F00" : "\u79C1\u5BC6";
+      dot.setAttribute("aria-label", pub ? "\u5DF2\u516C\u5F00\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u79C1\u5BC6" : "\u79C1\u5BC6\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u516C\u5F00");
+      dot.title = pub ? "\u5DF2\u516C\u5F00\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u79C1\u5BC6" : "\u79C1\u5BC6\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u516C\u5F00";
+    }
+    for (const el of Array.from(root.querySelectorAll(".nav-folder-title[data-path]"))) {
+      const folder = (el.getAttribute("data-path") || "").replace(/\\/g, "/");
+      const inFolder = this.pathsUnder(folder);
+      let box = el.querySelector(".blog-pub-folder");
+      if (inFolder.length === 0) {
+        if (box) box.remove();
+        continue;
+      }
+      if (!box) {
+        box = document.createElement("span");
+        box.className = "blog-pub-folder";
+        box.setAttribute(MARK_FOLDER, "1");
+        const mk = (label, pub) => {
+          const b = document.createElement("span");
+          b.className = "blog-pub-fbtn";
+          b.textContent = label;
+          b.addEventListener("click", (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const targets = this.pathsUnder(folder).filter((p) => this.notes.get(p) !== pub);
+            if (targets.length === 0) {
+              new import_obsidian.Notice("\u8FD9\u4E2A\u6587\u4EF6\u5939\u91CC\u7684\u7B14\u8BB0\u5DF2\u7ECF\u90FD\u662F" + (pub ? "\u516C\u5F00" : "\u79C1\u5BC6") + "\u4E86", 3e3);
+              return;
+            }
+            void this.toggleMany(targets, pub);
+          });
+          return b;
+        };
+        box.appendChild(mk("\u516C\u5F00", true));
+        box.appendChild(mk("\u79C1\u5BC6", false));
+        el.appendChild(box);
+      }
+      const pubCount = inFolder.filter((p) => this.notes.get(p) === true).length;
+      box.title = `${folder}\uFF1A${pubCount}/${inFolder.length} \u7BC7\u516C\u5F00`;
+      box.classList.toggle("all-pub", pubCount === inFolder.length && inFolder.length > 0);
+      box.classList.toggle("none-pub", pubCount === 0);
+    }
+  }
+  /** 某文件夹下所有已纳入管理的笔记路径 */
+  pathsUnder(folder) {
+    const prefix = folder ? folder + "/" : "";
+    const out = [];
+    for (const p of this.notes.keys()) {
+      if (!prefix || p.startsWith(prefix)) out.push(p);
+    }
+    return out;
+  }
+  /** 顶部工具条：全部公开 / 全部私密 */
+  addNavButtons() {
+    const leaf = this.app.workspace.getLeavesOfType("file-explorer")[0];
+    const bar = leaf?.view.containerEl.querySelector(".nav-buttons-container");
+    if (!bar || bar.querySelector(`[${MARK_NAV}]`)) return;
+    const mk = (label, pub) => {
+      const b = document.createElement("div");
+      b.className = "clickable-icon nav-action-button";
+      b.setAttribute(MARK_NAV, pub ? "all-pub" : "all-pri");
+      b.setAttribute("aria-label", label);
+      b.title = label;
+      b.textContent = pub ? "\u516C" : "\u79C1";
+      b.style.fontSize = "11px";
+      b.style.fontWeight = "600";
+      b.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const all = Array.from(this.notes.keys()).filter((p) => this.notes.get(p) !== pub);
+        if (all.length === 0) {
+          new import_obsidian.Notice("\u5DF2\u7ECF\u5168\u90E8\u662F" + (pub ? "\u516C\u5F00" : "\u79C1\u5BC6") + "\u4E86", 3e3);
+          return;
+        }
+        void this.toggleMany(all, pub);
+      });
+      return b;
+    };
+    bar.appendChild(mk("\u5168\u90E8\u516C\u5F00", true));
+    bar.appendChild(mk("\u5168\u90E8\u79C1\u5BC6", false));
+  }
+  /** 停用时把注入的东西都摘掉，别留一堆点了没反应的开关 */
+  stripAll() {
+    for (const el of Array.from(
+      document.querySelectorAll(".blog-pub-toggle, .blog-pub-folder, [data-blog-pub-nav]")
+    )) {
+      el.remove();
+    }
+  }
+};
+function normalize(p) {
+  return String(p).replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+}
+
 // src/main.ts
 var VIEW_TYPE = "blog-publisher-view";
+var EXPLORER_CSS = `
+.blog-pub-toggle {
+  margin-left: auto; flex-shrink: 0; padding: 0 5px; border-radius: 4px;
+  font-size: 10px; line-height: 15px; cursor: pointer; user-select: none;
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-muted); background: var(--background-secondary);
+}
+.blog-pub-toggle:hover { border-color: var(--interactive-accent); color: var(--text-normal); }
+.blog-pub-toggle.is-pub { color: var(--text-on-accent); background: var(--interactive-accent); border-color: var(--interactive-accent); }
+.blog-pub-toggle.is-pri { opacity: .55; }
+.blog-pub-folder { margin-left: auto; flex-shrink: 0; display: flex; gap: 3px; align-items: center; }
+.blog-pub-folder .blog-pub-fbtn {
+  padding: 0 4px; border-radius: 4px; font-size: 10px; line-height: 14px;
+  cursor: pointer; user-select: none; opacity: 0; transition: opacity .12s;
+  border: 1px solid var(--background-modifier-border); color: var(--text-muted);
+}
+.nav-folder-title:hover .blog-pub-folder .blog-pub-fbtn { opacity: 1; }
+.blog-pub-folder .blog-pub-fbtn:hover { border-color: var(--interactive-accent); color: var(--text-normal); }
+.blog-pub-folder.all-pub .blog-pub-fbtn:first-child { opacity: .45; color: var(--interactive-accent); border-color: var(--interactive-accent); }
+.blog-pub-folder.none-pub .blog-pub-fbtn:last-child { opacity: .45; color: var(--interactive-accent); border-color: var(--interactive-accent); }
+`;
 function getUtilityProcess() {
   try {
     const electron = require("electron");
@@ -3364,17 +3675,23 @@ function dataRoot() {
   }
   return nodePath.join(process.env.XDG_CONFIG_HOME || nodePath.join(home, ".config"), "obsidian-blog");
 }
-var BlogPublisherPlugin = class extends import_obsidian.Plugin {
+var BlogPublisherPlugin = class extends import_obsidian2.Plugin {
   child = null;
   port = 0;
   starting = null;
   toolRoot = "";
+  explorer = null;
   async onload() {
     console.log("[blog-publisher] loading");
-    (0, import_obsidian.addIcon)(
+    (0, import_obsidian2.addIcon)(
       "blog-publisher",
       '<svg viewBox="0 0 100 100"><path fill="currentColor" d="M20 15h60a5 5 0 0 1 5 5v60a5 5 0 0 1-5 5H20a5 5 0 0 1-5-5V20a5 5 0 0 1 5-5zm10 15v10h40V30H30zm0 18v8h40v-8H30zm0 16v8h26v-8H30z"/></svg>'
     );
+    const style = document.createElement("style");
+    style.id = "blog-publisher-explorer-css";
+    style.textContent = EXPLORER_CSS;
+    document.head.appendChild(style);
+    this.register(() => style.remove());
     this.registerView(VIEW_TYPE, (leaf) => new BlogPublisherView(leaf, this));
     this.addRibbonIcon("blog-publisher", "\u6253\u5F00\u535A\u5BA2\u53D1\u5E03\u5668", () => {
       void this.activateView();
@@ -3388,7 +3705,7 @@ var BlogPublisherPlugin = class extends import_obsidian.Plugin {
       id: "publish-now",
       name: "\u7ACB\u5373\u53D1\u5E03\u5230 GitHub",
       callback: async () => {
-        const n = new import_obsidian.Notice("\u6B63\u5728\u53D1\u5E03\u2026", 4e3);
+        const n = new import_obsidian2.Notice("\u6B63\u5728\u53D1\u5E03\u2026", 4e3);
         try {
           const port = await this.ensureServer();
           const r = await fetch(`http://127.0.0.1:${port}/api/publish`, {
@@ -3398,20 +3715,26 @@ var BlogPublisherPlugin = class extends import_obsidian.Plugin {
           });
           const j = await r.json();
           n.hide();
-          new import_obsidian.Notice(j.failed ? "\u53D1\u5E03\u5931\u8D25\uFF1A" + (j.log || []).slice(-1)[0] : j.pushed ? "\u5DF2\u63A8\u9001 GitHub\uFF0C\u6B63\u5728\u6784\u5EFA" : "\u7EBF\u4E0A\u5DF2\u662F\u6700\u65B0", 6e3);
+          new import_obsidian2.Notice(j.failed ? "\u53D1\u5E03\u5931\u8D25\uFF1A" + (j.log || []).slice(-1)[0] : j.pushed ? "\u5DF2\u63A8\u9001 GitHub\uFF0C\u6B63\u5728\u6784\u5EFA" : "\u7EBF\u4E0A\u5DF2\u662F\u6700\u65B0", 6e3);
         } catch (e) {
           n.hide();
-          new import_obsidian.Notice("\u53D1\u5E03\u5931\u8D25\uFF1A" + String(e?.message || e), 8e3);
+          new import_obsidian2.Notice("\u53D1\u5E03\u5931\u8D25\uFF1A" + String(e?.message || e), 8e3);
         }
       }
     });
     this.addSettingTab(new BlogPublisherSettingTab(this.app, this));
-    void this.ensureServer().catch((e) => {
+    void this.ensureServer().then(() => {
+      this.explorer = new ExplorerBadges(this.app, () => this.ensureServer());
+      this.explorer.start();
+      this.register(() => this.explorer?.stop());
+    }).catch((e) => {
       console.error("[blog-publisher] \u542F\u52A8\u5931\u8D25", e);
-      new import_obsidian.Notice("\u535A\u5BA2\u53D1\u5E03\u5668\u542F\u52A8\u5931\u8D25\uFF1A" + String(e?.message || e), 1e4);
+      new import_obsidian2.Notice("\u535A\u5BA2\u53D1\u5E03\u5668\u542F\u52A8\u5931\u8D25\uFF1A" + String(e?.message || e), 1e4);
     });
   }
   async onunload() {
+    this.explorer?.stop();
+    this.explorer = null;
     if (this.child) {
       try {
         this.child.postMessage({ type: "stop" });
@@ -3533,7 +3856,7 @@ var BlogPublisherPlugin = class extends import_obsidian.Plugin {
     return leaf;
   }
 };
-var BlogPublisherView = class extends import_obsidian.ItemView {
+var BlogPublisherView = class extends import_obsidian2.ItemView {
   plugin;
   frame = null;
   constructor(leaf, plugin) {
@@ -3561,7 +3884,7 @@ var BlogPublisherView = class extends import_obsidian.ItemView {
       const port = await this.plugin.ensureServer();
       loading.remove();
       const frame = root.createEl("iframe");
-      frame.src = `http://127.0.0.1:${port}/`;
+      frame.src = `http://127.0.0.1:${port}/?embed=1`;
       frame.style.width = "100%";
       frame.style.height = "100%";
       frame.style.border = "0";
@@ -3577,7 +3900,7 @@ var BlogPublisherView = class extends import_obsidian.ItemView {
     this.frame = null;
   }
 };
-var BlogPublisherSettingTab = class extends import_obsidian.PluginSettingTab {
+var BlogPublisherSettingTab = class extends import_obsidian2.PluginSettingTab {
   plugin;
   constructor(app, plugin) {
     super(app, plugin);
@@ -3591,12 +3914,12 @@ var BlogPublisherSettingTab = class extends import_obsidian.PluginSettingTab {
       text: "\u6570\u636E\u76EE\u5F55\u4E0E\u547D\u4EE4\u884C\u7248\u53D1\u5E03\u7BA1\u7406\u5668\u5171\u7528\uFF08\u9ED8\u8BA4 %APPDATA%\\obsidian-blog\uFF09\uFF0C\u6240\u4EE5\u4E24\u8FB9\u7684\u8FDE\u63A5\u3001\u4EE4\u724C\u3001\u53D1\u5E03\u6D41\u6C34\u662F\u540C\u4E00\u4EFD\u3002",
       cls: "setting-item-description"
     });
-    new import_obsidian.Setting(containerEl).setName("\u6253\u5F00\u53D1\u5E03\u5668").setDesc("\u4E5F\u53EF\u4EE5\u70B9\u5DE6\u4FA7\u680F\u7684\u56FE\u6807\uFF0C\u6216\u7528\u547D\u4EE4\u9762\u677F\u300C\u6253\u5F00\u535A\u5BA2\u53D1\u5E03\u5668\u300D").addButton(
+    new import_obsidian2.Setting(containerEl).setName("\u6253\u5F00\u53D1\u5E03\u5668").setDesc("\u4E5F\u53EF\u4EE5\u70B9\u5DE6\u4FA7\u680F\u7684\u56FE\u6807\uFF0C\u6216\u7528\u547D\u4EE4\u9762\u677F\u300C\u6253\u5F00\u535A\u5BA2\u53D1\u5E03\u5668\u300D").addButton(
       (b) => b.setButtonText("\u6253\u5F00").onClick(() => {
         void this.plugin.activateView();
       })
     );
-    new import_obsidian.Setting(containerEl).setName("\u5728\u6D4F\u89C8\u5668\u4E2D\u6253\u5F00").setDesc("\u7528\u7CFB\u7EDF\u6D4F\u89C8\u5668\u6253\u5F00\u540C\u4E00\u4E2A\u754C\u9762\uFF08\u9002\u5408\u5927\u5C4F\u64CD\u4F5C\uFF09").addButton(
+    new import_obsidian2.Setting(containerEl).setName("\u5728\u6D4F\u89C8\u5668\u4E2D\u6253\u5F00").setDesc("\u7528\u7CFB\u7EDF\u6D4F\u89C8\u5668\u6253\u5F00\u540C\u4E00\u4E2A\u754C\u9762\uFF08\u9002\u5408\u5927\u5C4F\u64CD\u4F5C\uFF09").addButton(
       (b) => b.setButtonText("\u6253\u5F00").onClick(async () => {
         const port = await this.plugin.ensureServer();
         window.open(`http://127.0.0.1:${port}/`, "_blank");

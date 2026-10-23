@@ -3735,6 +3735,9 @@ var UI = `<!DOCTYPE html>
   .authbar .mini { margin-left: auto; }
   .tokenrow { display: flex; gap: 8px; align-items: flex-start; }
   .tokenrow input { flex: 1; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  /* \u63D2\u4EF6\u7528 iframe \u5D4C\u5165\uFF08?embed=1\uFF09\uFF1AObsidian \u5DE6\u4FA7\u5DF2\u7ECF\u662F\u6587\u4EF6\u6811\uFF0C
+     \u8FD9\u91CC\u7684\u300C\u641C\u7D22 + \u6587\u4EF6\u5939\u7F51\u683C\u300D\u91CD\u590D\u4E14\u6324\uFF0C\u6574\u5757\u9690\u85CF\uFF0C\u53EA\u7559\u8FDE\u63A5 / \u53D8\u66F4 / \u6D41\u6C34 / \u53D1\u5E03\u3002 */
+  body.embed-mode #mainCard { display: none; }
 </style></head><body>
 
 <div class="statusbar"><div class="inner">
@@ -5399,6 +5402,11 @@ async function doUpdateSource() {
   }
 }
 document.getElementById('q').oninput = renderFolders;
+// \u63D2\u4EF6\u7528 iframe \u5D4C\u5165\u65F6\u5E26 ?embed=1\uFF1AObsidian \u81EA\u5DF1\u7684\u6587\u4EF6\u6811\u5DF2\u7ECF\u627F\u62C5\u4E86\u300C\u6D4F\u89C8 + \u6298\u53E0\u300D\uFF0C
+// \u8FD9\u91CC\u7684\u6587\u4EF6\u5939\u7F51\u683C\u662F\u91CD\u590D\u7684\u4E00\u5957\uFF0C\u85CF\u6389\u5B83\uFF0C\u754C\u9762\u53EA\u7559\u53D1\u5E03\u76F8\u5173\u7684\u4E1C\u897F\u3002
+if (new URLSearchParams(location.search).get('embed') === '1') {
+  document.body.classList.add('embed-mode');
+}
 updateThemeBtn();
 applyLang();
 loadState().catch((e) => setResult('err', t('loadFail') + e.message));

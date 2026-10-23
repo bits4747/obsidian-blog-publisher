@@ -3,8 +3,32 @@ import * as nodeFs from 'node:fs'
 import * as nodePath from 'node:path'
 import * as nodeOs from 'node:os'
 import { materializeTemplate, templateReady } from './template.js'
+import { ExplorerBadges } from './explorer.js'
 
 const VIEW_TYPE = 'blog-publisher-view'
+
+/** 文件树上「公开 / 私密」开关的样式。注入一次，跟随 Obsidian 主题变量。 */
+const EXPLORER_CSS = `
+.blog-pub-toggle {
+  margin-left: auto; flex-shrink: 0; padding: 0 5px; border-radius: 4px;
+  font-size: 10px; line-height: 15px; cursor: pointer; user-select: none;
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-muted); background: var(--background-secondary);
+}
+.blog-pub-toggle:hover { border-color: var(--interactive-accent); color: var(--text-normal); }
+.blog-pub-toggle.is-pub { color: var(--text-on-accent); background: var(--interactive-accent); border-color: var(--interactive-accent); }
+.blog-pub-toggle.is-pri { opacity: .55; }
+.blog-pub-folder { margin-left: auto; flex-shrink: 0; display: flex; gap: 3px; align-items: center; }
+.blog-pub-folder .blog-pub-fbtn {
+  padding: 0 4px; border-radius: 4px; font-size: 10px; line-height: 14px;
+  cursor: pointer; user-select: none; opacity: 0; transition: opacity .12s;
+  border: 1px solid var(--background-modifier-border); color: var(--text-muted);
+}
+.nav-folder-title:hover .blog-pub-folder .blog-pub-fbtn { opacity: 1; }
+.blog-pub-folder .blog-pub-fbtn:hover { border-color: var(--interactive-accent); color: var(--text-normal); }
+.blog-pub-folder.all-pub .blog-pub-fbtn:first-child { opacity: .45; color: var(--interactive-accent); border-color: var(--interactive-accent); }
+.blog-pub-folder.none-pub .blog-pub-fbtn:last-child { opacity: .45; color: var(--interactive-accent); border-color: var(--interactive-accent); }
+`
 
 /** 后台服务子进程的通信句柄（utilityProcess 或 child_process 的统一外观） */
 interface ChildHandle {
@@ -52,6 +76,7 @@ export default class BlogPublisherPlugin extends Plugin {
   private port = 0
   private starting: Promise<number> | null = null
   private toolRoot = ''
+  private explorer: ExplorerBadges | null = null
 
   async onload() {
     console.log('[blog-publisher] loading')
@@ -61,6 +86,12 @@ export default class BlogPublisherPlugin extends Plugin {
       'blog-publisher',
       '<svg viewBox="0 0 100 100"><path fill="currentColor" d="M20 15h60a5 5 0 0 1 5 5v60a5 5 0 0 1-5 5H20a5 5 0 0 1-5-5V20a5 5 0 0 1 5-5zm10 15v10h40V30H30zm0 18v8h40v-8H30zm0 16v8h26v-8H30z"/></svg>',
     )
+
+    const style = document.createElement('style')
+    style.id = 'blog-publisher-explorer-css'
+    style.textContent = EXPLORER_CSS
+    document.head.appendChild(style)
+    this.register(() => style.remove())
 
     this.registerView(VIEW_TYPE, (leaf) => new BlogPublisherView(leaf, this))
 
@@ -99,13 +130,22 @@ export default class BlogPublisherPlugin extends Plugin {
     this.addSettingTab(new BlogPublisherSettingTab(this.app, this))
 
     // 插件启用时就把服务拉起来：自动同步要依赖它常驻
-    void this.ensureServer().catch((e) => {
-      console.error('[blog-publisher] 启动失败', e)
-      new Notice('博客发布器启动失败：' + String((e as Error)?.message || e), 10000)
-    })
+    void this.ensureServer()
+      .then(() => {
+        // 服务起来之后才能读到公开状态，所以文件树开关在 ensureServer 之后挂
+        this.explorer = new ExplorerBadges(this.app, () => this.ensureServer())
+        this.explorer.start()
+        this.register(() => this.explorer?.stop())
+      })
+      .catch((e) => {
+        console.error('[blog-publisher] 启动失败', e)
+        new Notice('博客发布器启动失败：' + String((e as Error)?.message || e), 10000)
+      })
   }
 
   async onunload() {
+    this.explorer?.stop()
+    this.explorer = null
     if (this.child) {
       try {
         this.child.postMessage({ type: 'stop' })
@@ -294,7 +334,8 @@ class BlogPublisherView extends ItemView {
       const port = await this.plugin.ensureServer()
       loading.remove()
       const frame = root.createEl('iframe')
-      frame.src = `http://127.0.0.1:${port}/`
+      // embed=1：Obsidian 左侧已经是文件树，界面里那套文件夹网格是重复的，藏掉。
+      frame.src = `http://127.0.0.1:${port}/?embed=1`
       frame.style.width = '100%'
       frame.style.height = '100%'
       frame.style.border = '0'
