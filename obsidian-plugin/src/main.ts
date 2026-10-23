@@ -19,6 +19,10 @@ const EXPLORER_CSS = `
 .blog-pub-toggle.is-pub { color: var(--text-on-accent); background: var(--interactive-accent); border-color: var(--interactive-accent); }
 .blog-pub-toggle.is-pri { opacity: .55; }
 .blog-pub-folder { margin-left: auto; flex-shrink: 0; display: flex; gap: 3px; align-items: center; }
+.blog-pub-folder .blog-pub-fcount {
+  font-size: 10px; line-height: 15px; color: var(--text-faint);
+  font-variant-numeric: tabular-nums; padding-right: 1px;
+}
 .blog-pub-folder .blog-pub-fbtn {
   padding: 0 4px; border-radius: 4px; font-size: 10px; line-height: 14px;
   cursor: pointer; user-select: none; opacity: 0; transition: opacity .12s;

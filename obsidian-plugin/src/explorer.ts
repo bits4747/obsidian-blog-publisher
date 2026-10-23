@@ -277,11 +277,20 @@ export class ExplorerBadges {
           })
           return b
         }
+        // 常驻的「已公开数」：不然按钮只在 hover 时出现，用户根本不知道这里能点。
+        const cnt = document.createElement('span')
+        cnt.className = 'blog-pub-fcount'
+        box.appendChild(cnt)
         box.appendChild(mk('公开', true))
         box.appendChild(mk('私密', false))
         el.appendChild(box)
       }
       const pubCount = inFolder.filter((p) => this.notes.get(p) === true).length
+      const cntEl = box.querySelector<HTMLElement>('.blog-pub-fcount')
+      if (cntEl) {
+        cntEl.textContent = `${pubCount}/${inFolder.length}`
+        cntEl.title = `${folder}：${inFolder.length} 篇里 ${pubCount} 篇公开`
+      }
       box.title = `${folder}：${pubCount}/${inFolder.length} 篇公开`
       box.classList.toggle('all-pub', pubCount === inFolder.length && inFolder.length > 0)
       box.classList.toggle('none-pub', pubCount === 0)

@@ -3569,11 +3569,19 @@ var ExplorerBadges = class {
           });
           return b;
         };
+        const cnt = document.createElement("span");
+        cnt.className = "blog-pub-fcount";
+        box.appendChild(cnt);
         box.appendChild(mk("\u516C\u5F00", true));
         box.appendChild(mk("\u79C1\u5BC6", false));
         el.appendChild(box);
       }
       const pubCount = inFolder.filter((p) => this.notes.get(p) === true).length;
+      const cntEl = box.querySelector(".blog-pub-fcount");
+      if (cntEl) {
+        cntEl.textContent = `${pubCount}/${inFolder.length}`;
+        cntEl.title = `${folder}\uFF1A${inFolder.length} \u7BC7\u91CC ${pubCount} \u7BC7\u516C\u5F00`;
+      }
       box.title = `${folder}\uFF1A${pubCount}/${inFolder.length} \u7BC7\u516C\u5F00`;
       box.classList.toggle("all-pub", pubCount === inFolder.length && inFolder.length > 0);
       box.classList.toggle("none-pub", pubCount === 0);
@@ -3643,6 +3651,10 @@ var EXPLORER_CSS = `
 .blog-pub-toggle.is-pub { color: var(--text-on-accent); background: var(--interactive-accent); border-color: var(--interactive-accent); }
 .blog-pub-toggle.is-pri { opacity: .55; }
 .blog-pub-folder { margin-left: auto; flex-shrink: 0; display: flex; gap: 3px; align-items: center; }
+.blog-pub-folder .blog-pub-fcount {
+  font-size: 10px; line-height: 15px; color: var(--text-faint);
+  font-variant-numeric: tabular-nums; padding-right: 1px;
+}
 .blog-pub-folder .blog-pub-fbtn {
   padding: 0 4px; border-radius: 4px; font-size: 10px; line-height: 14px;
   cursor: pointer; user-select: none; opacity: 0; transition: opacity .12s;
