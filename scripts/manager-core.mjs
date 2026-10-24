@@ -1114,11 +1114,32 @@ export function createManager(opts) {
     // 已经确认过的删除：发布时清掉的、或用户已经知道并选择「不自动删」的，
     // 不该在清单里一直挂着（需求：手动发布后清空，算旧的改动）。
     const acked = new Set(((mark && mark.ackedDeleted) || []).map((r) => normalize(String(r))))
+    // 「历史上公开过」的路径集合：只增不减，发布时把当次公开的并进去。
+    // 用途见下面 added 分支 —— 判断「本地有、线上没有」到底是新笔记，还是
+    // 一篇公开过、后来被关掉的旧笔记。后者不能算新增。
+    const everPublished = new Set(((mark && mark.paths) || []).map((r) => normalize(String(r))))
+    if (everPublished.size === 0) {
+      // 老版本的水位没记 paths：退回内容副本里的时间清单，它的 key 就是
+      // 上次发布时公开过的那些路径（升级后第一次运行够用，之后由发布补齐）。
+      try {
+        const meta = JSON.parse(fsSync.readFileSync(path.join(contentDir, '.blog-meta.json'), 'utf8'))
+        const keys = meta && meta.notes && typeof meta.notes === 'object' ? Object.keys(meta.notes) : []
+        for (const k of keys) everPublished.add(normalize(k))
+      } catch {
+        /* 没有就算了 */
+      }
+    }
     const localRels = new Set()
     for (const n of vaultState(vaultPath).notes) {
       const rel = normalize(n.path)
       localRels.add(rel)
       if (!published.has(rel)) {
+        // 本地有、线上没有 —— 两种完全不同的情况，必须分开：
+        //   ① 一篇公开过、后来关掉/删掉的旧笔记：它只是下线了，不算「新增」。
+        //      这里绝不能只看 mtime：关掉 public 本身就是一次写盘，mtime 必然
+        //      晚于水位，于是它会被误报成「新增」（用户实测踩到过）。
+        //   ② 真·新笔记（从没公开过）：出现在「新增」里让人决定要不要公开。
+        if (!n.isPublic && everPublished.has(rel)) continue
         // 只有「上次发布之后才动过」的才算新增；从没公开过的旧笔记不算（见 watermarkOf）。
         let mt = 0
         try {
@@ -1387,6 +1408,8 @@ export function createManager(opts) {
     // 推送失败时不记 —— 那些改动其实还没上线，得继续留在清单里让人看见。
     // ackedDeleted 取「发布完之后仍然对不上」的删除：删除类自动同步关掉时
     // content/ 里会留着那些文件，它们会被反复报成删除，这里记下来就不再重复提示。
+    // paths 是「历史上公开过」的路径并集（只增不减）：用来把「公开过又关掉的旧笔记」
+    // 和「真·新笔记」区分开，前者不该被报成新增（见 diffVault 的 added 分支）。
     if (!failed) {
       let ackedDeleted = []
       try {
@@ -1394,8 +1417,17 @@ export function createManager(opts) {
       } catch {
         ackedDeleted = []
       }
+      let paths = []
       try {
-        savePublishMark(conn.id, { at: startedAt, ackedDeleted })
+        const prev = loadPublishMark(conn.id)
+        const set = new Set(((prev && prev.paths) || []).map((r) => normalize(String(r))))
+        for (const n of publicNotes) set.add(normalize(n.path))
+        paths = [...set]
+      } catch {
+        paths = publicNotes.map((n) => normalize(n.path))
+      }
+      try {
+        savePublishMark(conn.id, { at: startedAt, ackedDeleted, paths })
       } catch {
         /* 水位写不进去不影响这次发布的结果 */
       }

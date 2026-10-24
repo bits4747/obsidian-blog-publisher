@@ -6241,11 +6241,21 @@ function createManager(opts) {
     }
     const since = watermarkOf(workdir, mark);
     const acked = new Set((mark && mark.ackedDeleted || []).map((r) => normalize(String(r))));
+    const everPublished = new Set((mark && mark.paths || []).map((r) => normalize(String(r))));
+    if (everPublished.size === 0) {
+      try {
+        const meta = JSON.parse(import_node_fs.default.readFileSync(import_node_path.default.join(contentDir, ".blog-meta.json"), "utf8"));
+        const keys = meta && meta.notes && typeof meta.notes === "object" ? Object.keys(meta.notes) : [];
+        for (const k of keys) everPublished.add(normalize(k));
+      } catch {
+      }
+    }
     const localRels = /* @__PURE__ */ new Set();
     for (const n of vaultState(vaultPath).notes) {
       const rel = normalize(n.path);
       localRels.add(rel);
       if (!published.has(rel)) {
+        if (!n.isPublic && everPublished.has(rel)) continue;
         let mt = 0;
         try {
           mt = import_node_fs.default.statSync(import_node_path.default.join(vaultPath, n.path)).mtimeMs;
@@ -6450,8 +6460,17 @@ function createManager(opts) {
       } catch {
         ackedDeleted = [];
       }
+      let paths = [];
       try {
-        savePublishMark(conn.id, { at: startedAt, ackedDeleted });
+        const prev = loadPublishMark(conn.id);
+        const set = new Set((prev && prev.paths || []).map((r) => normalize(String(r))));
+        for (const n of publicNotes) set.add(normalize(n.path));
+        paths = [...set];
+      } catch {
+        paths = publicNotes.map((n) => normalize(n.path));
+      }
+      try {
+        savePublishMark(conn.id, { at: startedAt, ackedDeleted, paths });
       } catch {
       }
     }
