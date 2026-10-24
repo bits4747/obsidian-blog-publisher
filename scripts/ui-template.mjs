@@ -37,14 +37,14 @@ export const UI = `<!DOCTYPE html>
   }
   body { font-family: system-ui, 'Microsoft YaHei', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--fg); }
   .wrap { max-width: 1100px; margin: 0 auto; }
-  h1 { font-size: 19px; margin: 0 0 4px; } .sub { color: var(--muted); font-size: 12.5px; margin-bottom: 14px; }
+  h1 { font-size: 21px; margin: 0 0 4px; } .sub { color: var(--muted); font-size: 14.5px; margin-bottom: 14px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  input, select { padding: 8px 10px; border: 1px solid var(--field); border-radius: 8px; font-size: 13.5px;
+  input, select { padding: 8px 10px; border: 1px solid var(--field); border-radius: 8px; font-size: 15.5px;
                   background: var(--card); color: var(--fg); }
   input#q { flex: 1; min-width: 160px; }
-  button { padding: 8px 14px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; font-size: 13px; cursor: pointer; }
-  button.mini { padding: 3px 9px; font-size: 11.5px; background: var(--chip); color: var(--chip-fg); }
+  button { padding: 8px 14px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; font-size: 15px; cursor: pointer; }
+  button.mini { padding: 3px 9px; font-size: 13.5px; background: var(--chip); color: var(--chip-fg); }
   button.mini.green { background: var(--accent); color: #fff; }
   button:disabled { opacity: .55; cursor: default; }
   /* 文件夹区用「列容器」布局：每个 .grid-col 是一条独立的纵向流。
@@ -54,20 +54,20 @@ export const UI = `<!DOCTYPE html>
   .box { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
   .box-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border-soft); cursor: pointer; }
   .box-head:hover { background: var(--hover); }
-  .box-head .name { font-weight: 600; font-size: 14.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .cnt { font-size: 11.5px; color: var(--muted-2); }
+  .box-head .name { font-weight: 600; font-size: 16.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cnt { font-size: 13.5px; color: var(--muted-2); }
   .chev { transition: transform .15s; color: var(--muted-2); }
   .chev.open { transform: rotate(90deg); }
   ul { list-style: none; margin: 0; padding: 6px; }
   li { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; }
   li:hover { background: var(--hover); }
-  .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; }
-  .pub { color: var(--accent); font-size: 11.5px; } .pri { color: var(--muted-2); font-size: 11.5px; }
+  .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15.5px; }
+  .pub { color: var(--accent); font-size: 13.5px; } .pri { color: var(--muted-2); font-size: 13.5px; }
   .sw { position: relative; width: 32px; height: 18px; border-radius: 999px; background: var(--field); border: 0; cursor: pointer; transition: .15s; flex-shrink: 0; }
   .sw.on { background: var(--accent); } .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: .15s; }
   .sw.on::after { left: 16px; }
   /* ---- 变更分类：新增 / 修改 / 删除 ---- */
-  .chg { font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 999px; flex-shrink: 0;
+  .chg { font-size: 12.5px; font-weight: 600; padding: 1px 6px; border-radius: 999px; flex-shrink: 0;
          border: 1px solid transparent; white-space: nowrap; }
   .chg.add { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
   .chg.mod { color: var(--warn-fg); background: var(--warn-bg); border-color: var(--warn-bd); }
@@ -80,14 +80,14 @@ export const UI = `<!DOCTYPE html>
      某一栏条目多的时候另外两栏就只剩一大片空白。 */
   .chgcols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: start; }
   .chgcol { border: 1px solid var(--border-soft); border-radius: 9px; overflow: hidden; display: flex; flex-direction: column; }
-  .chgcol .ch { display: flex; align-items: center; gap: 6px; padding: 7px 10px; font-size: 12px; font-weight: 600; border-bottom: 1px solid var(--border-soft); }
-  .chgcol .ch .n { margin-left: auto; font-size: 11.5px; color: var(--muted); }
+  .chgcol .ch { display: flex; align-items: center; gap: 6px; padding: 7px 10px; font-size: 14px; font-weight: 600; border-bottom: 1px solid var(--border-soft); }
+  .chgcol .ch .n { margin-left: auto; font-size: 13.5px; color: var(--muted); }
   .chgcol ul { list-style: none; margin: 0; padding: 4px 0; max-height: 190px; overflow: auto; }
-  .chgcol li { display: flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 12.5px; cursor: pointer; }
+  .chgcol li { display: flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 14.5px; cursor: pointer; }
   .chgcol li:hover { background: var(--hover); }
   .chgcol li .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .chgcol li .p { font-size: 11px; color: var(--muted-2); max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .chgcol .empty { padding: 10px; font-size: 12px; color: var(--muted-2); }
+  .chgcol li .p { font-size: 13px; color: var(--muted-2); max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chgcol .empty { padding: 10px; font-size: 14px; color: var(--muted-2); }
   /* 未分组块：有内容时和下面的文件夹网格留出间隔，空的时候不占位 */
   #ungrouped:not(:empty) { margin-bottom: 12px; }
   #ungrouped .box { border-color: var(--border); }
@@ -97,17 +97,16 @@ export const UI = `<!DOCTYPE html>
   #folders li.flash { background: var(--accent-soft); }
   .autosync { display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
     padding: 8px 11px; margin-top: 12px; border: 1px dashed var(--border); border-radius: 8px; }
-  .autosync > .lbl { font-size: 12px; font-weight: 600; color: var(--muted); }
-  .autosync label { display: flex; align-items: center; gap: 5px; font-size: 12px; cursor: pointer; color: var(--fg); }
-  .autosync .hint { font-size: 11.5px; color: var(--muted-2); margin-left: auto; }
+  .autosync > .lbl { font-size: 14px; font-weight: 600; color: var(--muted); }
+  .autosync label { display: flex; align-items: center; gap: 5px; font-size: 14px; cursor: pointer; color: var(--fg); }
+  .autosync .hint { font-size: 13.5px; color: var(--muted-2); margin-left: auto; }
   /* ---- 自动同步流水：时间 + 动了哪些文件 + 推没推上去 + 有没有上线 ---- */
   .autolog-head { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-  .autolog-head .t { font-size: 11.5px; font-weight: 600; color: var(--muted); }
-  .autolog-head .mini { margin-left: auto; padding: 2px 8px; font-size: 11px; }
-  /* 默认只露 4 行的高度，多了在里面滚（高度由脚本按实际行高算，文件行多也不会撑爆） */
-  .autolog { margin-top: 4px; font-size: 11.5px; color: var(--muted-2);
-    display: flex; flex-direction: column; gap: 5px;
-    max-height: 150px; overflow-y: auto; overflow-x: hidden; }
+  .autolog-head .t { font-size: 13.5px; font-weight: 600; color: var(--muted); }
+  .autolog-head .mini { margin-left: auto; padding: 2px 8px; font-size: 13px; }
+  /* 流水不限高度：条目多了就整页往下长（原来卡 4 行要滚动，翻历史很别扭） */
+  .autolog { margin-top: 4px; font-size: 13.5px; color: var(--muted-2);
+    display: flex; flex-direction: column; gap: 5px; }
   .autolog .al { display: flex; flex-direction: column; gap: 1px; }
   .autolog .al-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
   .autolog .tm { font-variant-numeric: tabular-nums; color: var(--muted); }
@@ -118,25 +117,25 @@ export const UI = `<!DOCTYPE html>
   .autolog .took { color: var(--muted-2); }
   .autolog .sha { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--muted-2); }
   /* 第二行：这次动了哪些文件 —— 三栏里不再重复列这些，改由流水说明 */
-  .autolog .al-files { display: flex; gap: 10px; flex-wrap: wrap; padding-left: 2px; font-size: 11px; }
+  .autolog .al-files { display: flex; gap: 10px; flex-wrap: wrap; padding-left: 2px; font-size: 13px; }
   .autolog .fs { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
   .autolog .fs.add { color: var(--ok); } .autolog .fs.mod { color: var(--warn-fg); }
   .autolog .fs.del { color: var(--bad); }
   .hidden { display: none; }
-  label { font-size: 12.5px; color: var(--muted); }
+  label { font-size: 14.5px; color: var(--muted); }
   .vault-ok { color: var(--accent); } .vault-bad { color: var(--bad); }
 
   /* ---- 顶部状态栏（发布反馈出现在这里，不用滚到底部）---- */
   .statusbar { position: sticky; top: 0; z-index: 30; margin: -20px -20px 14px; padding: 12px 20px;
                background: var(--bar); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
   .statusbar .inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  .statusbar .title { font-size: 17px; font-weight: 700; white-space: nowrap; }
+  .statusbar .title { font-size: 19px; font-weight: 700; white-space: nowrap; }
   .statusbar .spacer { flex: 1; }
   /* 主操作按钮用蓝色（与站点主色一致）；绿色只留给「已公开」状态本身 */
-  .btn-publish { background: var(--accent); padding: 9px 18px; font-size: 13.5px; font-weight: 600;
+  .btn-publish { background: var(--accent); padding: 9px 18px; font-size: 15.5px; font-weight: 600;
                  box-shadow: 0 1px 2px rgba(37,112,204,.3); white-space: nowrap; }
   .btn-publish:hover:not(:disabled) { background: var(--accent-hover); }
-  .result { display: flex; align-items: center; gap: 7px; font-size: 13px; padding: 6px 12px;
+  .result { display: flex; align-items: center; gap: 7px; font-size: 15px; padding: 6px 12px;
             border-radius: 999px; max-width: 620px; }
   .result.busy { background: var(--accent-soft); color: var(--accent); }
   .result.ok   { background: var(--okbg); color: var(--okfg); }
@@ -160,21 +159,21 @@ export const UI = `<!DOCTYPE html>
   .vault.has-del { padding-bottom: 34px; }
   .vault:hover { border-color: var(--accent); transform: translateY(-1px); }
   .vault.on { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,112,204,.14); }
-  .vault .vname { font-weight: 600; font-size: 14px; margin-bottom: 3px; overflow: hidden;
+  .vault .vname { font-weight: 600; font-size: 16px; margin-bottom: 3px; overflow: hidden;
                   text-overflow: ellipsis; white-space: nowrap; }
-  .vault .vrepo { font-size: 11.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .vault .vmeta { font-size: 11.5px; color: var(--muted-2); margin-top: 6px; }
+  .vault .vrepo { font-size: 13.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vault .vmeta { font-size: 13.5px; color: var(--muted-2); margin-top: 6px; }
   .vault .vmeta b { color: var(--accent); font-weight: 600; }
-  .vault .badge { position: absolute; top: 10px; right: 10px; font-size: 10px; padding: 2px 7px;
+  .vault .badge { position: absolute; top: 10px; right: 10px; font-size: 12px; padding: 2px 7px;
                   border-radius: 999px; background: var(--accent); color: #fff; }
   .vault.new { display: flex; align-items: center; justify-content: center; gap: 6px; width: 170px;
-               border-style: dashed; color: var(--muted); font-size: 13px; }
+               border-style: dashed; color: var(--muted); font-size: 15px; }
   .vault.new:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-  .vault .del { position: absolute; bottom: 8px; right: 8px; font-size: 10.5px; padding: 1px 7px;
+  .vault .del { position: absolute; bottom: 8px; right: 8px; font-size: 12.5px; padding: 1px 7px;
                 border-radius: 6px; background: var(--btn-ghost); color: var(--muted-2); border: 0; cursor: pointer; }
   .vault .del:hover { background: #fee2e2; color: var(--bad); }
   .vault .vlink { display: inline-flex; align-items: center; gap: 3px; margin-top: 7px; text-decoration: none;
-                  font-size: 11.5px; color: var(--accent); padding: 2px 7px 2px 5px; border-radius: 6px;
+                  font-size: 13.5px; color: var(--accent); padding: 2px 7px 2px 5px; border-radius: 6px;
                   background: var(--accent-soft); font-weight: 500; }
   .vault .vlink:hover { background: var(--accent-soft-hover); text-decoration: underline; }
 
@@ -183,33 +182,33 @@ export const UI = `<!DOCTYPE html>
             display: flex; align-items: center; justify-content: center; padding: 20px; }
   .dialog .panel { background: var(--card); border-radius: 14px; width: 100%; max-width: 520px;
                    padding: 20px 22px; box-shadow: 0 20px 50px var(--shadow); }
-  .dialog h2 { margin: 0 0 4px; font-size: 16.5px; }
-  .dialog .hint { font-size: 12.5px; color: var(--muted); margin-bottom: 16px; }
+  .dialog h2 { margin: 0 0 4px; font-size: 18.5px; }
+  .dialog .hint { font-size: 14.5px; color: var(--muted); margin-bottom: 16px; }
   .field { margin-bottom: 14px; }
-  .field > label { display: block; margin-bottom: 5px; font-size: 12.5px; color: var(--chip-fg); font-weight: 500; }
+  .field > label { display: block; margin-bottom: 5px; font-size: 14.5px; color: var(--chip-fg); font-weight: 500; }
   .field input { width: 100%; box-sizing: border-box; }
   .pickrow { display: flex; gap: 8px; }
   .pickrow input { flex: 1; }
-  .picker { font-size: 11.5px; color: var(--muted-2); margin-top: 5px; min-height: 16px; }
+  .picker { font-size: 13.5px; color: var(--muted-2); margin-top: 5px; min-height: 16px; }
   .picker.ok { color: var(--accent); font-weight: 500; } .picker.bad { color: var(--bad); }
   .dialog .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
   .tabs { display: flex; gap: 6px; margin-bottom: 8px; }
-  .tab { background: var(--btn-ghost); color: var(--chip-fg); border: 0; cursor: pointer; font-size: 12.5px;
+  .tab { background: var(--btn-ghost); color: var(--chip-fg); border: 0; cursor: pointer; font-size: 14.5px;
          padding: 5px 11px; border-radius: 8px; }
   .tab:hover { background: var(--chip); }
   .tab.on { background: var(--accent); color: #fff; }
   button.ghost { background: var(--btn-ghost); color: var(--chip-fg); }
   .warnbox { background: var(--warn-bg); color: var(--warn-fg); border: 1px solid var(--warn-bd); border-radius: 8px;
-             padding: 9px 12px; font-size: 12.5px; margin-bottom: 12px; }
+             padding: 9px 12px; font-size: 14.5px; margin-bottom: 12px; }
   /* 未授权提示条：新机器上「一键连接 / 发布」都需要 GitHub 授权，
      不把这条摆到眼前，用户只会得到一个看不懂的失败。 */
   .authbar { display: flex; align-items: center; gap: 10px; margin: -6px 0 14px; padding: 9px 13px;
              background: var(--warn-bg); color: var(--warn-fg); border: 1px solid var(--warn-bd);
-             border-radius: 10px; font-size: 12.5px; }
+             border-radius: 10px; font-size: 14.5px; }
   .authbar.hidden { display: none; }
   .authbar .mini { margin-left: auto; }
   .tokenrow { display: flex; gap: 8px; align-items: flex-start; }
-  .tokenrow input { flex: 1; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  .tokenrow input { flex: 1; font-family: ui-monospace, Consolas, monospace; font-size: 14px; }
   /* 插件用 iframe 嵌入（?embed=1）：Obsidian 左侧已经是文件树，
      这里的「搜索 + 文件夹网格」重复且挤，整块隐藏，只留连接 / 变更 / 流水 / 发布。 */
   body.embed-mode #mainCard { display: none; }
@@ -219,8 +218,6 @@ export const UI = `<!DOCTYPE html>
   <span class="title" data-i18n="appTitle">发布管理器</span>
   <span class="spacer"></span>
   <span id="result" class="result hidden"><span class="txt"></span></span>
-  <button class="mini" id="langBtn" onclick="toggleLang()" data-i18n-title="switchLang" data-i18n-aria="switchLang">EN</button>
-  <button class="mini" id="themeBtn" onclick="toggleTheme()" data-i18n-title="toggleTheme" data-i18n-aria="toggleTheme">◐</button>
   <button class="mini" id="authBtn" onclick="openAuthDialog()" data-i18n="authBtn">GitHub 授权</button>
   <button class="mini" id="srcBtn" onclick="doUpdateSource()" data-i18n="srcBtn">⬆ 更新源码</button>
   <button class="btn-publish" id="pubBtn" onclick="doPublish()" data-i18n="publishBtn">⟳ 发布到 GitHub</button>
@@ -235,15 +232,17 @@ export const UI = `<!DOCTYPE html>
 
 <div class="card">
   <div class="row" style="margin-bottom:9px">
-    <label style="font-size:13px;font-weight:600;" data-i18n="myBlogs">我的博客</label>
+    <label style="font-size: 16px;font-weight:600;" data-i18n="myBlog">我的博客</label>
     <span class="cnt" id="vaultHint"></span>
+    <span id="vaultHead"></span>
+    <button class="mini" id="setupBtn" onclick="openSetup(setupConn, false)" data-i18n="vaultSettings" style="margin-left:auto">设置</button>
   </div>
   <div class="vaults" id="vaults"></div>
 </div>
 
 <div class="card" id="chgCard">
   <div class="row" style="margin-bottom:10px">
-    <label style="font-size:13px;font-weight:600;" data-i18n="chgTitle">变更</label>
+    <label style="font-size: 15px;font-weight:600;" data-i18n="chgTitle">变更</label>
     <span class="cnt" id="chgHint"></span>
   </div>
   <div class="chgcols" id="chgcols"></div>
@@ -295,8 +294,6 @@ let S = { connections: [], active: null, vaultPath: '', vaultOk: false, notes: [
 const DICT = {
   zh: {
     appTitle: '发布管理器',
-    toggleTheme: '切换明暗主题',
-    switchLang: '切换界面语言',
     publishBtn: '⟳ 发布到 GitHub',
     srcBtn: '⬆ 更新源码',
     updatingSrc: '正在更新源码…',
@@ -310,7 +307,8 @@ const DICT = {
     liveOk: function (s) { return '已上线（用时 ' + s + ' 秒）' },
     liveTimeout: '等了 4 分钟还没上线，构建可能失败了，请到 GitHub 仓库的 Actions 页面看一眼',
     liveOpen: '打开线上页面',
-    myBlogs: '我的博客',
+    myBlog: '我的博客',
+    vaultSettings: '设置',
     searchPh: '搜索笔记标题 / 路径…',
     expandAll: '一键展开',
     collapseAll: '一键收起',
@@ -485,8 +483,6 @@ const DICT = {
   },
   en: {
     appTitle: 'Publish Manager',
-    toggleTheme: 'Toggle dark / light theme',
-    switchLang: 'Switch interface language',
     publishBtn: '⟳ Publish to GitHub',
     srcBtn: '⬆ Update source',
     updatingSrc: 'Updating source…',
@@ -498,7 +494,8 @@ const DICT = {
     liveOk: function (s) { return 'Live (took ' + s + 's)' },
     liveTimeout: 'Still not live after 4 minutes — the build may have failed. Check the Actions tab of the GitHub repo.',
     liveOpen: 'Open live site',
-    myBlogs: 'My blogs',
+    myBlog: 'My blog',
+    vaultSettings: 'Settings',
     searchPh: 'Search note title / path…',
     expandAll: 'Expand all',
     collapseAll: 'Collapse all',
@@ -675,7 +672,26 @@ function guessLang() {
   const nav = (navigator.languages && navigator.languages[0]) || navigator.language || 'zh';
   return /^zh/i.test(nav) ? 'zh' : 'en';
 }
+/**
+ * 界面语言。
+ *
+ * 插件里（?embed=1）由 Obsidian 决定：宿主把语言当查询参数传进来，
+ * 之后主题/语言一变还会 postMessage 通知，所以**不再有语言切换按钮**。
+ * 命令行版（直接用浏览器开 127.0.0.1:3457）没有宿主，只能按浏览器语言猜一次。
+ *
+ * 用户的要求：只有中英两种。Obsidian 是简体/繁体中文 → 管理器用中文，
+ * 其它语言一律用英文。
+ */
+function langFromParam() {
+  try {
+    const v = (new URLSearchParams(location.search).get('lang') || '').toLowerCase();
+    if (!v) return null;
+    return /^zh/.test(v) ? 'zh' : 'en';
+  } catch (e) { return null; }
+}
 function currentLang() {
+  const fromHost = langFromParam();
+  if (fromHost) return fromHost;
   try { return localStorage.getItem('manager-lang') || guessLang(); } catch (e) { return guessLang(); }
 }
 let LANG = currentLang();
@@ -700,15 +716,35 @@ function applyLang() {
   document.querySelectorAll('[data-i18n-ph]').forEach(function (el) { el.placeholder = t(el.getAttribute('data-i18n-ph')); });
   // 带 HTML 标签的文案（授权指引里有 b / br），只能走 innerHTML
   document.querySelectorAll('[data-i18n-html]').forEach(function (el) { el.innerHTML = t(el.getAttribute('data-i18n-html')); });
-  const lb = document.getElementById('langBtn');
-  if (lb) lb.textContent = LANG === 'zh' ? 'EN' : '中';
 }
-function toggleLang() {
-  LANG = LANG === 'zh' ? 'en' : 'zh';
-  try { localStorage.setItem('manager-lang', LANG); } catch (e) { /* 忽略 */ }
-  applyLang();
-  try { renderVaults(); renderChanges(); renderFolders(); syncAutoSyncUI(); } catch (e) { /* 还没加载完就跳过 */ }
-  // 已打开的设置/授权弹窗也要跟着换语言：记下当前状态原样重开
+/**
+ * 宿主（Obsidian 插件）改了语言/主题时调这里。
+ *
+ * 插件那边把 lang / theme 用 postMessage 送进来，避免刷新整个 iframe
+ * （刷新会丢掉正在输入的内容、正在滚动的流水位置）。
+ * 注意：本文件整体是一个模板字面量，注释里不能出现反引号。
+ */
+function applyHostSettings(msg) {
+  let changed = false;
+  if (msg && typeof msg.lang === 'string') {
+    const next = /^zh/i.test(msg.lang) ? 'zh' : 'en';
+    if (next !== LANG) { LANG = next; applyLang(); changed = true; }
+  }
+  if (msg && typeof msg.theme === 'string') applyTheme(msg.theme === 'dark' ? 'dark' : 'light');
+  if (changed) {
+    try { renderVaults(); renderChanges(); renderFolders(); syncAutoSyncUI(); } catch (e) { /* 还没加载完就跳过 */ }
+    try { refreshDlgsAfterLang(); } catch (e) { /* 没弹窗就算了 */ }
+  }
+}
+window.addEventListener('message', function (ev) {
+  // 只认同源消息：iframe 里 origin 是 127.0.0.1，别的页面发不进来
+  if (ev && ev.data && typeof ev.data === 'object' && ev.data.__blogPublisher === true) {
+    applyHostSettings(ev.data);
+  }
+});
+
+// 语言切换后把已打开的弹窗原样重开（内容是闭包，外部拿不到，只能重建）
+function refreshDlgsAfterLang() {
   const sd = document.getElementById('setupDlg');
   if (sd) {
     const nm = document.getElementById('sName') ? document.getElementById('sName').value : '';
@@ -725,7 +761,6 @@ function toggleLang() {
   }
   const ad = document.getElementById('authDlg');
   if (ad) { ad.remove(); if (authHelpReopen) authHelpReopen(); }
-  // 全局授权弹窗（authMainDlg）也要跟随语言：先取出已输入的令牌，重开后再填回
   const ad2 = document.getElementById('authMainDlg');
   if (ad2) {
     const tv = ad2.querySelector('#tokenIn') ? ad2.querySelector('#tokenIn').value : '';
@@ -739,33 +774,21 @@ function toggleLang() {
 }
 
 // ---- 明暗主题 ----
-// 默认跟随系统；手动切过之后写 localStorage，之后不再跟随。
-// 这里用一个立即执行的函数在渲染前设好 data-theme，避免亮→暗闪一下。
+// 插件里由 Obsidian 决定（宿主 postMessage 送 dark/light），没有切换按钮。
+// 命令行版没有宿主，退回跟随系统（prefers-color-scheme）。
+// data-theme 必须在首帧前设好，否则会亮→暗闪一下。
 function applyTheme(mode) {
   const root = document.documentElement;
   if (mode === 'dark' || mode === 'light') root.setAttribute('data-theme', mode);
   else root.removeAttribute('data-theme');
 }
-function currentThemeMode() {
-  try { return localStorage.getItem('manager-theme') || 'system'; } catch { return 'system'; }
+function themeFromParam() {
+  try {
+    const v = (new URLSearchParams(location.search).get('theme') || '').toLowerCase();
+    return v === 'dark' || v === 'light' ? v : null;
+  } catch (e) { return null; }
 }
-function isDarkNow() {
-  const root = document.documentElement;
-  if (root.getAttribute('data-theme') === 'dark') return true;
-  if (root.getAttribute('data-theme') === 'light') return false;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
-}
-function toggleTheme() {
-  const next = isDarkNow() ? 'light' : 'dark';
-  try { localStorage.setItem('manager-theme', next); } catch { /* 忽略 */ }
-  applyTheme(next);
-  updateThemeBtn();
-}
-function updateThemeBtn() {
-  const btn = document.getElementById('themeBtn');
-  if (btn) btn.textContent = isDarkNow() ? '☀' : '◐';
-}
-applyTheme(currentThemeMode());
+applyTheme(themeFromParam());
 
 // 统一请求：有 body 走 POST，无 body 走 GET。
 // ⚠️ 但服务端多数写接口（/api/publish、/api/toggle…）**只认 POST**，
@@ -894,7 +917,7 @@ function showTokenMsg(d, kind, text) {
   box.textContent = text;
 }
 let authDialogReopen = null;
-// 全局授权弹窗与「建仓库」弹窗里的指引共用 id 会互相干扰（toggleLang 靠 id 找弹窗），
+// 全局授权弹窗与「建仓库」弹窗里的指引共用 id 会互相干扰（切换语言时靠 id 找弹窗重开），
 // 所以全局这个用独立 id。
 
 // ---- 顶部结果反馈 ----
@@ -1166,12 +1189,6 @@ function renderAutoLog() {
     }
     box.appendChild(row);
   }
-  // 默认只露 4 行：按前 4 行的真实高度算，带不带文件行都能正好放下 4 条
-  const rows = [...box.children];
-  const gap = parseFloat(getComputedStyle(box).rowGap) || 0;
-  let h = 0;
-  rows.slice(0, 4).forEach((r, i) => { h += r.offsetHeight + (i ? gap : 0); });
-  box.style.maxHeight = h > 0 ? Math.ceil(h) + 'px' : '150px';
   if (keepTop) box.scrollTop = keepTop;
 }
 
@@ -1242,76 +1259,79 @@ async function setAutoSync(type, value) {
   renderChanges(); renderFolders(); promptPending();
 }
 
-// ---- 多库切换：卡片式 ----
+// ---- 单库信息卡 ----
+// 插件形态下 Obsidian 里只有当前这一个库，多库卡片列表是多余的：
+// 这里只画「当前库」一张卡，各项设置走右上角的「设置」按钮。
+// （命令行版如果配置过多个连接，顶上给一个极窄的下拉做切换，不再铺一排卡片。）
 function renderVaults() {
   const wrap = document.getElementById('vaults');
+  const head = document.getElementById('vaultHead');
+  if (!wrap) return;
   wrap.innerHTML = '';
+  if (head) head.innerHTML = '';
   const hint = document.getElementById('vaultHint');
+  const cur = S.connections.find((c) => c.id === S.active) || null;
 
-  if (S.connections.length === 0) {
-    hint.textContent = t('noConn');
-  } else {
-    const cur = S.connections.find((c) => c.id === S.active);
-    hint.textContent = cur && cur.vaultOk
-      ? tf('notesHint', cur.noteCount, cur.publicCount)
-      : t('pickVault');
+  if (!cur) {
+    if (hint) hint.textContent = t('noConn');
+    const add = document.createElement('button');
+    add.className = 'vault new';
+    add.innerHTML = '<span style="font-size: 18px">＋</span> ' + t('newBlog').replace('＋ ', '');
+    add.onclick = () => openSetup(null);
+    wrap.appendChild(add);
+    return;
   }
 
-  for (const c of S.connections) {
-    const b = document.createElement('button');
-    b.className = 'vault' + (c.id === S.active ? ' on' : '');
-    const badge = c.id === S.active ? '<span class="badge">' + t('current') + '</span>' : '';
-    const meta = !c.vaultOk
-      ? '<span class="vault-bad">' + t('noVault') + '</span>'
-      : tf('vaultMetaHtml', c.noteCount, c.publicCount);
-    b.innerHTML =
-      badge +
-      '<div class="vname"></div>' +
-      '<div class="vrepo"></div>' +
-      '<div class="vmeta">' + meta + '</div>';
-    b.querySelector('.vname').textContent = c.name;
-    b.querySelector('.vrepo').textContent = shortRepo(c.repo) + ' · ' + c.branch;
-    b.title = c.repo + '\\n' + t('vaultTip') + (c.vaultPath || t('vaultNone'));
+  if (hint) {
+    hint.textContent = cur.vaultOk ? tf('notesHint', cur.noteCount, cur.publicCount) : t('pickVault');
+  }
 
-    // 这个库对应的线上网页：一节直接可点的链接
-    const url = c.siteUrl;
-    if (url) {
-      const a = document.createElement('a');
-      a.className = 'vlink';
-      a.href = url;
-      a.target = '_blank';
-      a.rel = 'noopener';
-      a.textContent = t('openSite');
-      a.title = url;
-      a.onclick = (ev) => { ev.stopPropagation(); }; // 别触发卡片本身的「切换/设置」
-      b.appendChild(a);
+  // 多个连接时（只有命令行版会遇到）给一个紧凑的下拉，不再铺卡片
+  if (head && S.connections.length > 1) {
+    const sel = document.createElement('select');
+    sel.className = 'vswitch';
+    for (const c of S.connections) {
+      const o = document.createElement('option');
+      o.value = c.id;
+      o.textContent = c.name;
+      if (c.id === S.active) o.selected = true;
+      sel.appendChild(o);
     }
-    b.onclick = async () => {
-      if (c.id === S.active) { openSetup(c); return; }
-      b.disabled = true;
-      try { await api('/api/connection/switch', { id: c.id }); clearResult(); await loadState(); }
-      catch (e) { setResult('err', t('switchFail') + e.message); b.disabled = false; }
+    sel.onchange = async () => {
+      try { await api('/api/connection/switch', { id: sel.value }); clearResult(); await loadState(); }
+      catch (e) { setResult('err', t('switchFail') + e.message); sel.value = S.active; }
     };
-
-    const del = document.createElement('button');
-    del.className = 'del'; del.textContent = t('remove');
-    del.title = t('removeTip');
-    del.onclick = async (ev) => {
-      ev.stopPropagation();
-      if (!confirm(tf('removeConfirm', c.name))) return;
-      try { await api('/api/connection/remove', { id: c.id }); await loadState(); }
-      catch (e) { alert(t('removeFail') + e.message); }
-    };
-    b.appendChild(del);
-    b.classList.add('has-del');
-    wrap.appendChild(b);
+    head.appendChild(sel);
   }
 
-  const add = document.createElement('button');
-  add.className = 'vault new';
-  add.innerHTML = '<span style="font-size:16px">＋</span> ' + t('newBlog').replace('＋ ', '');
-  add.onclick = () => openSetup(null);
-  wrap.appendChild(add);
+  const b = document.createElement('div');
+  b.className = 'vault on';
+  const meta = !cur.vaultOk
+    ? '<span class="vault-bad">' + t('noVault') + '</span>'
+    : tf('vaultMetaHtml', cur.noteCount, cur.publicCount);
+  b.innerHTML =
+    '<div class="vname"></div>' +
+    '<div class="vrepo"></div>' +
+    '<div class="vmeta">' + meta + '</div>';
+  b.querySelector('.vname').textContent = cur.name;
+  b.querySelector('.vrepo').textContent = shortRepo(cur.repo) + ' · ' + cur.branch;
+  b.title = cur.repo + '\\n' + t('vaultTip') + (cur.vaultPath || t('vaultNone'));
+
+  const url = cur.siteUrl;
+  if (url) {
+    const a = document.createElement('a');
+    a.className = 'vlink';
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.textContent = t('openSite');
+    a.title = url;
+    a.onclick = (ev) => { ev.stopPropagation(); };
+    b.appendChild(a);
+  }
+  b.onclick = () => openSetup(cur);
+  b.style.cursor = 'pointer';
+  wrap.appendChild(b);
 }
 
 // ---- 新建/修改连接：一个库 + 一个仓库，一步完成 ----
@@ -1882,10 +1902,23 @@ document.getElementById('q').oninput = renderFolders;
 if (new URLSearchParams(location.search).get('embed') === '1') {
   document.body.classList.add('embed-mode');
 }
-updateThemeBtn();
 applyLang();
 loadState().catch((e) => setResult('err', t('loadFail') + e.message));
 // 授权状态查一次再决定提示条是否显示：已授权的机器上不该出现这条
 refreshAuth();
+// 状态同步：先问极轻的 /api/rev（只回一个数字），版本号变了才拉全量 /api/state。
+// 这样在 Obsidian 文件树里点了开关，这边 1 秒内就会跟着变；
+// 全量那份要扫 117 个文件，不能按这个频率硬拉。
+let lastRev = 0;
+setInterval(async () => {
+  try {
+    const r = await api('/api/rev');
+    const rev = Number(r && r.rev) || 0;
+    if (!rev || rev === lastRev) return;
+    lastRev = rev;
+    await loadState();
+  } catch (e) { /* 服务没起来就下次再试 */ }
+}, 1000);
+// 兜底：库被外部改动（同步、别的编辑器）时版本号不会变，仍然每 8 秒全量对一次
 setInterval(() => { loadState().catch(() => {}); }, 8000);
 </script></body></html>`

@@ -1709,6 +1709,18 @@ export function createManager(opts) {
   const LOOPBACK = /^(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/i
   /** 发布互斥：同一时刻只允许一次发布在跑（防连点导致 index.lock 冲突） */
   let PUBLISHING = false
+
+  /**
+   * 状态版本号：任何会改动「笔记公开状态 / 变更清单 / 流水」的操作都 +1。
+   *
+   * 为什么需要：管理器界面和 Obsidian 文件树上的开关是两套 DOM，各拉各的
+   * `/api/state`（一份要扫 117 个文件、算 diff，几百毫秒）。原来两边都是 8 秒
+   * 轮询全量状态，于是在一边点开关，另一边最多要等 8 秒才变 —— 用户看到的就是
+   * 「点了没反应 / 两边不同步」。
+   * 现在两边改为每 1.2 秒只问这个极轻的版本号，变了才去拉全量状态。
+   */
+  let STATE_REV = 1
+  const bumpRev = () => { STATE_REV += 1; return STATE_REV }
   function localWriteAllowed(req) {
     if (!LOOPBACK.test(String(req.headers.host || ''))) return false
     const origin = String(req.headers.origin || '')
@@ -1757,6 +1769,17 @@ export function createManager(opts) {
       }
       const { connections, conn, vaultPath, workdir, local } = activeConfig()
 
+      // 极轻的版本号探针：只回一个数字，不扫库、不算 diff。
+      // 管理器界面与 Obsidian 文件树都靠它做到「一边点开关，另一边立刻跟着变」。
+      if (req.method === 'GET' && url === '/api/rev') {
+        res.writeHead(200, {
+          'content-type': 'application/json; charset=utf-8',
+          'cache-control': 'no-store',
+        })
+        res.end(JSON.stringify({ rev: STATE_REV }))
+        return
+      }
+
       if (req.method === 'GET' && url === '/api/state') {
         let vaultOk = false
         let notes = []
@@ -1787,6 +1810,7 @@ export function createManager(opts) {
           }
         })
         json(res, 200, {
+          rev: STATE_REV,
           connections: list,
           active: conn ? conn.id : null,
           vaultPath,
@@ -1807,6 +1831,7 @@ export function createManager(opts) {
         const saved = saveAutoSync(cur)
         // 开关变了，按新规则重挂监听（比如「新增」打开后要能立刻接管接下来的文件变化）
         restartWatcher()
+        bumpRev()
         json(res, 200, { autoSync: saved })
         return
       }
@@ -1962,7 +1987,9 @@ export function createManager(opts) {
         const { path: p, pub } = JSON.parse(body)
         if (!validVault(vaultPath)) return json(res, 400, { error: sm(langOf(req), 'errNoVault') })
         setPublic(vaultPath, p, !!pub)
-        json(res, 200, { ok: true })
+        // 版本号一变，另一侧（Obsidian 文件树 / 管理器界面）1.2 秒内就会重拉状态
+        bumpRev()
+        json(res, 200, { ok: true, rev: STATE_REV })
         return
       }
 
@@ -1999,6 +2026,7 @@ export function createManager(opts) {
               /* 清不掉不影响发布结果 */
             }
           }
+          bumpRev()
           // 让网页左上角标题与这里的「名字」一致：把名字写进仓库的 Actions 变量 SITE_NAME。
           // 写变量需要自己的授权，失败不算发布失败，只提示怎么补。
           const sn = await syncSiteNameVariable(conn.repo, conn.name)
@@ -2312,6 +2340,7 @@ export function createManager(opts) {
     // 只在推完之后写一条的话，这段时间界面上一片空白，看着像没反应。
     const entry = { at: startedAt, kind: 'run', counts, files: filesOf(handled), stage: 'pushing' }
     pushAutoLog(conn.id, entry)
+    bumpRev()
     try {
       // 「新增自动公开」：新笔记默认私密，开了这个开关才替用户把它设为 public，
       // 否则 publish 只拷公开笔记，新增永远上不了线。
@@ -2361,6 +2390,7 @@ export function createManager(opts) {
       autoBusy = false
       // publish 自己也会写文件（content/、.blog-meta.json），别让这些写入再触发一轮
       autoSuppressUntil = Date.now() + 5000
+      bumpRev()
     }
   }
 
@@ -2384,6 +2414,7 @@ export function createManager(opts) {
       const r = await probeLiveSite(target, entry.at, entry.commit || '')
       if (r.live) {
         patchAutoLog(conn.id, entry.at, { live: true, liveAt: Date.now() })
+        bumpRev()
         return
       }
       const b = await probeBuildStatus(repo, entry.commit || '')
@@ -2394,6 +2425,7 @@ export function createManager(opts) {
           buildConclusion: b.conclusion,
           buildUrl: b.url || '',
         })
+        bumpRev()
         return
       }
       if (Date.now() > deadline) {
@@ -2402,6 +2434,7 @@ export function createManager(opts) {
           buildStatus: (b && b.status) || '',
           buildUrl: (b && b.url) || '',
         })
+        bumpRev()
         return
       }
       setTimeout(tick, 20000)

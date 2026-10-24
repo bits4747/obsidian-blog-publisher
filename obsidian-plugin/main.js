@@ -3360,10 +3360,13 @@ var ExplorerBadges = class {
   watched = null;
   debounce = null;
   poll = null;
+  revPoll = null;
   hookTimer = null;
   busy = false;
   enabled = true;
   warnedVault = false;
+  /** 上次见到的状态版本号。只有它变了才去拉全量 /api/state（那份要扫 117 个文件） */
+  lastRev = 0;
   /**
    * 写操作的串行队列。
    *
@@ -3373,6 +3376,8 @@ var ExplorerBadges = class {
    * 排队能保证每次操作都被执行，而且按用户点的顺序。
    */
   queue = Promise.resolve();
+  /** 回到前台时立刻对一次状态（隐藏期间定时器被冻结） */
+  onWake = null;
   enqueue(job) {
     const run = this.queue.then(job, job);
     this.queue = run.catch(() => void 0);
@@ -3390,7 +3395,13 @@ var ExplorerBadges = class {
     this.stripAll();
     this.hook();
     this.hookTimer = window.setInterval(() => this.hook(), 2e3);
+    this.revPoll = window.setInterval(() => void this.checkRev(), 600);
     this.poll = window.setInterval(() => void this.refresh(), 8e3);
+    this.onWake = () => {
+      void this.checkRev();
+    };
+    window.addEventListener("focus", this.onWake);
+    document.addEventListener("visibilitychange", this.onWake);
     void this.refresh();
   }
   stop() {
@@ -3399,9 +3410,29 @@ var ExplorerBadges = class {
     this.watched = null;
     if (this.hookTimer !== null) window.clearInterval(this.hookTimer);
     if (this.poll !== null) window.clearInterval(this.poll);
+    if (this.revPoll !== null) window.clearInterval(this.revPoll);
     if (this.debounce !== null) window.clearTimeout(this.debounce);
-    this.hookTimer = this.poll = this.debounce = null;
+    this.hookTimer = this.poll = this.revPoll = this.debounce = null;
+    if (this.onWake) {
+      window.removeEventListener("focus", this.onWake);
+      document.removeEventListener("visibilitychange", this.onWake);
+      this.onWake = null;
+    }
     this.stripAll();
+  }
+  /** 只拉版本号；变了才去拉那份很重的全量状态 */
+  async checkRev() {
+    if (!this.enabled) return;
+    try {
+      const port = await this.getPort();
+      const r = await (0, import_obsidian.requestUrl)({ url: `http://127.0.0.1:${port}/api/rev`, method: "GET" });
+      if (r.status !== 200) return;
+      const rev = Number(r.json?.rev || 0);
+      if (!rev || rev === this.lastRev) return;
+      this.lastRev = rev;
+      await this.refresh();
+    } catch {
+    }
   }
   /** 找文件浏览器里真正装树节点的容器 */
   container() {
@@ -3485,6 +3516,7 @@ var ExplorerBadges = class {
       }
       this.notes.set(path, pub);
       this.decorate();
+      this.lastRev = 0;
     } catch (e) {
       new import_obsidian.Notice("\u8BBE\u7F6E\u5931\u8D25\uFF1A" + String(e?.message || e), 6e3);
       this.overrides.delete(path);
@@ -3528,6 +3560,7 @@ var ExplorerBadges = class {
       }
       new import_obsidian.Notice(`${scope ? scope + "\uFF1A" : ""}\u5DF2${pub ? "\u516C\u5F00" : "\u8BBE\u4E3A\u79C1\u5BC6"} ${done} \u7BC7`, 4e3);
       this.decorate();
+      this.lastRev = 0;
     } finally {
       this.busy = false;
     }
@@ -3563,7 +3596,6 @@ var ExplorerBadges = class {
       sw.classList.toggle("on", pub);
       sw.setAttribute("aria-checked", pub ? "true" : "false");
       sw.setAttribute("aria-label", pub ? "\u5DF2\u516C\u5F00\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u79C1\u5BC6" : "\u79C1\u5BC6\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u516C\u5F00");
-      sw.title = pub ? "\u5DF2\u516C\u5F00\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u79C1\u5BC6" : "\u79C1\u5BC6\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u516C\u5F00";
     }
     for (const el of Array.from(root.querySelectorAll(".nav-folder-title[data-path]"))) {
       const folder = (el.getAttribute("data-path") || "").replace(/\\/g, "/");
@@ -3593,8 +3625,7 @@ var ExplorerBadges = class {
         sw.classList.toggle("off", nonePub);
         sw.classList.toggle("part", !allPub && !nonePub);
         const label = allPub ? `${folder}\uFF1A${inFolder.length} \u7BC7\u5168\u90E8\u516C\u5F00` : nonePub ? `${folder}\uFF1A${inFolder.length} \u7BC7\u5168\u90E8\u79C1\u5BC6` : `${folder}\uFF1A${inFolder.length} \u7BC7\u91CC ${pubCount} \u7BC7\u516C\u5F00`;
-        sw.title = label + "\uFF08\u5DE6\u53F3\u62D6\u52A8\uFF1A\u5DE6\u7AEF\u5168\u90E8\u79C1\u5BC6\uFF0C\u53F3\u7AEF\u5168\u90E8\u516C\u5F00\uFF09";
-        sw.setAttribute("aria-label", sw.title);
+        sw.setAttribute("aria-label", label + "\uFF08\u5DE6\u53F3\u62D6\u52A8\uFF1A\u5DE6\u7AEF\u5168\u90E8\u79C1\u5BC6\uFF0C\u53F3\u7AEF\u5168\u90E8\u516C\u5F00\uFF09");
         sw.setAttribute("aria-valuetext", label);
         if (sw !== this.dragSw) {
           const place = this.sliderPlace.get(sw);
@@ -3604,9 +3635,7 @@ var ExplorerBadges = class {
       const cnt = box.querySelector(".blog-pub-fcount");
       if (cnt) {
         cnt.textContent = `${pubCount}/${inFolder.length}`;
-        cnt.title = `${folder}\uFF1A${inFolder.length} \u7BC7\u91CC ${pubCount} \u7BC7\u516C\u5F00`;
       }
-      box.title = `${folder}\uFF1A${pubCount}/${inFolder.length} \u7BC7\u516C\u5F00`;
     }
   }
   /**
@@ -3743,8 +3772,7 @@ var ExplorerBadges = class {
     sw.classList.toggle("off", nonePub);
     sw.classList.toggle("part", !allPub && !nonePub);
     const label = allPub ? `\u5168\u5E93 ${all.length} \u7BC7\u5168\u90E8\u516C\u5F00` : nonePub ? `\u5168\u5E93 ${all.length} \u7BC7\u5168\u90E8\u79C1\u5BC6` : `\u5168\u5E93 ${all.length} \u7BC7\u91CC ${pubCount} \u7BC7\u516C\u5F00`;
-    sw.title = label + "\uFF08\u5DE6\u53F3\u62D6\u52A8\uFF1A\u5DE6\u7AEF\u5168\u90E8\u79C1\u5BC6\uFF0C\u53F3\u7AEF\u5168\u90E8\u516C\u5F00\uFF09";
-    sw.setAttribute("aria-label", sw.title);
+    sw.setAttribute("aria-label", label + "\uFF08\u5DE6\u53F3\u62D6\u52A8\uFF1A\u5DE6\u7AEF\u5168\u90E8\u79C1\u5BC6\uFF0C\u53F3\u7AEF\u5168\u90E8\u516C\u5F00\uFF09");
     sw.setAttribute("aria-valuetext", label);
     if (sw !== this.dragSw) {
       const place = this.sliderPlace.get(sw);
@@ -3791,6 +3819,20 @@ function normalize(p) {
 
 // src/main.ts
 var VIEW_TYPE = "blog-publisher-view";
+function hostLang(app) {
+  let raw = "";
+  try {
+    const cfg = app.vault;
+    const fromCfg = cfg?.getConfig ? cfg.getConfig("language") : "";
+    if (typeof fromCfg === "string" && fromCfg) raw = fromCfg;
+    else raw = window.localStorage.getItem("language") || "";
+  } catch {
+  }
+  return /^zh/i.test(raw) ? "zh" : raw ? "en" : "zh";
+}
+function hostTheme() {
+  return document.body.classList.contains("theme-dark") ? "dark" : "light";
+}
 var EXPLORER_CSS = `
 /* \u5355\u7BC7\u5F00\u5173\uFF1A\u548C\u7BA1\u7406\u5668\u754C\u9762\u91CC\u90A3\u4E2A .sw \u540C\u4E00\u4E2A\u9020\u578B\uFF08\u80F6\u56CA + \u5706\u94AE\uFF09\uFF0C
    \u4F46\u7F29\u5230 24\xD713\uFF0C\u56E0\u4E3A\u5728 250px \u5BBD\u7684\u6587\u4EF6\u6811\u91CC 30\xD716 \u592A\u5360\u5730\u65B9\u3002 */
@@ -3808,7 +3850,7 @@ var EXPLORER_CSS = `
   box-shadow: 0 1px 2px rgba(0,0,0,.25);
   transition: left .15s ease;
 }
-.blog-pub-sw.on { background: var(--interactive-accent); }
+.blog-pub-sw.on { background: #2570cc; }
 .blog-pub-sw.on::after { left: 12px; }
 .blog-pub-sw:hover { box-shadow: 0 0 0 2px var(--background-modifier-hover); }
 
@@ -3827,13 +3869,13 @@ var EXPLORER_CSS = `
   touch-action: none; /* \u624B\u673A\u4E0A\u62D6\u52A8\u65F6\u4E0D\u8981\u628A\u9875\u9762\u4E00\u8D77\u6EDA\u4E86 */
   transition: background-color .15s ease;
 }
-.blog-pub-slider.on { background: var(--interactive-accent); }
+.blog-pub-slider.on { background: #2570cc; }
 .blog-pub-slider.off { background: var(--background-modifier-border); }
 /* \u90E8\u5206\u516C\u5F00\uFF1A\u5E95\u8272\u53EA\u586B\u4E00\u534A\uFF0C\u4E00\u773C\u770B\u51FA\u300C\u4E0D\u662F\u6574\u9F50\u7684\u300D */
 .blog-pub-slider.part {
   background: linear-gradient(
     to right,
-    var(--interactive-accent) 0 50%,
+    #2570cc 0 50%,
     var(--background-modifier-border) 50% 100%
   );
 }
@@ -3847,7 +3889,7 @@ var EXPLORER_CSS = `
 .blog-pub-slider:hover { box-shadow: 0 0 0 2px var(--background-modifier-hover); }
 .blog-pub-slider:active { cursor: grabbing; }
 /* \u62D6\u52A8\u4E2D\u7ED9\u4E2A\u63CF\u8FB9\uFF0C\u8BA9\u7528\u6237\u77E5\u9053\u6293\u4F4F\u4E86 */
-.blog-pub-slider:focus-visible { box-shadow: 0 0 0 2px var(--interactive-accent); }
+.blog-pub-slider:focus-visible { box-shadow: 0 0 0 2px #2570cc; }
 
 /* \u6587\u4EF6\u5939\u884C\u5C3E\uFF1A\u8BA1\u6570\u5E38\u9A7B\uFF08\u4E0D\u60AC\u505C\u4E5F\u80FD\u770B\u5230\u516C\u5F00\u4E86\u51E0\u7BC7\uFF09\uFF0C\u6ED1\u5757\u8DDF\u540E\u9762 */
 .blog-pub-folder {
@@ -3860,6 +3902,15 @@ var EXPLORER_CSS = `
 }
 /* \u9876\u90E8\u5DE5\u5177\u6761\u91CC\u7684\u6ED1\u5757\uFF1A\u8DDF\u7740 nav-action-button \u7684\u5C3A\u5BF8\u8D70 */
 .blog-pub-navwrap { display: inline-flex; align-items: center; padding: 0 4px; }
+
+/* \u6DF1\u8272\u4E3B\u9898\u4E0B\u7528\u4EAE\u4E00\u6863\u7684\u84DD\uFF0C\u5426\u5219 #2570cc \u538B\u5728\u6DF1\u5E95\u4E0A\u53D1\u95F7\u3002
+   \uFF08.theme-dark \u662F Obsidian \u6302\u5728 body \u4E0A\u7684\uFF0C\u4E0D\u9700\u8981\u63D2\u4EF6\u81EA\u5DF1\u5224\u65AD\u3002\uFF09 */
+body.theme-dark .blog-pub-sw.on { background: #5b9bf8; }
+body.theme-dark .blog-pub-slider.on { background: #5b9bf8; }
+body.theme-dark .blog-pub-slider.part {
+  background: linear-gradient(to right, #5b9bf8 0 50%, var(--background-modifier-border) 50% 100%);
+}
+body.theme-dark .blog-pub-slider:focus-visible { box-shadow: 0 0 0 2px #5b9bf8; }
 `;
 function getUtilityProcess() {
   try {
@@ -4067,6 +4118,8 @@ var BlogPublisherPlugin = class extends import_obsidian2.Plugin {
 var BlogPublisherView = class extends import_obsidian2.ItemView {
   plugin;
   frame = null;
+  langTimer = null;
+  langSent = "";
   constructor(leaf, plugin) {
     super(leaf);
     this.plugin = plugin;
@@ -4092,19 +4145,45 @@ var BlogPublisherView = class extends import_obsidian2.ItemView {
       const port = await this.plugin.ensureServer();
       loading.remove();
       const frame = root.createEl("iframe");
-      frame.src = `http://127.0.0.1:${port}/?embed=1`;
+      const lang = hostLang(this.app);
+      const theme = hostTheme();
+      this.langSent = lang + "|" + theme;
+      frame.src = `http://127.0.0.1:${port}/?embed=1&lang=${lang}&theme=${theme}`;
       frame.style.width = "100%";
       frame.style.height = "100%";
       frame.style.border = "0";
       frame.style.display = "block";
       frame.setAttribute("allow", "clipboard-write");
       this.frame = frame;
+      this.registerEvent(
+        this.app.workspace.on("css-change", () => {
+          this.postSettings();
+        })
+      );
+      this.langTimer = window.setInterval(() => {
+        const now = hostLang(this.app) + "|" + hostTheme();
+        if (now !== this.langSent) this.postSettings();
+      }, 2e3);
     } catch (e) {
       loading.setText("\u542F\u52A8\u5931\u8D25\uFF1A" + String(e?.message || e));
       loading.style.color = "var(--text-error)";
     }
   }
+  /** 把宿主的语言 / 主题送进 iframe（不刷新，避免丢输入和滚动位置） */
+  postSettings() {
+    const win = this.frame?.contentWindow;
+    if (!win) return;
+    const lang = hostLang(this.app);
+    const theme = hostTheme();
+    this.langSent = lang + "|" + theme;
+    try {
+      win.postMessage({ __blogPublisher: true, lang, theme }, "*");
+    } catch {
+    }
+  }
   async onClose() {
+    if (this.langTimer !== null) window.clearInterval(this.langTimer);
+    this.langTimer = null;
     this.frame = null;
   }
 };

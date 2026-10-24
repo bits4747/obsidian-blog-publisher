@@ -41,10 +41,13 @@ export class ExplorerBadges {
   private watched: Element | null = null
   private debounce: number | null = null
   private poll: number | null = null
+  private revPoll: number | null = null
   private hookTimer: number | null = null
   private busy = false
   private enabled = true
   private warnedVault = false
+  /** 上次见到的状态版本号。只有它变了才去拉全量 /api/state（那份要扫 117 个文件） */
+  private lastRev = 0
   /**
    * 写操作的串行队列。
    *
@@ -54,6 +57,8 @@ export class ExplorerBadges {
    * 排队能保证每次操作都被执行，而且按用户点的顺序。
    */
   private queue: Promise<void> = Promise.resolve()
+  /** 回到前台时立刻对一次状态（隐藏期间定时器被冻结） */
+  private onWake: (() => void) | null = null
 
   private enqueue(job: () => Promise<void>): Promise<void> {
     const run = this.queue.then(job, job)
@@ -80,8 +85,17 @@ export class ExplorerBadges {
     // 文件浏览器可能被关掉再打开（换布局、切工作区），容器会换新的，
     // 所以定期检查一次容器是不是同一个，不是就重新挂观察器。
     this.hookTimer = window.setInterval(() => this.hook(), 2000)
-    // 库里被别处改动（同步、外部编辑器）时也要跟上
+    // 每 600 毫秒问一次极轻的 /api/rev（只回一个数字，实测 2~30ms、9 字节，不扫库）。
+    // 版本号一变才去拉全量 /api/state —— 这样在管理器界面里点了开关，
+    // 文件树这边 1 秒内就会跟着变，而不是等原来的 8 秒。
+    this.revPoll = window.setInterval(() => void this.checkRev(), 600)
+    // 兜底：库被外部改动（同步、别的编辑器）时版本号不会变，仍然每 8 秒全量对一次
     this.poll = window.setInterval(() => void this.refresh(), 8000)
+    // 窗口被遮挡 / 最小化时 Chromium 会冻结定时器，回到前台时可能已经过了很久。
+    // 这时候立刻对一次，别让用户看到「切回来还是旧的」。
+    this.onWake = () => { void this.checkRev() }
+    window.addEventListener('focus', this.onWake)
+    document.addEventListener('visibilitychange', this.onWake)
     void this.refresh()
   }
 
@@ -91,9 +105,31 @@ export class ExplorerBadges {
     this.watched = null
     if (this.hookTimer !== null) window.clearInterval(this.hookTimer)
     if (this.poll !== null) window.clearInterval(this.poll)
+    if (this.revPoll !== null) window.clearInterval(this.revPoll)
     if (this.debounce !== null) window.clearTimeout(this.debounce)
-    this.hookTimer = this.poll = this.debounce = null
+    this.hookTimer = this.poll = this.revPoll = this.debounce = null
+    if (this.onWake) {
+      window.removeEventListener('focus', this.onWake)
+      document.removeEventListener('visibilitychange', this.onWake)
+      this.onWake = null
+    }
     this.stripAll()
+  }
+
+  /** 只拉版本号；变了才去拉那份很重的全量状态 */
+  private async checkRev(): Promise<void> {
+    if (!this.enabled) return
+    try {
+      const port = await this.getPort()
+      const r = await requestUrl({ url: `http://127.0.0.1:${port}/api/rev`, method: 'GET' })
+      if (r.status !== 200) return
+      const rev = Number((r.json as { rev?: number })?.rev || 0)
+      if (!rev || rev === this.lastRev) return
+      this.lastRev = rev
+      await this.refresh()
+    } catch {
+      /* 服务没起来就下次再试 */
+    }
   }
 
   /** 找文件浏览器里真正装树节点的容器 */
@@ -193,6 +229,8 @@ export class ExplorerBadges {
       }
       this.notes.set(path, pub)
       this.decorate()
+      // 自己点的这一下已经把版本号推进了，重置一下免得下一轮 /api/rev 白拉一次全量
+      this.lastRev = 0
     } catch (e) {
       new Notice('设置失败：' + String((e as Error)?.message || e), 6000)
       this.overrides.delete(path)
@@ -241,6 +279,7 @@ export class ExplorerBadges {
       }
       new Notice(`${scope ? scope + '：' : ''}已${pub ? '公开' : '设为私密'} ${done} 篇`, 4000)
       this.decorate()
+      this.lastRev = 0
     } finally {
       this.busy = false
     }
@@ -279,8 +318,9 @@ export class ExplorerBadges {
       }
       sw.classList.toggle('on', pub)
       sw.setAttribute('aria-checked', pub ? 'true' : 'false')
+      // 只用 aria-label，不设 title：Obsidian 会按 aria-label 弹它自己的提示气泡，
+      // 再设 title 就会同时冒出浏览器原生 tooltip，看起来是两层叠在一起。
       sw.setAttribute('aria-label', pub ? '已公开，点击设为私密' : '私密，点击设为公开')
-      sw.title = pub ? '已公开，点击设为私密' : '私密，点击设为公开'
     }
 
     // ---- 文件夹行 ----
@@ -320,8 +360,9 @@ export class ExplorerBadges {
           : nonePub
             ? `${folder}：${inFolder.length} 篇全部私密`
             : `${folder}：${inFolder.length} 篇里 ${pubCount} 篇公开`
-        sw.title = label + '（左右拖动：左端全部私密，右端全部公开）'
-        sw.setAttribute('aria-label', sw.title)
+        // 只留滑块自己的 aria-label（Obsidian 据此弹一层气泡）。
+        // 原来这里同时设了 title，会再叠一层原生 tooltip。
+        sw.setAttribute('aria-label', label + '（左右拖动：左端全部私密，右端全部公开）')
         sw.setAttribute('aria-valuetext', label)
         // 拖动中不要被轮询刷回去
         if (sw !== this.dragSw) {
@@ -332,9 +373,8 @@ export class ExplorerBadges {
       const cnt = box.querySelector<HTMLElement>('.blog-pub-fcount')
       if (cnt) {
         cnt.textContent = `${pubCount}/${inFolder.length}`
-        cnt.title = `${folder}：${inFolder.length} 篇里 ${pubCount} 篇公开`
+        // 计数不再单独给 title：外层 box 已经有 aria-label，再给一层就成两个气泡
       }
-      box.title = `${folder}：${pubCount}/${inFolder.length} 篇公开`
     }
   }
 
@@ -494,8 +534,7 @@ export class ExplorerBadges {
       : nonePub
         ? `全库 ${all.length} 篇全部私密`
         : `全库 ${all.length} 篇里 ${pubCount} 篇公开`
-    sw.title = label + '（左右拖动：左端全部私密，右端全部公开）'
-    sw.setAttribute('aria-label', sw.title)
+    sw.setAttribute('aria-label', label + '（左右拖动：左端全部私密，右端全部公开）')
     sw.setAttribute('aria-valuetext', label)
     if (sw !== this.dragSw) {
       const place = this.sliderPlace.get(sw)

@@ -7,6 +7,31 @@ import { ExplorerBadges } from './explorer.js'
 
 const VIEW_TYPE = 'blog-publisher-view'
 
+/**
+ * 宿主（Obsidian）当前界面语言，归一到 zh / en。
+ *
+ * 管理器界面只需要中英两种：Obsidian 配的是简体或繁体中文都算中文，
+ * 其它任何语言一律英文 —— 多语言界面维护成本不值，也不该出现第三种半截翻译。
+ */
+function hostLang(app: App): 'zh' | 'en' {
+  let raw = ''
+  try {
+    // 1.5+ 存在 app 配置里；老版本写在 localStorage 的 language
+    const cfg = (app as unknown as { vault?: { getConfig?: (k: string) => unknown } }).vault
+    const fromCfg = cfg?.getConfig ? cfg.getConfig('language') : ''
+    if (typeof fromCfg === 'string' && fromCfg) raw = fromCfg
+    else raw = window.localStorage.getItem('language') || ''
+  } catch {
+    /* 取不到就按中文，和 Obsidian 默认一致 */
+  }
+  return /^zh/i.test(raw) ? 'zh' : raw ? 'en' : 'zh'
+}
+
+/** 宿主当前是深色还是浅色 */
+function hostTheme(): 'dark' | 'light' {
+  return document.body.classList.contains('theme-dark') ? 'dark' : 'light'
+}
+
 /** 文件树上「公开 / 私密」开关的样式。注入一次，跟随 Obsidian 主题变量。 */
 const EXPLORER_CSS = `
 /* 单篇开关：和管理器界面里那个 .sw 同一个造型（胶囊 + 圆钮），
@@ -25,7 +50,7 @@ const EXPLORER_CSS = `
   box-shadow: 0 1px 2px rgba(0,0,0,.25);
   transition: left .15s ease;
 }
-.blog-pub-sw.on { background: var(--interactive-accent); }
+.blog-pub-sw.on { background: #2570cc; }
 .blog-pub-sw.on::after { left: 12px; }
 .blog-pub-sw:hover { box-shadow: 0 0 0 2px var(--background-modifier-hover); }
 
@@ -44,13 +69,13 @@ const EXPLORER_CSS = `
   touch-action: none; /* 手机上拖动时不要把页面一起滚了 */
   transition: background-color .15s ease;
 }
-.blog-pub-slider.on { background: var(--interactive-accent); }
+.blog-pub-slider.on { background: #2570cc; }
 .blog-pub-slider.off { background: var(--background-modifier-border); }
 /* 部分公开：底色只填一半，一眼看出「不是整齐的」 */
 .blog-pub-slider.part {
   background: linear-gradient(
     to right,
-    var(--interactive-accent) 0 50%,
+    #2570cc 0 50%,
     var(--background-modifier-border) 50% 100%
   );
 }
@@ -64,7 +89,7 @@ const EXPLORER_CSS = `
 .blog-pub-slider:hover { box-shadow: 0 0 0 2px var(--background-modifier-hover); }
 .blog-pub-slider:active { cursor: grabbing; }
 /* 拖动中给个描边，让用户知道抓住了 */
-.blog-pub-slider:focus-visible { box-shadow: 0 0 0 2px var(--interactive-accent); }
+.blog-pub-slider:focus-visible { box-shadow: 0 0 0 2px #2570cc; }
 
 /* 文件夹行尾：计数常驻（不悬停也能看到公开了几篇），滑块跟后面 */
 .blog-pub-folder {
@@ -77,6 +102,15 @@ const EXPLORER_CSS = `
 }
 /* 顶部工具条里的滑块：跟着 nav-action-button 的尺寸走 */
 .blog-pub-navwrap { display: inline-flex; align-items: center; padding: 0 4px; }
+
+/* 深色主题下用亮一档的蓝，否则 #2570cc 压在深底上发闷。
+   （.theme-dark 是 Obsidian 挂在 body 上的，不需要插件自己判断。） */
+body.theme-dark .blog-pub-sw.on { background: #5b9bf8; }
+body.theme-dark .blog-pub-slider.on { background: #5b9bf8; }
+body.theme-dark .blog-pub-slider.part {
+  background: linear-gradient(to right, #5b9bf8 0 50%, var(--background-modifier-border) 50% 100%);
+}
+body.theme-dark .blog-pub-slider:focus-visible { box-shadow: 0 0 0 2px #5b9bf8; }
 `
 
 /** 后台服务子进程的通信句柄（utilityProcess 或 child_process 的统一外观） */
@@ -353,6 +387,8 @@ export default class BlogPublisherPlugin extends Plugin {
 class BlogPublisherView extends ItemView {
   private plugin: BlogPublisherPlugin
   private frame: HTMLIFrameElement | null = null
+  private langTimer: number | null = null
+  private langSent = ''
 
   constructor(leaf: WorkspaceLeaf, plugin: BlogPublisherPlugin) {
     super(leaf)
@@ -384,7 +420,12 @@ class BlogPublisherView extends ItemView {
       loading.remove()
       const frame = root.createEl('iframe')
       // embed=1：Obsidian 左侧已经是文件树，界面里那套文件夹网格是重复的，藏掉。
-      frame.src = `http://127.0.0.1:${port}/?embed=1`
+      // lang/theme：界面不再自己放「中英」「明暗」按钮，改为跟宿主走 ——
+      // 首帧就用这两个参数定好，之后变化靠 postMessage 热更新（不刷新 iframe）。
+      const lang = hostLang(this.app)
+      const theme = hostTheme()
+      this.langSent = lang + '|' + theme
+      frame.src = `http://127.0.0.1:${port}/?embed=1&lang=${lang}&theme=${theme}`
       frame.style.width = '100%'
       frame.style.height = '100%'
       frame.style.border = '0'
@@ -392,13 +433,41 @@ class BlogPublisherView extends ItemView {
       // iframe 里要能用剪贴板 / 下载等能力，但不需要额外权限
       frame.setAttribute('allow', 'clipboard-write')
       this.frame = frame
+
+      // 主题一变（Obsidian 切明暗、换主题）就把新值送进去
+      this.registerEvent(
+        this.app.workspace.on('css-change', () => {
+          this.postSettings()
+        }),
+      )
+      // 语言变化 Obsidian 不广播事件，用便宜的定时比对兜底（2 秒一次，只比字符串）
+      this.langTimer = window.setInterval(() => {
+        const now = hostLang(this.app) + '|' + hostTheme()
+        if (now !== this.langSent) this.postSettings()
+      }, 2000)
     } catch (e) {
       loading.setText('启动失败：' + String((e as Error)?.message || e))
       loading.style.color = 'var(--text-error)'
     }
   }
 
+  /** 把宿主的语言 / 主题送进 iframe（不刷新，避免丢输入和滚动位置） */
+  private postSettings(): void {
+    const win = this.frame?.contentWindow
+    if (!win) return
+    const lang = hostLang(this.app)
+    const theme = hostTheme()
+    this.langSent = lang + '|' + theme
+    try {
+      win.postMessage({ __blogPublisher: true, lang, theme }, '*')
+    } catch {
+      /* iframe 还没就绪就下次再说 */
+    }
+  }
+
   async onClose() {
+    if (this.langTimer !== null) window.clearInterval(this.langTimer)
+    this.langTimer = null
     this.frame = null
   }
 }
