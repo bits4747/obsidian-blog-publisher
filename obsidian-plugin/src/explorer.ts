@@ -1,4 +1,5 @@
 import { App, Modal, Notice, requestUrl } from 'obsidian'
+import { hostLang, strings, type Strings } from './i18n.js'
 
 /**
  * 把「是否公开」直接做进 Obsidian 原生文件浏览器。
@@ -60,6 +61,13 @@ export class ExplorerBadges {
   /** 回到前台时立刻对一次状态（隐藏期间定时器被冻结） */
   private onWake: (() => void) | null = null
 
+  /**
+   * 界面语言。跟随 Obsidian，不在插件里另设开关。
+   * 缓存上一次的语言字符串，语言变了才重建已经注入的节点文字。
+   */
+  private lang: string
+  private t: Strings
+
   private enqueue(job: () => Promise<void>): Promise<void> {
     const run = this.queue.then(job, job)
     // 队列本身不能因为某次失败而断掉
@@ -70,6 +78,41 @@ export class ExplorerBadges {
   constructor(app: App, getPort: () => Promise<number>) {
     this.app = app
     this.getPort = getPort
+    this.lang = hostLang(app)
+    this.t = strings(this.lang as 'zh' | 'en')
+  }
+
+  /** 语言变了就重刷一遍文案（Obsidian 改语言不广播事件，由宿主定时比对后调用） */
+  setLang(): boolean {
+    const next = hostLang(this.app)
+    if (next === this.lang) return false
+    this.lang = next
+    this.t = strings(next as 'zh' | 'en')
+    // 已经注入的文字要重建：直接清掉让 decorate() 按新语言重新造
+    this.stripAll()
+    this.decorate()
+    return true
+  }
+
+  /** 全库设为公开 / 私密（命令面板入口，走同一套确认） */
+  async setAll(pub: boolean): Promise<void> {
+    const paths = Array.from(this.notes.keys())
+    if (paths.length === 0) return
+    const s = this.t.scopeAll
+    new ConfirmModal(this.app, {
+      title: pub ? this.t.confirmPublicTitle(s) : this.t.confirmPrivateTitle(s),
+      body: pub ? this.t.confirmPublicBody(paths.length) : this.t.confirmPrivateBody(paths.length),
+      cta: pub ? this.t.confirmPublicCta : this.t.confirmPrivateCta,
+      cancel: this.t.cancel,
+      onConfirm: () => void this.toggleMany(paths, pub, s),
+    }).open()
+  }
+
+  /** 某个文件夹设为公开 / 私密（命令面板入口） */
+  async setFolder(folder: string, pub: boolean): Promise<void> {
+    const paths = this.pathsUnder(folder)
+    if (paths.length === 0) return
+    await this.toggleMany(paths, pub, folder || this.t.scopeAll)
   }
 
   start(): void {
@@ -165,7 +208,7 @@ export class ExplorerBadges {
       if (j.vaultPath && base && normalize(j.vaultPath) !== normalize(base)) {
         if (!this.warnedVault) {
           this.warnedVault = true
-          new Notice('博客发布器：管理器配置的库不是当前库，文件树上的公开开关已停用。\n管理器：' + j.vaultPath + '\n当前：' + base, 12000)
+          new Notice(this.t.vaultMismatch(String(j.vaultPath), base), 12000)
         }
         this.enabled = false
         this.stripAll()
@@ -215,7 +258,7 @@ export class ExplorerBadges {
       })
       if (r.status !== 200) {
         const j = (r.json || {}) as { error?: string }
-        new Notice('设置失败：' + (j.error || 'HTTP ' + r.status), 6000)
+        new Notice(this.t.toggleFail(j.error || 'HTTP ' + r.status), 6000)
         // 回滚
         this.overrides.delete(path)
         this.notes.set(path, !pub)
@@ -227,7 +270,7 @@ export class ExplorerBadges {
       // 自己点的这一下已经把版本号推进了，重置一下免得下一轮 /api/rev 白拉一次全量
       this.lastRev = 0
     } catch (e) {
-      new Notice('设置失败：' + String((e as Error)?.message || e), 6000)
+      new Notice(this.t.toggleFail(String((e as Error)?.message || e)), 6000)
       this.overrides.delete(path)
       this.notes.set(path, !pub)
       this.decorate()
@@ -272,7 +315,7 @@ export class ExplorerBadges {
           /* 单篇失败不影响其余 */
         }
       }
-      new Notice(`${scope ? scope + '：' : ''}已${pub ? '公开' : '设为私密'} ${done} 篇`, 4000)
+      new Notice(this.t.batchDone(scope, pub, done), 4000)
       this.decorate()
       this.lastRev = 0
     } finally {
@@ -315,7 +358,7 @@ export class ExplorerBadges {
       sw.setAttribute('aria-checked', pub ? 'true' : 'false')
       // 只用 aria-label，不设 title：Obsidian 会按 aria-label 弹它自己的提示气泡，
       // 再设 title 就会同时冒出浏览器原生 tooltip，看起来是两层叠在一起。
-      sw.setAttribute('aria-label', pub ? '已公开，点击设为私密' : '私密，点击设为公开')
+      sw.setAttribute('aria-label', pub ? this.t.swToPrivate : this.t.swToPublic)
     }
 
     // ---- 文件夹行 ----
@@ -348,10 +391,10 @@ export class ExplorerBadges {
       if (batch) {
         this.paintBatchButtons(batch, allPub, nonePub)
         const label = allPub
-          ? `${folder}：${inFolder.length} 篇全部公开`
+          ? this.t.folderAllPublic(folder, inFolder.length)
           : nonePub
-            ? `${folder}：${inFolder.length} 篇全部私密`
-            : `${folder}：${inFolder.length} 篇里 ${pubCount} 篇公开`
+            ? this.t.folderAllPrivate(folder, inFolder.length)
+            : this.t.folderMixed(folder, inFolder.length, pubCount)
         batch.setAttribute('aria-label', label)
       }
       const cnt = box.querySelector<HTMLElement>('.blog-pub-fcount')
@@ -382,7 +425,7 @@ export class ExplorerBadges {
       btn.setAttribute('role', 'button')
       btn.setAttribute('tabindex', '0')
       btn.dataset.pub = pub ? '1' : '0'
-      btn.textContent = pub ? '公开' : '私密'
+      btn.textContent = pub ? this.t.pub : this.t.priv
       const run = (ev: Event): void => {
         ev.preventDefault()
         ev.stopPropagation()
@@ -394,12 +437,12 @@ export class ExplorerBadges {
           return
         }
         // 一次改全库是重动作（上百篇），给一次确认，别让误点把整站下线
+        const s = scopeLabel || this.t.scopeAll
         new ConfirmModal(this.app, {
-          title: pub ? `把${scopeLabel}笔记设为公开？` : `把${scopeLabel}笔记设为私密？`,
-          body:
-            `这会改动 ${paths.length} 篇笔记的 public 字段。` +
-            (pub ? '' : '设为私密后它们会从线上博客下线，需要重新公开并发布才会回来。'),
-          cta: pub ? '全部公开' : '全部私密',
+          title: pub ? this.t.confirmPublicTitle(s) : this.t.confirmPrivateTitle(s),
+          body: pub ? this.t.confirmPublicBody(paths.length) : this.t.confirmPrivateBody(paths.length),
+          cta: pub ? this.t.confirmPublicCta : this.t.confirmPrivateCta,
+          cancel: this.t.cancel,
           onConfirm: go,
         }).open()
       }
@@ -442,7 +485,7 @@ export class ExplorerBadges {
     wrap.className = 'clickable-icon nav-action-button blog-pub-navwrap'
     wrap.setAttribute(MARK_NAV, 'all')
     // 全库是重动作（上百篇），点下去仍要确认一次，别让误点把整站下线。
-    wrap.appendChild(this.buildBatchButtons('全库', () => Array.from(this.notes.keys()), true))
+    wrap.appendChild(this.buildBatchButtons(this.t.scopeAll, () => Array.from(this.notes.keys()), true))
     bar.appendChild(wrap)
   }
 
@@ -456,10 +499,10 @@ export class ExplorerBadges {
     const nonePub = pubCount === 0
     this.paintBatchButtons(batch, allPub, nonePub)
     const label = allPub
-      ? `全库 ${all.length} 篇全部公开`
+      ? this.t.vaultAllPublic(all.length)
       : nonePub
-        ? `全库 ${all.length} 篇全部私密`
-        : `全库 ${all.length} 篇里 ${pubCount} 篇公开`
+        ? this.t.vaultAllPrivate(all.length)
+        : this.t.vaultMixed(all.length, pubCount)
     batch.setAttribute('aria-label', label)
   }
 
@@ -477,8 +520,11 @@ export class ExplorerBadges {
 
 /** 一句确认 + 一个按钮。obsidian 的类型定义里没有 ConfirmModal，自己拼一个。 */
 class ConfirmModal extends Modal {
-  private opts: { title: string; body: string; cta: string; onConfirm: () => void }
-  constructor(app: App, opts: { title: string; body: string; cta: string; onConfirm: () => void }) {
+  private opts: { title: string; body: string; cta: string; cancel: string; onConfirm: () => void }
+  constructor(
+    app: App,
+    opts: { title: string; body: string; cta: string; cancel: string; onConfirm: () => void },
+  ) {
     super(app)
     this.opts = opts
   }
@@ -492,7 +538,7 @@ class ConfirmModal extends Modal {
       this.close()
       this.opts.onConfirm()
     })
-    const no = row.createEl('button', { text: '取消' })
+    const no = row.createEl('button', { text: this.opts.cancel })
     no.addEventListener('click', () => this.close())
   }
   onClose(): void {

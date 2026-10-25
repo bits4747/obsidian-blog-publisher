@@ -3342,6 +3342,119 @@ function templateReady(fs, path, dir) {
 
 // src/explorer.ts
 var import_obsidian = require("obsidian");
+
+// src/i18n.ts
+function hostLang(app) {
+  let raw = "";
+  try {
+    const cfg = app.vault;
+    const fromCfg = cfg?.getConfig ? cfg.getConfig("language") : "";
+    if (typeof fromCfg === "string" && fromCfg) raw = fromCfg;
+    else raw = window.localStorage.getItem("language") || "";
+  } catch {
+  }
+  return /^zh/i.test(raw) ? "zh" : raw ? "en" : "zh";
+}
+var ZH = {
+  pub: "\u516C\u5F00",
+  priv: "\u79C1\u5BC6",
+  swToPrivate: "\u5DF2\u516C\u5F00\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u79C1\u5BC6",
+  swToPublic: "\u79C1\u5BC6\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u516C\u5F00",
+  folderAllPublic: (f, n) => `${f}\uFF1A${n} \u7BC7\u5168\u90E8\u516C\u5F00`,
+  folderAllPrivate: (f, n) => `${f}\uFF1A${n} \u7BC7\u5168\u90E8\u79C1\u5BC6`,
+  folderMixed: (f, n, p) => `${f}\uFF1A${n} \u7BC7\u91CC ${p} \u7BC7\u516C\u5F00`,
+  vaultAllPublic: (n) => `\u5168\u5E93 ${n} \u7BC7\u5168\u90E8\u516C\u5F00`,
+  vaultAllPrivate: (n) => `\u5168\u5E93 ${n} \u7BC7\u5168\u90E8\u79C1\u5BC6`,
+  vaultMixed: (n, p) => `\u5168\u5E93 ${n} \u7BC7\u91CC ${p} \u7BC7\u516C\u5F00`,
+  scopeAll: "\u5168\u5E93",
+  confirmPublicTitle: (s) => `\u628A${s}\u7B14\u8BB0\u8BBE\u4E3A\u516C\u5F00\uFF1F`,
+  confirmPrivateTitle: (s) => `\u628A${s}\u7B14\u8BB0\u8BBE\u4E3A\u79C1\u5BC6\uFF1F`,
+  confirmPublicBody: (n) => `\u8FD9\u4F1A\u6539\u52A8 ${n} \u7BC7\u7B14\u8BB0\u7684 public \u5B57\u6BB5\u3002`,
+  confirmPrivateBody: (n) => `\u8FD9\u4F1A\u6539\u52A8 ${n} \u7BC7\u7B14\u8BB0\u7684 public \u5B57\u6BB5\u3002\u8BBE\u4E3A\u79C1\u5BC6\u540E\u5B83\u4EEC\u4F1A\u4ECE\u7EBF\u4E0A\u535A\u5BA2\u4E0B\u7EBF\uFF0C\u9700\u8981\u91CD\u65B0\u516C\u5F00\u5E76\u53D1\u5E03\u624D\u4F1A\u56DE\u6765\u3002`,
+  confirmPublicCta: "\u5168\u90E8\u516C\u5F00",
+  confirmPrivateCta: "\u5168\u90E8\u79C1\u5BC6",
+  cancel: "\u53D6\u6D88",
+  batchDone: (scope, pub, n) => `${scope ? scope + "\uFF1A" : ""}\u5DF2${pub ? "\u516C\u5F00" : "\u8BBE\u4E3A\u79C1\u5BC6"} ${n} \u7BC7`,
+  toggleFail: (msg) => "\u8BBE\u7F6E\u5931\u8D25\uFF1A" + msg,
+  vaultMismatch: (a, b) => "\u535A\u5BA2\u53D1\u5E03\u5668\uFF1A\u7BA1\u7406\u5668\u914D\u7F6E\u7684\u5E93\u4E0D\u662F\u5F53\u524D\u5E93\uFF0C\u6587\u4EF6\u6811\u4E0A\u7684\u516C\u5F00\u5F00\u5173\u5DF2\u505C\u7528\u3002\n\u7BA1\u7406\u5668\uFF1A" + a + "\n\u5F53\u524D\uFF1A" + b,
+  ribbonOpen: "\u6253\u5F00\u535A\u5BA2\u53D1\u5E03\u5668",
+  cmdOpen: "\u6253\u5F00\u535A\u5BA2\u53D1\u5E03\u5668",
+  cmdPublish: "\u7ACB\u5373\u53D1\u5E03\u5230 GitHub",
+  cmdAllPublic: "\u5168\u90E8\u7B14\u8BB0\u8BBE\u4E3A\u516C\u5F00",
+  cmdAllPrivate: "\u5168\u90E8\u7B14\u8BB0\u8BBE\u4E3A\u79C1\u5BC6",
+  cmdFolderPublic: "\u5F53\u524D\u6587\u4EF6\u5939\u5168\u90E8\u516C\u5F00",
+  cmdFolderPrivate: "\u5F53\u524D\u6587\u4EF6\u5939\u5168\u90E8\u79C1\u5BC6",
+  noActiveNote: "\u5148\u6253\u5F00\u4E00\u7BC7\u7B14\u8BB0",
+  viewTitle: "\u535A\u5BA2\u53D1\u5E03\u5668",
+  loading: "\u6B63\u5728\u542F\u52A8\u53D1\u5E03\u5668\u2026",
+  startFail: (m) => "\u542F\u52A8\u5931\u8D25\uFF1A" + m,
+  publishing: "\u6B63\u5728\u53D1\u5E03\u2026",
+  publishFailed: (m) => "\u53D1\u5E03\u5931\u8D25\uFF1A" + m,
+  pushed: "\u5DF2\u63A8\u9001 GitHub\uFF0C\u6B63\u5728\u6784\u5EFA",
+  upToDate: "\u7EBF\u4E0A\u5DF2\u662F\u6700\u65B0",
+  pluginStartFail: (m) => "\u535A\u5BA2\u53D1\u5E03\u5668\u542F\u52A8\u5931\u8D25\uFF1A" + m,
+  settingsTitle: "\u535A\u5BA2\u53D1\u5E03\u5668",
+  settingsDataDesc: "\u6570\u636E\u76EE\u5F55\u4E0E\u547D\u4EE4\u884C\u7248\u53D1\u5E03\u7BA1\u7406\u5668\u5171\u7528\uFF08\u9ED8\u8BA4 %APPDATA%\\obsidian-blog\uFF09\uFF0C\u6240\u4EE5\u4E24\u8FB9\u7684\u8FDE\u63A5\u3001\u4EE4\u724C\u3001\u53D1\u5E03\u6D41\u6C34\u662F\u540C\u4E00\u4EFD\u3002",
+  settingsOpenName: "\u6253\u5F00\u53D1\u5E03\u5668",
+  settingsOpenDesc: "\u4E5F\u53EF\u4EE5\u70B9\u5DE6\u4FA7\u680F\u7684\u56FE\u6807\uFF0C\u6216\u7528\u547D\u4EE4\u9762\u677F\u300C\u6253\u5F00\u535A\u5BA2\u53D1\u5E03\u5668\u300D",
+  settingsOpenBtn: "\u6253\u5F00",
+  settingsBrowserName: "\u5728\u6D4F\u89C8\u5668\u4E2D\u6253\u5F00",
+  settingsBrowserDesc: "\u7528\u7CFB\u7EDF\u6D4F\u89C8\u5668\u6253\u5F00\u540C\u4E00\u4E2A\u754C\u9762\uFF08\u9002\u5408\u5927\u5C4F\u64CD\u4F5C\uFF09",
+  settingsBrowserBtn: "\u6253\u5F00"
+};
+var EN = {
+  pub: "Public",
+  priv: "Private",
+  swToPrivate: "Public \u2014 click to make private",
+  swToPublic: "Private \u2014 click to make public",
+  folderAllPublic: (f, n) => `${f}: all ${n} public`,
+  folderAllPrivate: (f, n) => `${f}: all ${n} private`,
+  folderMixed: (f, n, p) => `${f}: ${p} of ${n} public`,
+  vaultAllPublic: (n) => `All ${n} notes public`,
+  vaultAllPrivate: (n) => `All ${n} notes private`,
+  vaultMixed: (n, p) => `${p} of ${n} notes public`,
+  scopeAll: "",
+  confirmPublicTitle: () => "Make these notes public?",
+  confirmPrivateTitle: () => "Make these notes private?",
+  confirmPublicBody: (n) => `This changes the public field of ${n} notes.`,
+  confirmPrivateBody: (n) => `This changes the public field of ${n} notes. Private notes are removed from the published site \u2014 they only come back after you make them public and publish again.`,
+  confirmPublicCta: "Make all public",
+  confirmPrivateCta: "Make all private",
+  cancel: "Cancel",
+  batchDone: (scope, pub, n) => `${scope ? scope + ": " : ""}${n} note(s) set to ${pub ? "public" : "private"}`,
+  toggleFail: (msg) => "Failed: " + msg,
+  vaultMismatch: (a, b) => "Blog Publisher: the vault configured in the manager is not the current vault, so the public toggles in the file explorer are disabled.\nManager: " + a + "\nCurrent: " + b,
+  ribbonOpen: "Open blog publisher",
+  cmdOpen: "Open blog publisher",
+  cmdPublish: "Publish to GitHub now",
+  cmdAllPublic: "Make all notes public",
+  cmdAllPrivate: "Make all notes private",
+  cmdFolderPublic: "Make current folder public",
+  cmdFolderPrivate: "Make current folder private",
+  noActiveNote: "Open a note first",
+  viewTitle: "Blog publisher",
+  loading: "Starting publisher\u2026",
+  startFail: (m) => "Failed to start: " + m,
+  publishing: "Publishing\u2026",
+  publishFailed: (m) => "Publish failed: " + m,
+  pushed: "Pushed to GitHub, building now",
+  upToDate: "Site is already up to date",
+  pluginStartFail: (m) => "Blog publisher failed to start: " + m,
+  settingsTitle: "Blog publisher",
+  settingsDataDesc: "Shares the same data directory as the command-line manager (default %APPDATA%\\obsidian-blog), so connections, tokens and publish history are one and the same.",
+  settingsOpenName: "Open publisher",
+  settingsOpenDesc: 'You can also click the ribbon icon or use the "Open blog publisher" command',
+  settingsOpenBtn: "Open",
+  settingsBrowserName: "Open in browser",
+  settingsBrowserDesc: "Opens the same UI in your system browser (handy on a large screen)",
+  settingsBrowserBtn: "Open"
+};
+var TABLE = { zh: ZH, en: EN };
+function strings(lang) {
+  return TABLE[lang];
+}
+
+// src/explorer.ts
 var MARK_FILE = "data-blog-pub";
 var MARK_FOLDER = "data-blog-pub-folder";
 var MARK_NAV = "data-blog-pub-nav";
@@ -3378,6 +3491,12 @@ var ExplorerBadges = class {
   queue = Promise.resolve();
   /** 回到前台时立刻对一次状态（隐藏期间定时器被冻结） */
   onWake = null;
+  /**
+   * 界面语言。跟随 Obsidian，不在插件里另设开关。
+   * 缓存上一次的语言字符串，语言变了才重建已经注入的节点文字。
+   */
+  lang;
+  t;
   enqueue(job) {
     const run = this.queue.then(job, job);
     this.queue = run.catch(() => void 0);
@@ -3386,6 +3505,37 @@ var ExplorerBadges = class {
   constructor(app, getPort) {
     this.app = app;
     this.getPort = getPort;
+    this.lang = hostLang(app);
+    this.t = strings(this.lang);
+  }
+  /** 语言变了就重刷一遍文案（Obsidian 改语言不广播事件，由宿主定时比对后调用） */
+  setLang() {
+    const next = hostLang(this.app);
+    if (next === this.lang) return false;
+    this.lang = next;
+    this.t = strings(next);
+    this.stripAll();
+    this.decorate();
+    return true;
+  }
+  /** 全库设为公开 / 私密（命令面板入口，走同一套确认） */
+  async setAll(pub) {
+    const paths = Array.from(this.notes.keys());
+    if (paths.length === 0) return;
+    const s = this.t.scopeAll;
+    new ConfirmModal(this.app, {
+      title: pub ? this.t.confirmPublicTitle(s) : this.t.confirmPrivateTitle(s),
+      body: pub ? this.t.confirmPublicBody(paths.length) : this.t.confirmPrivateBody(paths.length),
+      cta: pub ? this.t.confirmPublicCta : this.t.confirmPrivateCta,
+      cancel: this.t.cancel,
+      onConfirm: () => void this.toggleMany(paths, pub, s)
+    }).open();
+  }
+  /** 某个文件夹设为公开 / 私密（命令面板入口） */
+  async setFolder(folder, pub) {
+    const paths = this.pathsUnder(folder);
+    if (paths.length === 0) return;
+    await this.toggleMany(paths, pub, folder || this.t.scopeAll);
   }
   start() {
     this.stripAll();
@@ -3464,7 +3614,7 @@ var ExplorerBadges = class {
       if (j.vaultPath && base && normalize(j.vaultPath) !== normalize(base)) {
         if (!this.warnedVault) {
           this.warnedVault = true;
-          new import_obsidian.Notice("\u535A\u5BA2\u53D1\u5E03\u5668\uFF1A\u7BA1\u7406\u5668\u914D\u7F6E\u7684\u5E93\u4E0D\u662F\u5F53\u524D\u5E93\uFF0C\u6587\u4EF6\u6811\u4E0A\u7684\u516C\u5F00\u5F00\u5173\u5DF2\u505C\u7528\u3002\n\u7BA1\u7406\u5668\uFF1A" + j.vaultPath + "\n\u5F53\u524D\uFF1A" + base, 12e3);
+          new import_obsidian.Notice(this.t.vaultMismatch(String(j.vaultPath), base), 12e3);
         }
         this.enabled = false;
         this.stripAll();
@@ -3504,7 +3654,7 @@ var ExplorerBadges = class {
       });
       if (r.status !== 200) {
         const j = r.json || {};
-        new import_obsidian.Notice("\u8BBE\u7F6E\u5931\u8D25\uFF1A" + (j.error || "HTTP " + r.status), 6e3);
+        new import_obsidian.Notice(this.t.toggleFail(j.error || "HTTP " + r.status), 6e3);
         this.overrides.delete(path);
         this.notes.set(path, !pub);
         this.decorate();
@@ -3514,7 +3664,7 @@ var ExplorerBadges = class {
       this.decorate();
       this.lastRev = 0;
     } catch (e) {
-      new import_obsidian.Notice("\u8BBE\u7F6E\u5931\u8D25\uFF1A" + String(e?.message || e), 6e3);
+      new import_obsidian.Notice(this.t.toggleFail(String(e?.message || e)), 6e3);
       this.overrides.delete(path);
       this.notes.set(path, !pub);
       this.decorate();
@@ -3554,7 +3704,7 @@ var ExplorerBadges = class {
         } catch {
         }
       }
-      new import_obsidian.Notice(`${scope ? scope + "\uFF1A" : ""}\u5DF2${pub ? "\u516C\u5F00" : "\u8BBE\u4E3A\u79C1\u5BC6"} ${done} \u7BC7`, 4e3);
+      new import_obsidian.Notice(this.t.batchDone(scope, pub, done), 4e3);
       this.decorate();
       this.lastRev = 0;
     } finally {
@@ -3591,7 +3741,7 @@ var ExplorerBadges = class {
       }
       sw.classList.toggle("on", pub);
       sw.setAttribute("aria-checked", pub ? "true" : "false");
-      sw.setAttribute("aria-label", pub ? "\u5DF2\u516C\u5F00\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u79C1\u5BC6" : "\u79C1\u5BC6\uFF0C\u70B9\u51FB\u8BBE\u4E3A\u516C\u5F00");
+      sw.setAttribute("aria-label", pub ? this.t.swToPrivate : this.t.swToPublic);
     }
     for (const el of Array.from(root.querySelectorAll(".nav-folder-title[data-path]"))) {
       const folder = (el.getAttribute("data-path") || "").replace(/\\/g, "/");
@@ -3617,7 +3767,7 @@ var ExplorerBadges = class {
       const batch = box.querySelector(".blog-pub-batch");
       if (batch) {
         this.paintBatchButtons(batch, allPub, nonePub);
-        const label = allPub ? `${folder}\uFF1A${inFolder.length} \u7BC7\u5168\u90E8\u516C\u5F00` : nonePub ? `${folder}\uFF1A${inFolder.length} \u7BC7\u5168\u90E8\u79C1\u5BC6` : `${folder}\uFF1A${inFolder.length} \u7BC7\u91CC ${pubCount} \u7BC7\u516C\u5F00`;
+        const label = allPub ? this.t.folderAllPublic(folder, inFolder.length) : nonePub ? this.t.folderAllPrivate(folder, inFolder.length) : this.t.folderMixed(folder, inFolder.length, pubCount);
         batch.setAttribute("aria-label", label);
       }
       const cnt = box.querySelector(".blog-pub-fcount");
@@ -3642,7 +3792,7 @@ var ExplorerBadges = class {
       btn.setAttribute("role", "button");
       btn.setAttribute("tabindex", "0");
       btn.dataset.pub = pub ? "1" : "0";
-      btn.textContent = pub ? "\u516C\u5F00" : "\u79C1\u5BC6";
+      btn.textContent = pub ? this.t.pub : this.t.priv;
       const run = (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
@@ -3653,10 +3803,12 @@ var ExplorerBadges = class {
           go();
           return;
         }
+        const s = scopeLabel || this.t.scopeAll;
         new ConfirmModal(this.app, {
-          title: pub ? `\u628A${scopeLabel}\u7B14\u8BB0\u8BBE\u4E3A\u516C\u5F00\uFF1F` : `\u628A${scopeLabel}\u7B14\u8BB0\u8BBE\u4E3A\u79C1\u5BC6\uFF1F`,
-          body: `\u8FD9\u4F1A\u6539\u52A8 ${paths.length} \u7BC7\u7B14\u8BB0\u7684 public \u5B57\u6BB5\u3002` + (pub ? "" : "\u8BBE\u4E3A\u79C1\u5BC6\u540E\u5B83\u4EEC\u4F1A\u4ECE\u7EBF\u4E0A\u535A\u5BA2\u4E0B\u7EBF\uFF0C\u9700\u8981\u91CD\u65B0\u516C\u5F00\u5E76\u53D1\u5E03\u624D\u4F1A\u56DE\u6765\u3002"),
-          cta: pub ? "\u5168\u90E8\u516C\u5F00" : "\u5168\u90E8\u79C1\u5BC6",
+          title: pub ? this.t.confirmPublicTitle(s) : this.t.confirmPrivateTitle(s),
+          body: pub ? this.t.confirmPublicBody(paths.length) : this.t.confirmPrivateBody(paths.length),
+          cta: pub ? this.t.confirmPublicCta : this.t.confirmPrivateCta,
+          cancel: this.t.cancel,
           onConfirm: go
         }).open();
       };
@@ -3695,7 +3847,7 @@ var ExplorerBadges = class {
     const wrap = document.createElement("div");
     wrap.className = "clickable-icon nav-action-button blog-pub-navwrap";
     wrap.setAttribute(MARK_NAV, "all");
-    wrap.appendChild(this.buildBatchButtons("\u5168\u5E93", () => Array.from(this.notes.keys()), true));
+    wrap.appendChild(this.buildBatchButtons(this.t.scopeAll, () => Array.from(this.notes.keys()), true));
     bar.appendChild(wrap);
   }
   /** 刷新顶部按钮的点亮状态（全公开 / 全私密 / 部分公开） */
@@ -3707,7 +3859,7 @@ var ExplorerBadges = class {
     const allPub = all.length > 0 && pubCount === all.length;
     const nonePub = pubCount === 0;
     this.paintBatchButtons(batch, allPub, nonePub);
-    const label = allPub ? `\u5168\u5E93 ${all.length} \u7BC7\u5168\u90E8\u516C\u5F00` : nonePub ? `\u5168\u5E93 ${all.length} \u7BC7\u5168\u90E8\u79C1\u5BC6` : `\u5168\u5E93 ${all.length} \u7BC7\u91CC ${pubCount} \u7BC7\u516C\u5F00`;
+    const label = allPub ? this.t.vaultAllPublic(all.length) : nonePub ? this.t.vaultAllPrivate(all.length) : this.t.vaultMixed(all.length, pubCount);
     batch.setAttribute("aria-label", label);
   }
   /** 停用时把注入的东西都摘掉，别留一堆点了没反应的开关 */
@@ -3737,7 +3889,7 @@ var ConfirmModal = class extends import_obsidian.Modal {
       this.close();
       this.opts.onConfirm();
     });
-    const no = row.createEl("button", { text: "\u53D6\u6D88" });
+    const no = row.createEl("button", { text: this.opts.cancel });
     no.addEventListener("click", () => this.close());
   }
   onClose() {
@@ -3750,16 +3902,11 @@ function normalize(p) {
 
 // src/main.ts
 var VIEW_TYPE = "blog-publisher-view";
-function hostLang(app) {
-  let raw = "";
-  try {
-    const cfg = app.vault;
-    const fromCfg = cfg?.getConfig ? cfg.getConfig("language") : "";
-    if (typeof fromCfg === "string" && fromCfg) raw = fromCfg;
-    else raw = window.localStorage.getItem("language") || "";
-  } catch {
-  }
-  return /^zh/i.test(raw) ? "zh" : raw ? "en" : "zh";
+function activeFolder(app) {
+  const f = app.workspace.getActiveFile();
+  if (!f) return null;
+  const i = f.path.lastIndexOf("/");
+  return i < 0 ? "" : f.path.slice(0, i);
 }
 function hostTheme() {
   return document.body.classList.contains("theme-dark") ? "dark" : "light";
@@ -3856,8 +4003,116 @@ var BlogPublisherPlugin = class extends import_obsidian2.Plugin {
   starting = null;
   toolRoot = "";
   explorer = null;
+  /** 界面语言：跟随 Obsidian，简体 / 繁体中文都算中文，其余英文 */
+  lang = "zh";
+  /** 当前语言的全部文案（视图与设置页也要读，故不设 private） */
+  t = strings("zh");
+  /** 命令对象留一份：Obsidian 改语言不广播事件，靠定时比对后改 name 刷新命令面板 */
+  cmds = [];
+  syncLang() {
+    const next = hostLang(this.app);
+    if (next === this.lang) return false;
+    this.lang = next;
+    this.t = strings(next);
+    this.manifest.name = next === "zh" ? "\u535A\u5BA2\u53D1\u5E03\u5668" : "Blog Publisher";
+    this.registerCommands();
+    this.explorer?.setLang();
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE)) {
+      const el = leaf.tabHeaderInnerTitleEl;
+      if (el) el.setText(this.t.viewTitle);
+    }
+    return true;
+  }
+  /**
+   * 注册 / 重注册命令。
+   *
+   * 命令面板里显示的插件名前缀是 addCommand 那一刻按 manifest.name 定死的，
+   * 之后改 manifest.name 不会影响已经注册的命令（实测）。所以语言变了要把
+   * 名字改好再整批重新注册一遍，前缀才会跟着变。
+   */
+  registerCommands() {
+    for (const c of this.cmds) {
+      try {
+        this.removeCommand(c.id);
+      } catch {
+      }
+    }
+    this.cmds = [];
+    this.cmds.push(
+      this.addCommand({
+        id: "open-publisher",
+        name: this.t.cmdOpen,
+        callback: () => void this.activateView()
+      })
+    );
+    this.cmds.push(
+      this.addCommand({
+        id: "publish-now",
+        name: this.t.cmdPublish,
+        callback: async () => {
+          const n = new import_obsidian2.Notice(this.t.publishing, 4e3);
+          try {
+            const port = await this.ensureServer();
+            const r = await fetch(`http://127.0.0.1:${port}/api/publish`, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: "{}"
+            });
+            const j = await r.json();
+            n.hide();
+            new import_obsidian2.Notice(
+              j.failed ? this.t.publishFailed((j.log || []).slice(-1)[0] || "") : j.pushed ? this.t.pushed : this.t.upToDate,
+              6e3
+            );
+          } catch (e) {
+            n.hide();
+            new import_obsidian2.Notice(this.t.publishFailed(String(e?.message || e)), 8e3);
+          }
+        }
+      })
+    );
+    const bulk = (pub, folderOnly) => async () => {
+      const ex = this.explorer;
+      if (!ex) return;
+      if (folderOnly) {
+        const folder = activeFolder(this.app);
+        if (folder === null) {
+          new import_obsidian2.Notice(this.t.noActiveNote, 5e3);
+          return;
+        }
+        await ex.setFolder(folder, pub);
+        return;
+      }
+      await ex.setAll(pub);
+    };
+    this.cmds.push(
+      this.addCommand({ id: "set-all-public", name: this.t.cmdAllPublic, callback: bulk(true, false) }),
+      this.addCommand({ id: "set-all-private", name: this.t.cmdAllPrivate, callback: bulk(false, false) }),
+      this.addCommand({
+        id: "set-folder-public",
+        name: this.t.cmdFolderPublic,
+        checkCallback: (checking) => {
+          if (activeFolder(this.app) === null) return false;
+          if (!checking) void bulk(true, true)();
+          return true;
+        }
+      }),
+      this.addCommand({
+        id: "set-folder-private",
+        name: this.t.cmdFolderPrivate,
+        checkCallback: (checking) => {
+          if (activeFolder(this.app) === null) return false;
+          if (!checking) void bulk(false, true)();
+          return true;
+        }
+      })
+    );
+  }
   async onload() {
     console.log("[blog-publisher] loading");
+    this.lang = hostLang(this.app);
+    this.t = strings(this.lang);
+    this.manifest.name = this.lang === "zh" ? "\u535A\u5BA2\u53D1\u5E03\u5668" : "Blog Publisher";
     (0, import_obsidian2.addIcon)(
       "blog-publisher",
       '<svg viewBox="0 0 100 100"><path fill="currentColor" d="M20 15h60a5 5 0 0 1 5 5v60a5 5 0 0 1-5 5H20a5 5 0 0 1-5-5V20a5 5 0 0 1 5-5zm10 15v10h40V30H30zm0 18v8h40v-8H30zm0 16v8h26v-8H30z"/></svg>'
@@ -3868,35 +4123,10 @@ var BlogPublisherPlugin = class extends import_obsidian2.Plugin {
     document.head.appendChild(style);
     this.register(() => style.remove());
     this.registerView(VIEW_TYPE, (leaf) => new BlogPublisherView(leaf, this));
-    this.addRibbonIcon("blog-publisher", "\u6253\u5F00\u535A\u5BA2\u53D1\u5E03\u5668", () => {
+    this.addRibbonIcon("blog-publisher", this.t.ribbonOpen, () => {
       void this.activateView();
     });
-    this.addCommand({
-      id: "open-publisher",
-      name: "\u6253\u5F00\u535A\u5BA2\u53D1\u5E03\u5668",
-      callback: () => void this.activateView()
-    });
-    this.addCommand({
-      id: "publish-now",
-      name: "\u7ACB\u5373\u53D1\u5E03\u5230 GitHub",
-      callback: async () => {
-        const n = new import_obsidian2.Notice("\u6B63\u5728\u53D1\u5E03\u2026", 4e3);
-        try {
-          const port = await this.ensureServer();
-          const r = await fetch(`http://127.0.0.1:${port}/api/publish`, {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: "{}"
-          });
-          const j = await r.json();
-          n.hide();
-          new import_obsidian2.Notice(j.failed ? "\u53D1\u5E03\u5931\u8D25\uFF1A" + (j.log || []).slice(-1)[0] : j.pushed ? "\u5DF2\u63A8\u9001 GitHub\uFF0C\u6B63\u5728\u6784\u5EFA" : "\u7EBF\u4E0A\u5DF2\u662F\u6700\u65B0", 6e3);
-        } catch (e) {
-          n.hide();
-          new import_obsidian2.Notice("\u53D1\u5E03\u5931\u8D25\uFF1A" + String(e?.message || e), 8e3);
-        }
-      }
-    });
+    this.registerCommands();
     this.addSettingTab(new BlogPublisherSettingTab(this.app, this));
     void this.ensureServer().then(() => {
       this.explorer = new ExplorerBadges(this.app, () => this.ensureServer());
@@ -3904,7 +4134,12 @@ var BlogPublisherPlugin = class extends import_obsidian2.Plugin {
       this.register(() => this.explorer?.stop());
     }).catch((e) => {
       console.error("[blog-publisher] \u542F\u52A8\u5931\u8D25", e);
-      new import_obsidian2.Notice("\u535A\u5BA2\u53D1\u5E03\u5668\u542F\u52A8\u5931\u8D25\uFF1A" + String(e?.message || e), 1e4);
+      new import_obsidian2.Notice(this.t.pluginStartFail(String(e?.message || e)), 1e4);
+    });
+    this.registerInterval(window.setInterval(() => this.syncLang(), 2e3));
+    this.registerDomEvent(window, "focus", () => this.syncLang());
+    this.registerDomEvent(document, "visibilitychange", () => {
+      if (document.visibilityState === "visible") this.syncLang();
     });
   }
   async onunload() {
@@ -4044,7 +4279,7 @@ var BlogPublisherView = class extends import_obsidian2.ItemView {
     return VIEW_TYPE;
   }
   getDisplayText() {
-    return "\u535A\u5BA2\u53D1\u5E03\u5668";
+    return this.plugin.t.viewTitle;
   }
   getIcon() {
     return "blog-publisher";
@@ -4055,7 +4290,7 @@ var BlogPublisherView = class extends import_obsidian2.ItemView {
     root.addClass("blog-publisher-root");
     root.style.padding = "0";
     root.style.overflow = "hidden";
-    const loading = root.createDiv({ text: "\u6B63\u5728\u542F\u52A8\u53D1\u5E03\u5668\u2026", cls: "blog-publisher-loading" });
+    const loading = root.createDiv({ text: this.plugin.t.loading, cls: "blog-publisher-loading" });
     loading.style.padding = "20px";
     try {
       const port = await this.plugin.ensureServer();
@@ -4081,7 +4316,7 @@ var BlogPublisherView = class extends import_obsidian2.ItemView {
         if (now !== this.langSent) this.postSettings();
       }, 2e3);
     } catch (e) {
-      loading.setText("\u542F\u52A8\u5931\u8D25\uFF1A" + String(e?.message || e));
+      loading.setText(this.plugin.t.startFail(String(e?.message || e)));
       loading.style.color = "var(--text-error)";
     }
   }
@@ -4112,18 +4347,19 @@ var BlogPublisherSettingTab = class extends import_obsidian2.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "\u535A\u5BA2\u53D1\u5E03\u5668" });
+    const t = this.plugin.t;
+    containerEl.createEl("h2", { text: t.settingsTitle });
     containerEl.createEl("p", {
-      text: "\u6570\u636E\u76EE\u5F55\u4E0E\u547D\u4EE4\u884C\u7248\u53D1\u5E03\u7BA1\u7406\u5668\u5171\u7528\uFF08\u9ED8\u8BA4 %APPDATA%\\obsidian-blog\uFF09\uFF0C\u6240\u4EE5\u4E24\u8FB9\u7684\u8FDE\u63A5\u3001\u4EE4\u724C\u3001\u53D1\u5E03\u6D41\u6C34\u662F\u540C\u4E00\u4EFD\u3002",
+      text: t.settingsDataDesc,
       cls: "setting-item-description"
     });
-    new import_obsidian2.Setting(containerEl).setName("\u6253\u5F00\u53D1\u5E03\u5668").setDesc("\u4E5F\u53EF\u4EE5\u70B9\u5DE6\u4FA7\u680F\u7684\u56FE\u6807\uFF0C\u6216\u7528\u547D\u4EE4\u9762\u677F\u300C\u6253\u5F00\u535A\u5BA2\u53D1\u5E03\u5668\u300D").addButton(
-      (b) => b.setButtonText("\u6253\u5F00").onClick(() => {
+    new import_obsidian2.Setting(containerEl).setName(t.settingsOpenName).setDesc(t.settingsOpenDesc).addButton(
+      (b) => b.setButtonText(t.settingsOpenBtn).onClick(() => {
         void this.plugin.activateView();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName("\u5728\u6D4F\u89C8\u5668\u4E2D\u6253\u5F00").setDesc("\u7528\u7CFB\u7EDF\u6D4F\u89C8\u5668\u6253\u5F00\u540C\u4E00\u4E2A\u754C\u9762\uFF08\u9002\u5408\u5927\u5C4F\u64CD\u4F5C\uFF09").addButton(
-      (b) => b.setButtonText("\u6253\u5F00").onClick(async () => {
+    new import_obsidian2.Setting(containerEl).setName(t.settingsBrowserName).setDesc(t.settingsBrowserDesc).addButton(
+      (b) => b.setButtonText(t.settingsBrowserBtn).onClick(async () => {
         const port = await this.plugin.ensureServer();
         window.open(`http://127.0.0.1:${port}/`, "_blank");
       })

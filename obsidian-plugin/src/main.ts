@@ -1,30 +1,19 @@
-import { App, ItemView, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, addIcon } from 'obsidian'
+import { App, Command, ItemView, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf, addIcon } from 'obsidian'
 import * as nodeFs from 'node:fs'
 import * as nodePath from 'node:path'
 import * as nodeOs from 'node:os'
 import { materializeTemplate, templateReady } from './template.js'
 import { ExplorerBadges } from './explorer.js'
+import { hostLang, strings, type Strings } from './i18n.js'
 
 const VIEW_TYPE = 'blog-publisher-view'
 
-/**
- * 宿主（Obsidian）当前界面语言，归一到 zh / en。
- *
- * 管理器界面只需要中英两种：Obsidian 配的是简体或繁体中文都算中文，
- * 其它任何语言一律英文 —— 多语言界面维护成本不值，也不该出现第三种半截翻译。
- */
-function hostLang(app: App): 'zh' | 'en' {
-  let raw = ''
-  try {
-    // 1.5+ 存在 app 配置里；老版本写在 localStorage 的 language
-    const cfg = (app as unknown as { vault?: { getConfig?: (k: string) => unknown } }).vault
-    const fromCfg = cfg?.getConfig ? cfg.getConfig('language') : ''
-    if (typeof fromCfg === 'string' && fromCfg) raw = fromCfg
-    else raw = window.localStorage.getItem('language') || ''
-  } catch {
-    /* 取不到就按中文，和 Obsidian 默认一致 */
-  }
-  return /^zh/i.test(raw) ? 'zh' : raw ? 'en' : 'zh'
+/** 当前活动笔记所在的文件夹（库根返回 ''，没有活动笔记返回 null） */
+function activeFolder(app: App): string | null {
+  const f = app.workspace.getActiveFile()
+  if (!f) return null
+  const i = f.path.lastIndexOf('/')
+  return i < 0 ? '' : f.path.slice(0, i)
 }
 
 /** 宿主当前是深色还是浅色 */
@@ -145,9 +134,137 @@ export default class BlogPublisherPlugin extends Plugin {
   private starting: Promise<number> | null = null
   private toolRoot = ''
   private explorer: ExplorerBadges | null = null
+  /** 界面语言：跟随 Obsidian，简体 / 繁体中文都算中文，其余英文 */
+  private lang: 'zh' | 'en' = 'zh'
+  /** 当前语言的全部文案（视图与设置页也要读，故不设 private） */
+  t: Strings = strings('zh')
+  /** 命令对象留一份：Obsidian 改语言不广播事件，靠定时比对后改 name 刷新命令面板 */
+  private cmds: Command[] = []
+
+  private syncLang(): boolean {
+    const next = hostLang(this.app)
+    if (next === this.lang) return false
+    this.lang = next
+    this.t = strings(next)
+    // 命令名和面板里的插件名前缀都要跟着变：改名字前缀只能重新注册一遍
+    this.manifest.name = next === 'zh' ? '博客发布器' : 'Blog Publisher'
+    this.registerCommands()
+    // 文件树上已注入的按钮文字要重造
+    this.explorer?.setLang()
+    // 视图标签页的标题是建 leaf 时按 getDisplayText() 取的，改语言不会自动刷新
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE)) {
+      const el = (leaf as unknown as { tabHeaderInnerTitleEl?: HTMLElement }).tabHeaderInnerTitleEl
+      if (el) el.setText(this.t.viewTitle)
+    }
+    return true
+  }
+
+
+  /**
+   * 注册 / 重注册命令。
+   *
+   * 命令面板里显示的插件名前缀是 addCommand 那一刻按 manifest.name 定死的，
+   * 之后改 manifest.name 不会影响已经注册的命令（实测）。所以语言变了要把
+   * 名字改好再整批重新注册一遍，前缀才会跟着变。
+   */
+  private registerCommands(): void {
+    for (const c of this.cmds) {
+      try {
+        this.removeCommand(c.id)
+      } catch {
+        /* 还没注册过 */
+      }
+    }
+    this.cmds = []
+    this.cmds.push(
+      this.addCommand({
+        id: 'open-publisher',
+        name: this.t.cmdOpen,
+        callback: () => void this.activateView(),
+      }),
+    )
+
+    this.cmds.push(
+      this.addCommand({
+        id: 'publish-now',
+        name: this.t.cmdPublish,
+        callback: async () => {
+          const n = new Notice(this.t.publishing, 4000)
+          try {
+            const port = await this.ensureServer()
+            const r = await fetch(`http://127.0.0.1:${port}/api/publish`, {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: '{}',
+            })
+            const j = (await r.json()) as { failed?: boolean; pushed?: boolean; log?: string[] }
+            n.hide()
+            new Notice(
+              j.failed
+                ? this.t.publishFailed((j.log || []).slice(-1)[0] || '')
+                : j.pushed
+                  ? this.t.pushed
+                  : this.t.upToDate,
+              6000,
+            )
+          } catch (e) {
+            n.hide()
+            new Notice(this.t.publishFailed(String((e as Error)?.message || e)), 8000)
+          }
+        },
+      }),
+    )
+
+    // 全库 / 当前文件夹的批量命令：文件树上的按钮已经能做，这里给键盘党一个入口
+    const bulk = (pub: boolean, folderOnly: boolean) => async () => {
+      const ex = this.explorer
+      if (!ex) return
+      if (folderOnly) {
+        const folder = activeFolder(this.app)
+        if (folder === null) {
+          new Notice(this.t.noActiveNote, 5000)
+          return
+        }
+        await ex.setFolder(folder, pub)
+        return
+      }
+      await ex.setAll(pub)
+    }
+    this.cmds.push(
+      this.addCommand({ id: 'set-all-public', name: this.t.cmdAllPublic, callback: bulk(true, false) }),
+      this.addCommand({ id: 'set-all-private', name: this.t.cmdAllPrivate, callback: bulk(false, false) }),
+      this.addCommand({
+        id: 'set-folder-public',
+        name: this.t.cmdFolderPublic,
+        checkCallback: (checking) => {
+          if (activeFolder(this.app) === null) return false
+          if (!checking) void bulk(true, true)()
+          return true
+        },
+      }),
+      this.addCommand({
+        id: 'set-folder-private',
+        name: this.t.cmdFolderPrivate,
+        checkCallback: (checking) => {
+          if (activeFolder(this.app) === null) return false
+          if (!checking) void bulk(false, true)()
+          return true
+        },
+      }),
+    )
+
+
+  }
 
   async onload() {
     console.log('[blog-publisher] loading')
+
+    this.lang = hostLang(this.app)
+    this.t = strings(this.lang)
+
+    // 命令面板里的插件名前缀是 addCommand 那一刻按 manifest.name 定死的，
+    // 之后改名字不会影响已注册的命令。所以要在注册命令之前把名字定成当前语言。
+    this.manifest.name = this.lang === 'zh' ? '博客发布器' : 'Blog Publisher'
 
     // 侧边栏图标
     addIcon(
@@ -163,37 +280,11 @@ export default class BlogPublisherPlugin extends Plugin {
 
     this.registerView(VIEW_TYPE, (leaf) => new BlogPublisherView(leaf, this))
 
-    this.addRibbonIcon('blog-publisher', '打开博客发布器', () => {
+    this.addRibbonIcon('blog-publisher', this.t.ribbonOpen, () => {
       void this.activateView()
     })
 
-    this.addCommand({
-      id: 'open-publisher',
-      name: '打开博客发布器',
-      callback: () => void this.activateView(),
-    })
-
-    this.addCommand({
-      id: 'publish-now',
-      name: '立即发布到 GitHub',
-      callback: async () => {
-        const n = new Notice('正在发布…', 4000)
-        try {
-          const port = await this.ensureServer()
-          const r = await fetch(`http://127.0.0.1:${port}/api/publish`, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: '{}',
-          })
-          const j = (await r.json()) as { failed?: boolean; pushed?: boolean; log?: string[] }
-          n.hide()
-          new Notice(j.failed ? '发布失败：' + (j.log || []).slice(-1)[0] : j.pushed ? '已推送 GitHub，正在构建' : '线上已是最新', 6000)
-        } catch (e) {
-          n.hide()
-          new Notice('发布失败：' + String((e as Error)?.message || e), 8000)
-        }
-      },
-    })
+    this.registerCommands()
 
     this.addSettingTab(new BlogPublisherSettingTab(this.app, this))
 
@@ -207,8 +298,17 @@ export default class BlogPublisherPlugin extends Plugin {
       })
       .catch((e) => {
         console.error('[blog-publisher] 启动失败', e)
-        new Notice('博客发布器启动失败：' + String((e as Error)?.message || e), 10000)
+        new Notice(this.t.pluginStartFail(String((e as Error)?.message || e)), 10000)
       })
+
+    // Obsidian 改语言不发事件，用便宜的定时比对兜底（2 秒一次，只比一个字符串）。
+    // 窗口被遮挡 / 最小化时 Chromium 会把定时器降频到分钟级，所以再挂两个必然触发的时机：
+    // 回到前台（focus）和切换可见性。用户切回 Obsidian 的那一刻文案就是对的。
+    this.registerInterval(window.setInterval(() => this.syncLang(), 2000))
+    this.registerDomEvent(window, 'focus', () => this.syncLang())
+    this.registerDomEvent(document, 'visibilitychange', () => {
+      if (document.visibilityState === 'visible') this.syncLang()
+    })
   }
 
   async onunload() {
@@ -384,7 +484,7 @@ class BlogPublisherView extends ItemView {
     return VIEW_TYPE
   }
   getDisplayText() {
-    return '博客发布器'
+    return this.plugin.t.viewTitle
   }
   getIcon() {
     return 'blog-publisher'
@@ -397,7 +497,7 @@ class BlogPublisherView extends ItemView {
     root.style.padding = '0'
     root.style.overflow = 'hidden'
 
-    const loading = root.createDiv({ text: '正在启动发布器…', cls: 'blog-publisher-loading' })
+    const loading = root.createDiv({ text: this.plugin.t.loading, cls: 'blog-publisher-loading' })
     loading.style.padding = '20px'
 
     try {
@@ -431,7 +531,7 @@ class BlogPublisherView extends ItemView {
         if (now !== this.langSent) this.postSettings()
       }, 2000)
     } catch (e) {
-      loading.setText('启动失败：' + String((e as Error)?.message || e))
+      loading.setText(this.plugin.t.startFail(String((e as Error)?.message || e)))
       loading.style.color = 'var(--text-error)'
     }
   }
@@ -468,27 +568,28 @@ class BlogPublisherSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this
     containerEl.empty()
-    containerEl.createEl('h2', { text: '博客发布器' })
+    const t = this.plugin.t
+    containerEl.createEl('h2', { text: t.settingsTitle })
 
     containerEl.createEl('p', {
-      text: '数据目录与命令行版发布管理器共用（默认 %APPDATA%\\obsidian-blog），所以两边的连接、令牌、发布流水是同一份。',
+      text: t.settingsDataDesc,
       cls: 'setting-item-description',
     })
 
     new Setting(containerEl)
-      .setName('打开发布器')
-      .setDesc('也可以点左侧栏的图标，或用命令面板「打开博客发布器」')
+      .setName(t.settingsOpenName)
+      .setDesc(t.settingsOpenDesc)
       .addButton((b) =>
-        b.setButtonText('打开').onClick(() => {
+        b.setButtonText(t.settingsOpenBtn).onClick(() => {
           void this.plugin.activateView()
         }),
       )
 
     new Setting(containerEl)
-      .setName('在浏览器中打开')
-      .setDesc('用系统浏览器打开同一个界面（适合大屏操作）')
+      .setName(t.settingsBrowserName)
+      .setDesc(t.settingsBrowserDesc)
       .addButton((b) =>
-        b.setButtonText('打开').onClick(async () => {
+        b.setButtonText(t.settingsBrowserBtn).onClick(async () => {
           const port = await this.plugin.ensureServer()
           window.open(`http://127.0.0.1:${port}/`, '_blank')
         }),
