@@ -127,8 +127,11 @@ const ZH: Strings = {
 }
 
 const EN: Strings = {
-  pub: 'Public',
-  priv: 'Private',
+  // 文件树一行本来就窄，英文全拼「Public」「Private」比中文宽四成，
+  // 会把标题挤掉。缩写到 Pub / Priv 后整组宽度和「公开|私密」基本一致。
+  // 完整说法放在悬停提示里，不影响理解。
+  pub: 'Pub',
+  priv: 'Priv',
   swToPrivate: 'Public — click to make private',
   swToPublic: 'Private — click to make public',
   folderAllPublic: (f, n) => `${f}: all ${n} public`,

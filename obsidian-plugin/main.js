@@ -3403,8 +3403,11 @@ var ZH = {
   settingsBrowserBtn: "\u6253\u5F00"
 };
 var EN = {
-  pub: "Public",
-  priv: "Private",
+  // 文件树一行本来就窄，英文全拼「Public」「Private」比中文宽四成，
+  // 会把标题挤掉。缩写到 Pub / Priv 后整组宽度和「公开|私密」基本一致。
+  // 完整说法放在悬停提示里，不影响理解。
+  pub: "Pub",
+  priv: "Priv",
   swToPrivate: "Public \u2014 click to make private",
   swToPublic: "Private \u2014 click to make public",
   folderAllPublic: (f, n) => `${f}: all ${n} public`,
