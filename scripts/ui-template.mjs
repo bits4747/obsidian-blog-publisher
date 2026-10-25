@@ -55,6 +55,10 @@ export const UI = `<!DOCTYPE html>
   .box-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border-soft); cursor: pointer; }
   .box-head:hover { background: var(--hover); }
   .box-head .name { font-weight: 600; font-size: 16.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* 文件夹标题上的批量按钮：不许被压缩、不许换行，窄列里优先保住文件夹名 */
+  .box-head button.mini { flex-shrink: 0; white-space: nowrap; padding: 3px 7px; }
+  .box-head .cnt { flex-shrink: 0; }
+  .box-head { gap: 6px; }
   .cnt { font-size: 13.5px; color: var(--muted-2); }
   .chev { transition: transform .15s; color: var(--muted-2); }
   .chev.open { transform: rotate(90deg); }
@@ -79,6 +83,12 @@ export const UI = `<!DOCTYPE html>
   /* align-items:start —— 每栏按自己的条目数决定高度。默认的 stretch 会把三栏拉成一样高，
      某一栏条目多的时候另外两栏就只剩一大片空白。 */
   .chgcols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: start; }
+  /* 没有改动时把「变更」这张卡压扁：只留标题行 + 一行提示，别占半屏 */
+  #chgCard.is-empty .chgcols { display: block; }
+  #chgCard.is-empty .row { margin-bottom: 0; }
+  .chgnone { display: flex; align-items: center; gap: 7px; padding: 2px 0 2px 2px;
+             font-size: 14px; color: var(--muted-2); }
+  .chgnone .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex-shrink: 0; }
   .chgcol { border: 1px solid var(--border-soft); border-radius: 9px; overflow: hidden; display: flex; flex-direction: column; }
   .chgcol .ch { display: flex; align-items: center; gap: 6px; padding: 7px 10px; font-size: 14px; font-weight: 600; border-bottom: 1px solid var(--border-soft); }
   .chgcol .ch .n { margin-left: auto; font-size: 13.5px; color: var(--muted); }
@@ -124,7 +134,6 @@ export const UI = `<!DOCTYPE html>
   .hidden { display: none; }
   label { font-size: 14.5px; color: var(--muted); }
   .vault-ok { color: var(--accent); } .vault-bad { color: var(--bad); }
-
   /* ---- 顶部状态栏（发布反馈出现在这里，不用滚到底部）---- */
   .statusbar { position: sticky; top: 0; z-index: 30; margin: -20px -20px 14px; padding: 12px 20px;
                background: var(--bar); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
@@ -151,31 +160,21 @@ export const UI = `<!DOCTYPE html>
      它们和成败混在同一视觉层级时，会让人把整次发布误判成成功（真实踩过）。 */
   .result pre .dim { opacity: .6; }
 
-  /* ---- 多库切换：卡片式选择器 ---- */
-  .vaults { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 10px; }
-  .vault { position: relative; flex: 0 0 auto; width: 230px; text-align: left; cursor: pointer;
-           background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 13px 11px;
-           font: inherit; color: inherit; transition: border-color .15s, box-shadow .15s, transform .12s; }
-  .vault.has-del { padding-bottom: 34px; }
-  .vault:hover { border-color: var(--accent); transform: translateY(-1px); }
-  .vault.on { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,112,204,.14); }
-  .vault .vname { font-weight: 600; font-size: 16px; margin-bottom: 3px; overflow: hidden;
-                  text-overflow: ellipsis; white-space: nowrap; }
-  .vault .vrepo { font-size: 13.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .vault .vmeta { font-size: 13.5px; color: var(--muted-2); margin-top: 6px; }
-  .vault .vmeta b { color: var(--accent); font-weight: 600; }
-  .vault .badge { position: absolute; top: 10px; right: 10px; font-size: 12px; padding: 2px 7px;
-                  border-radius: 999px; background: var(--accent); color: #fff; }
-  .vault.new { display: flex; align-items: center; justify-content: center; gap: 6px; width: 170px;
-               border-style: dashed; color: var(--muted); font-size: 15px; }
-  .vault.new:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-  .vault .del { position: absolute; bottom: 8px; right: 8px; font-size: 12.5px; padding: 1px 7px;
-                border-radius: 6px; background: var(--btn-ghost); color: var(--muted-2); border: 0; cursor: pointer; }
-  .vault .del:hover { background: #fee2e2; color: var(--bad); }
-  .vault .vlink { display: inline-flex; align-items: center; gap: 3px; margin-top: 7px; text-decoration: none;
-                  font-size: 13.5px; color: var(--accent); padding: 2px 7px 2px 5px; border-radius: 6px;
-                  background: var(--accent-soft); font-weight: 500; }
-  .vault .vlink:hover { background: var(--accent-soft-hover); text-decoration: underline; }
+  /* ---- 单库信息条：一行搞定，不再用卡片 ---- */
+  .vbar { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+          padding: 0 2px 12px; font-size: 14px; }
+  .vbar .vname { font-weight: 600; font-size: 15px; color: var(--fg); }
+  .vbar .vrepo { color: var(--muted); font-size: 13.5px; }
+  .vbar .vmeta { color: var(--muted-2); font-size: 13.5px; }
+  .vbar .vmeta b { color: var(--accent); font-weight: 600; }
+  .vbar .vspacer { flex: 1; }
+  .vbar .vlink { display: inline-flex; align-items: center; gap: 3px; text-decoration: none;
+                 font-size: 13.5px; color: var(--accent); padding: 2px 8px; border-radius: 6px;
+                 background: var(--accent-soft); font-weight: 500; }
+  .vbar .vlink:hover { background: var(--accent-soft-hover); text-decoration: underline; }
+  .vbar .vlink.hidden { display: none; }
+  /* 多连接时（只有命令行版会遇到）的紧凑下拉 */
+  .vbar select { padding: 2px 6px; font-size: 13px; border-radius: 6px; }
 
   /* ---- 新建连接：一步一个库 + 一个仓库 ---- */
   .dialog { position: fixed; inset: 0; z-index: 50; background: rgba(17,24,39,.45);
@@ -230,14 +229,15 @@ export const UI = `<!DOCTYPE html>
 
 <div class="wrap">
 
-<div class="card">
-  <div class="row" style="margin-bottom:9px">
-    <label style="font-size: 16px;font-weight:600;" data-i18n="myBlog">我的博客</label>
-    <span class="cnt" id="vaultHint"></span>
-    <span id="vaultHead"></span>
-    <button class="mini" id="setupBtn" onclick="openSetup(setupConn, false)" data-i18n="vaultSettings" style="margin-left:auto">设置</button>
-  </div>
-  <div class="vaults" id="vaults"></div>
+<!-- 单库信息条：只占一行。库名 / 仓库 / 篇数 / 打开网页 / 设置，
+     全塞在状态栏下面这一条里，不再单独占一张卡片（那会白占掉首屏最值钱的位置）。 -->
+<div class="vbar" id="vbar">
+  <span class="vname" id="vbName"></span>
+  <span class="vrepo" id="vbRepo"></span>
+  <span class="vmeta" id="vbMeta"></span>
+  <span class="vspacer"></span>
+  <a class="vlink hidden" id="vbLink" target="_blank" rel="noopener" data-i18n="openSite">↗ 打开网页</a>
+  <button class="mini" id="setupBtn" onclick="openActiveSetup()" data-i18n="vaultSettings">设置</button>
 </div>
 
 <div class="card" id="chgCard">
@@ -307,16 +307,17 @@ const DICT = {
     liveOk: function (s) { return '已上线（用时 ' + s + ' 秒）' },
     liveTimeout: '等了 4 分钟还没上线，构建可能失败了，请到 GitHub 仓库的 Actions 页面看一眼',
     liveOpen: '打开线上页面',
-    myBlog: '我的博客',
     vaultSettings: '设置',
+
     searchPh: '搜索笔记标题 / 路径…',
     expandAll: '一键展开',
     collapseAll: '一键收起',
     pubAll: '全部公开',
     privAll: '全部私密',
+    // 文件夹标题上的批量按钮：位置窄，英文用短词，别把文件夹名挤掉
+    pubAllMini: '公开',
+    privAllMini: '私密',
     noConn: '还没有连接，点右边新建一个',
-    notesHint: function (n, p) { return n + ' 篇笔记 · ' + p + ' 篇已公开' },
-    pickVault: '请先为这个博客选择本地库文件夹',
     current: '当前',
     noVault: '未设置本地库',
     vaultMeta: function (n, p) { return n + ' 篇 · ' + p + ' 篇公开' },
@@ -327,7 +328,6 @@ const DICT = {
     removeTip: '只从清单移除，不影响 GitHub 仓库和本地库',
     removeConfirm: function (name) { return '移除「' + name + '」这条连接？\\n\\n· 不会删除 GitHub 仓库\\n· 不会改动本地 Obsidian 库\\n· 下次可以重新添加' },
     removeFail: '移除失败：',
-    newBlog: '＋ 新建博客',
     switchFail: '切换失败：',
     uncategorized: '未分组',
     countNotes: function (n) { return n + ' 篇' },
@@ -494,16 +494,15 @@ const DICT = {
     liveOk: function (s) { return 'Live (took ' + s + 's)' },
     liveTimeout: 'Still not live after 4 minutes — the build may have failed. Check the Actions tab of the GitHub repo.',
     liveOpen: 'Open live site',
-    myBlog: 'My blog',
     vaultSettings: 'Settings',
     searchPh: 'Search note title / path…',
     expandAll: 'Expand all',
     collapseAll: 'Collapse all',
     pubAll: 'Publish all',
     privAll: 'Make all private',
+    pubAllMini: 'Public',
+    privAllMini: 'Private',
     noConn: 'No connections yet — create one on the right',
-    notesHint: function (n, p) { return n + (n === 1 ? ' note · ' : ' notes · ') + p + ' public' },
-    pickVault: 'Pick a local vault folder for this blog',
     current: 'Current',
     noVault: 'No local vault',
     vaultMeta: function (n, p) { return n + (n === 1 ? ' note · ' : ' notes · ') + p + ' public' },
@@ -513,7 +512,6 @@ const DICT = {
     removeTip: 'Removes from this list only — your GitHub repo and local vault are untouched',
     removeConfirm: function (name) { return 'Remove the connection "' + name + '"?\\n\\n· The GitHub repo is NOT deleted\\n· Your local Obsidian vault is NOT modified\\n· You can add it again later' },
     removeFail: 'Remove failed: ',
-    newBlog: '＋ New blog',
     switchFail: 'Switch failed: ',
     uncategorized: 'Ungrouped',
     countNotes: function (n) { return n + (n === 1 ? ' note' : ' notes') },
@@ -997,6 +995,16 @@ function renderChanges() {
   const total = CH.added.length + CH.modified.length + CH.deleted.length;
   if (hint) hint.textContent = total ? tf('chgCount', total) : '';
   box.innerHTML = '';
+  // 没有改动时不要把三栏空壳摆在那儿占掉半屏，收成一行
+  const card = document.getElementById('chgCard');
+  if (card) card.classList.toggle('is-empty', total === 0);
+  if (total === 0) {
+    const ok = document.createElement('div');
+    ok.className = 'chgnone';
+    ok.innerHTML = '<span class="dot"></span>' + esc(t('chgNone'));
+    box.appendChild(ok);
+    return;
+  }
   const cols = [
     { key: 'add', label: t('chgAdded'), list: CH.added, tip: t('chgTipAdded') },
     { key: 'mod', label: t('chgModified'), list: CH.modified, tip: t('chgTipModified') },
@@ -1259,35 +1267,52 @@ async function setAutoSync(type, value) {
   renderChanges(); renderFolders(); promptPending();
 }
 
-// ---- 单库信息卡 ----
-// 插件形态下 Obsidian 里只有当前这一个库，多库卡片列表是多余的：
-// 这里只画「当前库」一张卡，各项设置走右上角的「设置」按钮。
-// （命令行版如果配置过多个连接，顶上给一个极窄的下拉做切换，不再铺一排卡片。）
+// ---- 单库信息条 ----
+// 只显示当前这一个库：库名 · 仓库 · 篇数 · 打开网页 · 设置。
+// 不铺卡片、不占一整张卡的高度 —— 这些信息一眼就能看完，占一大块地方纯属浪费首屏。
+// （命令行版如果配置过多个连接，这里给一个极窄的下拉做切换。）
 function renderVaults() {
-  const wrap = document.getElementById('vaults');
-  const head = document.getElementById('vaultHead');
-  if (!wrap) return;
-  wrap.innerHTML = '';
-  if (head) head.innerHTML = '';
-  const hint = document.getElementById('vaultHint');
+  const bar = document.getElementById('vbar');
+  if (!bar) return;
+  const nameEl = document.getElementById('vbName');
+  const repoEl = document.getElementById('vbRepo');
+  const metaEl = document.getElementById('vbMeta');
+  const linkEl = document.getElementById('vbLink');
   const cur = S.connections.find((c) => c.id === S.active) || null;
+  const oldSel = bar.querySelector('select.vswitch');
+  if (oldSel) oldSel.remove();
 
   if (!cur) {
-    if (hint) hint.textContent = t('noConn');
-    const add = document.createElement('button');
-    add.className = 'vault new';
-    add.innerHTML = '<span style="font-size: 18px">＋</span> ' + t('newBlog').replace('＋ ', '');
-    add.onclick = () => openSetup(null);
-    wrap.appendChild(add);
+    if (nameEl) nameEl.textContent = t('noConn');
+    if (repoEl) repoEl.textContent = '';
+    if (metaEl) metaEl.textContent = '';
+    if (linkEl) linkEl.classList.add('hidden');
     return;
   }
 
-  if (hint) {
-    hint.textContent = cur.vaultOk ? tf('notesHint', cur.noteCount, cur.publicCount) : t('pickVault');
+  if (nameEl) nameEl.textContent = cur.name;
+  if (repoEl) {
+    repoEl.textContent = shortRepo(cur.repo) + ' · ' + cur.branch;
+    repoEl.title = cur.repo;
+  }
+  if (metaEl) {
+    metaEl.innerHTML = cur.vaultOk
+      ? tf('vaultMetaHtml', cur.noteCount, cur.publicCount)
+      : '<span class="vault-bad">' + t('noVault') + '</span>';
+    metaEl.title = t('vaultTip') + (cur.vaultPath || t('vaultNone'));
+  }
+  if (linkEl) {
+    if (cur.siteUrl) {
+      linkEl.href = cur.siteUrl;
+      linkEl.title = cur.siteUrl;
+      linkEl.classList.remove('hidden');
+    } else {
+      linkEl.classList.add('hidden');
+    }
   }
 
-  // 多个连接时（只有命令行版会遇到）给一个紧凑的下拉，不再铺卡片
-  if (head && S.connections.length > 1) {
+  // 多个连接时（只有命令行版会遇到）给一个紧凑的下拉
+  if (S.connections.length > 1) {
     const sel = document.createElement('select');
     sel.className = 'vswitch';
     for (const c of S.connections) {
@@ -1301,41 +1326,17 @@ function renderVaults() {
       try { await api('/api/connection/switch', { id: sel.value }); clearResult(); await loadState(); }
       catch (e) { setResult('err', t('switchFail') + e.message); sel.value = S.active; }
     };
-    head.appendChild(sel);
+    if (nameEl) nameEl.insertAdjacentElement('afterend', sel);
   }
-
-  const b = document.createElement('div');
-  b.className = 'vault on';
-  const meta = !cur.vaultOk
-    ? '<span class="vault-bad">' + t('noVault') + '</span>'
-    : tf('vaultMetaHtml', cur.noteCount, cur.publicCount);
-  b.innerHTML =
-    '<div class="vname"></div>' +
-    '<div class="vrepo"></div>' +
-    '<div class="vmeta">' + meta + '</div>';
-  b.querySelector('.vname').textContent = cur.name;
-  b.querySelector('.vrepo').textContent = shortRepo(cur.repo) + ' · ' + cur.branch;
-  b.title = cur.repo + '\\n' + t('vaultTip') + (cur.vaultPath || t('vaultNone'));
-
-  const url = cur.siteUrl;
-  if (url) {
-    const a = document.createElement('a');
-    a.className = 'vlink';
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.textContent = t('openSite');
-    a.title = url;
-    a.onclick = (ev) => { ev.stopPropagation(); };
-    b.appendChild(a);
-  }
-  b.onclick = () => openSetup(cur);
-  b.style.cursor = 'pointer';
-  wrap.appendChild(b);
 }
 
 // ---- 新建/修改连接：一个库 + 一个仓库，一步完成 ----
 let setupConn = null, setupPicked = '';
+// 顶部「设置」按钮：没有连接时是「新建」，有连接时编辑当前这个
+function openActiveSetup() {
+  const cur = S.connections.find((c) => c.id === S.active) || null;
+  openSetup(cur, false);
+}
 // 这两个句柄供切语言时原样重开弹窗用（弹窗内容是函数内闭包，外部拿不到）
 let setupShowPick = null, authHelpReopen = null;
 function openSetup(conn, keepPicked) {
@@ -1667,8 +1668,8 @@ function renderFolders() {
     const cnt = document.createElement('span'); cnt.className = 'cnt'; cnt.textContent = tf('countNotes', realCount);
     head.appendChild(cnt);
     const mk = (label, cls, pub) => { const b = document.createElement('button'); b.className = 'mini ' + cls; b.textContent = label; b.onclick = (e) => { e.stopPropagation(); toggleBatch(f, pub); }; return b; };
-    head.appendChild(mk(t('pubAll'), 'green', true));
-    head.appendChild(mk(t('privAll'), '', false));
+    head.appendChild(mk(t('pubAllMini'), 'green', true));
+    head.appendChild(mk(t('privAllMini'), '', false));
     head.onclick = () => {
       const nowCollapsed = !S.collapsed.has(f);
       if (nowCollapsed) S.collapsed.add(f); else S.collapsed.delete(f);
@@ -1761,14 +1762,13 @@ async function refreshChanges() {
     /* 刷新失败不影响主流程，下次 loadState 会纠正 */
   }
 }
-// 切公开状态后，只更新卡片上的计数，不整页重渲染（避免滚动位置丢失）
+// 切公开状态后，只更新信息条上的计数，不整页重渲染（避免滚动位置丢失）
 function updateVaultCounts() {
   const cur = S.connections.find((c) => c.id === S.active);
   if (!cur) return;
   cur.publicCount = S.notes.filter((n) => n.isPublic).length;
-  document.getElementById('vaultHint').textContent = tf('notesHint', cur.noteCount, cur.publicCount);
-  const card = document.querySelector('.vault.on .vmeta');
-  if (card) card.innerHTML = tf('vaultMetaHtml', cur.noteCount, cur.publicCount);
+  const metaEl = document.getElementById('vbMeta');
+  if (metaEl) metaEl.innerHTML = tf('vaultMetaHtml', cur.noteCount, cur.publicCount);
 }
 async function toggleBatch(folder, pub) {
   for (const n of S.notes) {
