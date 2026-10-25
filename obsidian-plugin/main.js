@@ -3383,10 +3383,6 @@ var ExplorerBadges = class {
     this.queue = run.catch(() => void 0);
     return run;
   }
-  /** 正在被拖动的批量滑块。拖动期间 8 秒轮询的 decorate() 不许把它的位置改回去。 */
-  dragSw = null;
-  /** 每个滑块自己的「把钮放到某个位置」函数，供 decorate() 刷新状态用 */
-  sliderPlace = /* @__PURE__ */ new WeakMap();
   constructor(app, getPort) {
     this.app = app;
     this.getPort = getPort;
@@ -3612,25 +3608,17 @@ var ExplorerBadges = class {
         const cnt2 = document.createElement("span");
         cnt2.className = "blog-pub-fcount";
         box.appendChild(cnt2);
-        const sw2 = this.buildSlider(folder, () => this.pathsUnder(folder));
-        box.appendChild(sw2);
+        box.appendChild(this.buildBatchButtons(folder, () => this.pathsUnder(folder)));
         el.appendChild(box);
       }
       const pubCount = inFolder.filter((p) => this.notes.get(p) === true).length;
       const allPub = pubCount === inFolder.length;
       const nonePub = pubCount === 0;
-      const sw = box.querySelector(".blog-pub-slider");
-      if (sw) {
-        sw.classList.toggle("on", allPub);
-        sw.classList.toggle("off", nonePub);
-        sw.classList.toggle("part", !allPub && !nonePub);
+      const batch = box.querySelector(".blog-pub-batch");
+      if (batch) {
+        this.paintBatchButtons(batch, allPub, nonePub);
         const label = allPub ? `${folder}\uFF1A${inFolder.length} \u7BC7\u5168\u90E8\u516C\u5F00` : nonePub ? `${folder}\uFF1A${inFolder.length} \u7BC7\u5168\u90E8\u79C1\u5BC6` : `${folder}\uFF1A${inFolder.length} \u7BC7\u91CC ${pubCount} \u7BC7\u516C\u5F00`;
-        sw.setAttribute("aria-label", label + "\uFF08\u5DE6\u53F3\u62D6\u52A8\uFF1A\u5DE6\u7AEF\u5168\u90E8\u79C1\u5BC6\uFF0C\u53F3\u7AEF\u5168\u90E8\u516C\u5F00\uFF09");
-        sw.setAttribute("aria-valuetext", label);
-        if (sw !== this.dragSw) {
-          const place = this.sliderPlace.get(sw);
-          if (place) place(allPub ? 1 : nonePub ? 0 : 0.5);
-        }
+        batch.setAttribute("aria-label", label);
       }
       const cnt = box.querySelector(".blog-pub-fcount");
       if (cnt) {
@@ -3639,105 +3627,56 @@ var ExplorerBadges = class {
     }
   }
   /**
-   * 造一个可左右拖动的三态滑块：0 = 全部私密，1 = 全部公开，0.5 = 部分公开。
+   * 造一组「公开 / 私密」两个按钮，用来批量改一个文件夹（或全库）的公开状态。
    *
-   * 交互：按下拖动钮随手走，松手落到最近的一端（0.5 只在「松手时两端都不靠」
-   * 或当前就是部分公开且没拖动时出现）；直接点某一端也能跳过去，
-   * 免得每次都要拖 —— 滑块小的时候拖并不好按。
+   * 为什么不用开关：开关只有两个态，一个「部分公开」的文件夹点下去只能被推断成
+   * 「全公开」—— 想一键变全私密就没有入口了。滑块能选方向，但 44px 的长条挂在
+   * 文件树里又太长、很碍眼。两个按钮把方向直接写出来，宽度也只比开关略大。
    */
-  buildSlider(scopeLabel, getPaths, needConfirm = false) {
-    const sw = document.createElement("span");
-    sw.className = "blog-pub-slider";
-    sw.setAttribute("role", "slider");
-    sw.setAttribute("aria-valuemin", "0");
-    sw.setAttribute("aria-valuemax", "1");
-    sw.setAttribute("tabindex", "0");
-    const knob = document.createElement("span");
-    knob.className = "blog-pub-knob";
-    sw.appendChild(knob);
-    let value = 0.5;
-    const place = (v) => {
-      value = Math.max(0, Math.min(1, v));
-      const track = sw.clientWidth || 40;
-      const kw = knob.offsetWidth || 16;
-      knob.style.left = Math.round((track - kw - 2) * value + 1) + "px";
-      sw.setAttribute("aria-valuenow", String(value));
-    };
-    this.sliderPlace.set(sw, place);
-    const commit = () => {
-      const paths = getPaths();
-      if (paths.length === 0) return;
-      const target = value >= 0.75 ? true : value <= 0.25 ? false : null;
-      if (target === null) {
-        place(0.5);
-        return;
-      }
-      const run = () => void this.toggleMany(paths, target, scopeLabel);
-      if (!needConfirm) {
-        run();
-        return;
-      }
-      new ConfirmModal(this.app, {
-        title: target ? `\u628A${scopeLabel}\u7B14\u8BB0\u8BBE\u4E3A\u516C\u5F00\uFF1F` : `\u628A${scopeLabel}\u7B14\u8BB0\u8BBE\u4E3A\u79C1\u5BC6\uFF1F`,
-        body: `\u8FD9\u4F1A\u6539\u52A8 ${paths.length} \u7BC7\u7B14\u8BB0\u7684 public \u5B57\u6BB5\u3002` + (target ? "" : "\u8BBE\u4E3A\u79C1\u5BC6\u540E\u5B83\u4EEC\u4F1A\u4ECE\u7EBF\u4E0A\u535A\u5BA2\u4E0B\u7EBF\uFF0C\u9700\u8981\u91CD\u65B0\u516C\u5F00\u5E76\u53D1\u5E03\u624D\u4F1A\u56DE\u6765\u3002"),
-        cta: target ? "\u5168\u90E8\u516C\u5F00" : "\u5168\u90E8\u79C1\u5BC6",
-        onConfirm: run
-      }).open();
-    };
-    let dragging = false;
-    let moved = false;
-    const fromEvent = (clientX) => {
-      const r = sw.getBoundingClientRect();
-      if (r.width <= 0) return 0.5;
-      return Math.max(0, Math.min(1, (clientX - r.left) / r.width));
-    };
-    sw.addEventListener("pointerdown", (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      dragging = true;
-      moved = false;
-      this.dragSw = sw;
-      window.addEventListener("pointermove", onMove, true);
-      window.addEventListener("pointerup", onUp, true);
-      window.addEventListener("pointercancel", onUp, true);
-      place(fromEvent(ev.clientX));
-    });
-    const onMove = (ev) => {
-      if (!dragging) return;
-      ev.preventDefault();
-      ev.stopPropagation();
-      moved = true;
-      place(fromEvent(ev.clientX));
-    };
-    const onUp = (ev) => {
-      if (!dragging) return;
-      dragging = false;
-      this.dragSw = null;
-      window.removeEventListener("pointermove", onMove, true);
-      window.removeEventListener("pointerup", onUp, true);
-      window.removeEventListener("pointercancel", onUp, true);
-      if (!moved) {
-        const cur = sw.classList.contains("on") ? 1 : sw.classList.contains("off") ? 0 : 0.5;
-        const hit = fromEvent(ev.clientX);
-        value = hit >= 0.5 ? 1 : 0;
-        if (Math.abs(hit - cur) < 0.25) value = cur >= 0.75 ? 0 : 1;
-        place(value);
-      }
-      commit();
-    };
-    sw.addEventListener("keydown", (ev) => {
-      let next = null;
-      if (ev.key === "ArrowLeft") next = 0;
-      else if (ev.key === "ArrowRight") next = 1;
-      else if (ev.key === "Home") next = 0;
-      else if (ev.key === "End") next = 1;
-      if (next === null) return;
-      ev.preventDefault();
-      ev.stopPropagation();
-      place(next);
-      commit();
-    });
-    return sw;
+  buildBatchButtons(scopeLabel, getPaths, needConfirm = false) {
+    const box = document.createElement("span");
+    box.className = "blog-pub-batch";
+    for (const pub of [true, false]) {
+      const btn = document.createElement("span");
+      btn.className = "blog-pub-bbtn";
+      btn.setAttribute("role", "button");
+      btn.setAttribute("tabindex", "0");
+      btn.dataset.pub = pub ? "1" : "0";
+      btn.textContent = pub ? "\u516C\u5F00" : "\u79C1\u5BC6";
+      const run = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const paths = getPaths();
+        if (paths.length === 0) return;
+        const go = () => void this.toggleMany(paths, pub, scopeLabel);
+        if (!needConfirm) {
+          go();
+          return;
+        }
+        new ConfirmModal(this.app, {
+          title: pub ? `\u628A${scopeLabel}\u7B14\u8BB0\u8BBE\u4E3A\u516C\u5F00\uFF1F` : `\u628A${scopeLabel}\u7B14\u8BB0\u8BBE\u4E3A\u79C1\u5BC6\uFF1F`,
+          body: `\u8FD9\u4F1A\u6539\u52A8 ${paths.length} \u7BC7\u7B14\u8BB0\u7684 public \u5B57\u6BB5\u3002` + (pub ? "" : "\u8BBE\u4E3A\u79C1\u5BC6\u540E\u5B83\u4EEC\u4F1A\u4ECE\u7EBF\u4E0A\u535A\u5BA2\u4E0B\u7EBF\uFF0C\u9700\u8981\u91CD\u65B0\u516C\u5F00\u5E76\u53D1\u5E03\u624D\u4F1A\u56DE\u6765\u3002"),
+          cta: pub ? "\u5168\u90E8\u516C\u5F00" : "\u5168\u90E8\u79C1\u5BC6",
+          onConfirm: go
+        }).open();
+      };
+      btn.addEventListener("click", run);
+      btn.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" || ev.key === " ") run(ev);
+      });
+      box.appendChild(btn);
+    }
+    return box;
+  }
+  /**
+   * 按当前公开状态给两个按钮上色：已经全公开就点亮「公开」，
+   * 已经全私密就点亮「私密」，部分公开时两个都不点亮。
+   */
+  paintBatchButtons(batch, allPub, nonePub) {
+    for (const btn of Array.from(batch.querySelectorAll(".blog-pub-bbtn"))) {
+      const pub = btn.dataset.pub === "1";
+      btn.classList.toggle("active", pub ? allPub : nonePub);
+    }
   }
   /** 某文件夹下所有已纳入管理的笔记路径 */
   pathsUnder(folder) {
@@ -3748,7 +3687,7 @@ var ExplorerBadges = class {
     }
     return out;
   }
-  /** 顶部工具条：一个三态滑块管全库（左端全部私密，右端全部公开） */
+  /** 顶部工具条：两个按钮管全库（公开 / 私密） */
   addNavSwitch() {
     const leaf = this.app.workspace.getLeavesOfType("file-explorer")[0];
     const bar = leaf?.view.containerEl.querySelector(".nav-buttons-container");
@@ -3756,34 +3695,26 @@ var ExplorerBadges = class {
     const wrap = document.createElement("div");
     wrap.className = "clickable-icon nav-action-button blog-pub-navwrap";
     wrap.setAttribute(MARK_NAV, "all");
-    const sw = this.buildSlider("\u5168\u5E93", () => Array.from(this.notes.keys()), true);
-    wrap.appendChild(sw);
+    wrap.appendChild(this.buildBatchButtons("\u5168\u5E93", () => Array.from(this.notes.keys()), true));
     bar.appendChild(wrap);
   }
-  /** 刷新顶部滑块的状态（全公开 / 全私密 / 部分公开） */
+  /** 刷新顶部按钮的点亮状态（全公开 / 全私密 / 部分公开） */
   updateNavSwitch() {
-    const sw = document.querySelector(`[${MARK_NAV}] .blog-pub-slider`);
-    if (!sw) return;
+    const batch = document.querySelector(`[${MARK_NAV}] .blog-pub-batch`);
+    if (!batch) return;
     const all = Array.from(this.notes.values());
     const pubCount = all.filter(Boolean).length;
     const allPub = all.length > 0 && pubCount === all.length;
     const nonePub = pubCount === 0;
-    sw.classList.toggle("on", allPub);
-    sw.classList.toggle("off", nonePub);
-    sw.classList.toggle("part", !allPub && !nonePub);
+    this.paintBatchButtons(batch, allPub, nonePub);
     const label = allPub ? `\u5168\u5E93 ${all.length} \u7BC7\u5168\u90E8\u516C\u5F00` : nonePub ? `\u5168\u5E93 ${all.length} \u7BC7\u5168\u90E8\u79C1\u5BC6` : `\u5168\u5E93 ${all.length} \u7BC7\u91CC ${pubCount} \u7BC7\u516C\u5F00`;
-    sw.setAttribute("aria-label", label + "\uFF08\u5DE6\u53F3\u62D6\u52A8\uFF1A\u5DE6\u7AEF\u5168\u90E8\u79C1\u5BC6\uFF0C\u53F3\u7AEF\u5168\u90E8\u516C\u5F00\uFF09");
-    sw.setAttribute("aria-valuetext", label);
-    if (sw !== this.dragSw) {
-      const place = this.sliderPlace.get(sw);
-      if (place) place(allPub ? 1 : nonePub ? 0 : 0.5);
-    }
+    batch.setAttribute("aria-label", label);
   }
   /** 停用时把注入的东西都摘掉，别留一堆点了没反应的开关 */
   stripAll() {
     for (const el of Array.from(
       document.querySelectorAll(
-        ".blog-pub-sw, .blog-pub-slider, .blog-pub-folder, [data-blog-pub], [data-blog-pub-folder], [data-blog-pub-nav]"
+        ".blog-pub-sw, .blog-pub-batch, .blog-pub-folder, [data-blog-pub], [data-blog-pub-folder], [data-blog-pub-nav]"
       )
     )) {
       el.remove();
@@ -3857,41 +3788,31 @@ var EXPLORER_CSS = `
 /* \u6587\u4EF6\u884C\uFF1A\u5F00\u5173\u8D34\u5230\u884C\u5C3E\uFF08\u548C\u6587\u4EF6\u5939\u884C\u5BF9\u9F50\uFF0C\u4E0D\u7136\u5B83\u7D27\u8DDF\u5728\u6807\u9898\u540E\u9762\uFF09 */
 .nav-file-title .blog-pub-sw { margin-left: auto; }
 
-/* \u6279\u91CF\u6ED1\u5757\uFF08\u6587\u4EF6\u5939 / \u5168\u5E93\uFF09\uFF1A\u4E09\u6001\uFF0C\u5DE6\u7AEF=\u5168\u90E8\u79C1\u5BC6\uFF0C\u53F3\u7AEF=\u5168\u90E8\u516C\u5F00\u3002
-   \u5355\u7BC7\u7528\u5F00\u5173\u662F\u56E0\u4E3A\u5B83\u53EA\u6709\u4E24\u6001\uFF1B\u6279\u91CF\u5FC5\u987B\u80FD\u9009\u65B9\u5411 \u2014\u2014 \u90E8\u5206\u516C\u5F00\u7684\u6587\u4EF6\u5939
-   \u8981\u4E00\u952E\u53D8\u5168\u79C1\u5BC6\uFF0C\u5F00\u5173\u90A3\u4E2A\u300C\u53EA\u6709\u4E00\u4E2A\u65B9\u5411\u300D\u7684\u63A8\u65AD\u505A\u4E0D\u5230\u3002
-   \u6240\u4EE5\u6279\u91CF\u505A\u6210\u53EF\u4EE5\u5DE6\u53F3\u62D6\u7684\u6ED1\u5757\uFF0C\u800C\u4E14\u6BD4\u5355\u7BC7\u5F00\u5173\u5927\u4E00\u70B9\u597D\u6309\u3002 */
-.blog-pub-slider {
-  position: relative; flex-shrink: 0; margin-left: 6px;
-  width: 44px; height: 15px; border-radius: 999px;
-  background: var(--background-modifier-border);
-  cursor: grab; user-select: none;
-  touch-action: none; /* \u624B\u673A\u4E0A\u62D6\u52A8\u65F6\u4E0D\u8981\u628A\u9875\u9762\u4E00\u8D77\u6EDA\u4E86 */
-  transition: background-color .15s ease;
+/* \u6279\u91CF\u6309\u94AE\uFF08\u6587\u4EF6\u5939 / \u5168\u5E93\uFF09\uFF1A\u4E24\u4E2A\u660E\u786E\u7684\u300C\u516C\u5F00\u300D\u300C\u79C1\u5BC6\u300D\u3002
+   \u505A\u6210\u4E00\u4E2A\u8FDE\u4F53\u7684\u5206\u6BB5\u63A7\u4EF6\uFF08\u5171\u7528\u5916\u6846\u3001\u4E2D\u95F4\u4E00\u9053\u5206\u9694\u7EBF\uFF09\uFF0C\u6BD4\u4E24\u4E2A\u72EC\u7ACB\u5C0F\u80F6\u56CA
+   \u7D27\u51D1\u5F97\u591A\uFF0C\u89C6\u89C9\u4E0A\u4E5F\u53EA\u5360\u300C\u4E00\u4E2A\u63A7\u4EF6\u300D\u7684\u4F4D\u7F6E\u3002 */
+.blog-pub-batch {
+  margin-left: 6px; flex-shrink: 0;
+  display: inline-flex; align-items: stretch;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px; overflow: hidden;
 }
-.blog-pub-slider.on { background: #2570cc; }
-.blog-pub-slider.off { background: var(--background-modifier-border); }
-/* \u90E8\u5206\u516C\u5F00\uFF1A\u5E95\u8272\u53EA\u586B\u4E00\u534A\uFF0C\u4E00\u773C\u770B\u51FA\u300C\u4E0D\u662F\u6574\u9F50\u7684\u300D */
-.blog-pub-slider.part {
-  background: linear-gradient(
-    to right,
-    #2570cc 0 50%,
-    var(--background-modifier-border) 50% 100%
-  );
+.blog-pub-bbtn {
+  font-size: 10px; line-height: 12px; padding: 1px 5px;
+  cursor: pointer; user-select: none;
+  color: var(--text-faint); background: transparent;
+  transition: background-color .12s ease, color .12s ease;
 }
-.blog-pub-slider .blog-pub-knob {
-  position: absolute; top: 1.5px; left: 1px;
-  width: 12px; height: 12px; border-radius: 50%;
-  background: var(--text-on-accent, #fff);
-  box-shadow: 0 1px 2px rgba(0,0,0,.3);
-  pointer-events: none;
+.blog-pub-bbtn + .blog-pub-bbtn { border-left: 1px solid var(--background-modifier-border); }
+.blog-pub-bbtn:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
+.blog-pub-bbtn.active {
+  background: #2570cc; color: var(--text-on-accent, #fff);
 }
-.blog-pub-slider:hover { box-shadow: 0 0 0 2px var(--background-modifier-hover); }
-.blog-pub-slider:active { cursor: grabbing; }
-/* \u62D6\u52A8\u4E2D\u7ED9\u4E2A\u63CF\u8FB9\uFF0C\u8BA9\u7528\u6237\u77E5\u9053\u6293\u4F4F\u4E86 */
-.blog-pub-slider:focus-visible { box-shadow: 0 0 0 2px #2570cc; }
+.blog-pub-bbtn.active:hover { background: #2570cc; color: var(--text-on-accent, #fff); }
+body.theme-dark .blog-pub-bbtn.active,
+body.theme-dark .blog-pub-bbtn.active:hover { background: #5b9bf8; }
 
-/* \u6587\u4EF6\u5939\u884C\u5C3E\uFF1A\u8BA1\u6570\u5E38\u9A7B\uFF08\u4E0D\u60AC\u505C\u4E5F\u80FD\u770B\u5230\u516C\u5F00\u4E86\u51E0\u7BC7\uFF09\uFF0C\u6ED1\u5757\u8DDF\u540E\u9762 */
+/* \u6587\u4EF6\u5939\u884C\u5C3E\uFF1A\u8BA1\u6570\u5E38\u9A7B\uFF08\u4E0D\u60AC\u505C\u4E5F\u80FD\u770B\u5230\u516C\u5F00\u4E86\u51E0\u7BC7\uFF09\uFF0C\u6309\u94AE\u7EC4\u8DDF\u540E\u9762 */
 .blog-pub-folder {
   margin-left: auto; flex-shrink: 0;
   display: flex; align-items: center; gap: 4px;
@@ -3900,17 +3821,12 @@ var EXPLORER_CSS = `
   font-size: 10px; line-height: 15px; color: var(--text-faint);
   font-variant-numeric: tabular-nums;
 }
-/* \u9876\u90E8\u5DE5\u5177\u6761\u91CC\u7684\u6ED1\u5757\uFF1A\u8DDF\u7740 nav-action-button \u7684\u5C3A\u5BF8\u8D70 */
+/* \u9876\u90E8\u5DE5\u5177\u6761\u91CC\u7684\u6309\u94AE\u7EC4\uFF1A\u8DDF\u7740 nav-action-button \u7684\u5C3A\u5BF8\u8D70 */
 .blog-pub-navwrap { display: inline-flex; align-items: center; padding: 0 4px; }
 
 /* \u6DF1\u8272\u4E3B\u9898\u4E0B\u7528\u4EAE\u4E00\u6863\u7684\u84DD\uFF0C\u5426\u5219 #2570cc \u538B\u5728\u6DF1\u5E95\u4E0A\u53D1\u95F7\u3002
    \uFF08.theme-dark \u662F Obsidian \u6302\u5728 body \u4E0A\u7684\uFF0C\u4E0D\u9700\u8981\u63D2\u4EF6\u81EA\u5DF1\u5224\u65AD\u3002\uFF09 */
 body.theme-dark .blog-pub-sw.on { background: #5b9bf8; }
-body.theme-dark .blog-pub-slider.on { background: #5b9bf8; }
-body.theme-dark .blog-pub-slider.part {
-  background: linear-gradient(to right, #5b9bf8 0 50%, var(--background-modifier-border) 50% 100%);
-}
-body.theme-dark .blog-pub-slider:focus-visible { box-shadow: 0 0 0 2px #5b9bf8; }
 `;
 function getUtilityProcess() {
   try {

@@ -67,11 +67,6 @@ export class ExplorerBadges {
     return run
   }
 
-  /** 正在被拖动的批量滑块。拖动期间 8 秒轮询的 decorate() 不许把它的位置改回去。 */
-  private dragSw: HTMLElement | null = null
-  /** 每个滑块自己的「把钮放到某个位置」函数，供 decorate() 刷新状态用 */
-  private sliderPlace = new WeakMap<HTMLElement, (v: number) => void>()
-
   constructor(app: App, getPort: () => Promise<number>) {
     this.app = app
     this.getPort = getPort
@@ -340,35 +335,24 @@ export class ExplorerBadges {
         const cnt = document.createElement('span')
         cnt.className = 'blog-pub-fcount'
         box.appendChild(cnt)
-        // 三态滑块：左端=全部私密，右端=全部公开，中间=部分公开。
-        // 用滑块而不是开关，是因为开关只有一个方向 —— 半开状态点下去只能推断成
-        // 「全公开」，而部分公开的文件夹要能一键变全私密，必须让用户选方向。
-        const sw = this.buildSlider(folder, () => this.pathsUnder(folder))
-        box.appendChild(sw)
+        // 批量用两个明确的按钮（公开 / 私密），不用开关也不用滑块：
+        // 开关只有一个方向，半开状态点下去只能推断成「全公开」，而部分公开的
+        // 文件夹要能一键变全私密；滑块又太长太占地方。两个按钮把方向写清楚。
+        box.appendChild(this.buildBatchButtons(folder, () => this.pathsUnder(folder)))
         el.appendChild(box)
       }
       const pubCount = inFolder.filter((p) => this.notes.get(p) === true).length
       const allPub = pubCount === inFolder.length
       const nonePub = pubCount === 0
-      const sw = box.querySelector<HTMLElement>('.blog-pub-slider')
-      if (sw) {
-        sw.classList.toggle('on', allPub)
-        sw.classList.toggle('off', nonePub)
-        sw.classList.toggle('part', !allPub && !nonePub)
+      const batch = box.querySelector<HTMLElement>('.blog-pub-batch')
+      if (batch) {
+        this.paintBatchButtons(batch, allPub, nonePub)
         const label = allPub
           ? `${folder}：${inFolder.length} 篇全部公开`
           : nonePub
             ? `${folder}：${inFolder.length} 篇全部私密`
             : `${folder}：${inFolder.length} 篇里 ${pubCount} 篇公开`
-        // 只留滑块自己的 aria-label（Obsidian 据此弹一层气泡）。
-        // 原来这里同时设了 title，会再叠一层原生 tooltip。
-        sw.setAttribute('aria-label', label + '（左右拖动：左端全部私密，右端全部公开）')
-        sw.setAttribute('aria-valuetext', label)
-        // 拖动中不要被轮询刷回去
-        if (sw !== this.dragSw) {
-          const place = this.sliderPlace.get(sw)
-          if (place) place(allPub ? 1 : nonePub ? 0 : 0.5)
-        }
+        batch.setAttribute('aria-label', label)
       }
       const cnt = box.querySelector<HTMLElement>('.blog-pub-fcount')
       if (cnt) {
@@ -379,119 +363,64 @@ export class ExplorerBadges {
   }
 
   /**
-   * 造一个可左右拖动的三态滑块：0 = 全部私密，1 = 全部公开，0.5 = 部分公开。
+   * 造一组「公开 / 私密」两个按钮，用来批量改一个文件夹（或全库）的公开状态。
    *
-   * 交互：按下拖动钮随手走，松手落到最近的一端（0.5 只在「松手时两端都不靠」
-   * 或当前就是部分公开且没拖动时出现）；直接点某一端也能跳过去，
-   * 免得每次都要拖 —— 滑块小的时候拖并不好按。
+   * 为什么不用开关：开关只有两个态，一个「部分公开」的文件夹点下去只能被推断成
+   * 「全公开」—— 想一键变全私密就没有入口了。滑块能选方向，但 44px 的长条挂在
+   * 文件树里又太长、很碍眼。两个按钮把方向直接写出来，宽度也只比开关略大。
    */
-  private buildSlider(scopeLabel: string, getPaths: () => string[], needConfirm = false): HTMLElement {
-    const sw = document.createElement('span')
-    sw.className = 'blog-pub-slider'
-    sw.setAttribute('role', 'slider')
-    sw.setAttribute('aria-valuemin', '0')
-    sw.setAttribute('aria-valuemax', '1')
-    sw.setAttribute('tabindex', '0')
-    const knob = document.createElement('span')
-    knob.className = 'blog-pub-knob'
-    sw.appendChild(knob)
-
-    let value = 0.5
-    const place = (v: number): void => {
-      value = Math.max(0, Math.min(1, v))
-      const track = sw.clientWidth || 40
-      const kw = knob.offsetWidth || 16
-      knob.style.left = Math.round((track - kw - 2) * value + 1) + 'px'
-      sw.setAttribute('aria-valuenow', String(value))
-    }
-    this.sliderPlace.set(sw, place)
-
-    const commit = (): void => {
-      const paths = getPaths()
-      if (paths.length === 0) return
-      const target = value >= 0.75 ? true : value <= 0.25 ? false : null
-      if (target === null) {
-        place(0.5) // 中间没有对应动作，弹回去
-        return
+  private buildBatchButtons(
+    scopeLabel: string,
+    getPaths: () => string[],
+    needConfirm = false,
+  ): HTMLElement {
+    const box = document.createElement('span')
+    box.className = 'blog-pub-batch'
+    for (const pub of [true, false]) {
+      const btn = document.createElement('span')
+      btn.className = 'blog-pub-bbtn'
+      btn.setAttribute('role', 'button')
+      btn.setAttribute('tabindex', '0')
+      btn.dataset.pub = pub ? '1' : '0'
+      btn.textContent = pub ? '公开' : '私密'
+      const run = (ev: Event): void => {
+        ev.preventDefault()
+        ev.stopPropagation()
+        const paths = getPaths()
+        if (paths.length === 0) return
+        const go = (): void => void this.toggleMany(paths, pub, scopeLabel)
+        if (!needConfirm) {
+          go()
+          return
+        }
+        // 一次改全库是重动作（上百篇），给一次确认，别让误点把整站下线
+        new ConfirmModal(this.app, {
+          title: pub ? `把${scopeLabel}笔记设为公开？` : `把${scopeLabel}笔记设为私密？`,
+          body:
+            `这会改动 ${paths.length} 篇笔记的 public 字段。` +
+            (pub ? '' : '设为私密后它们会从线上博客下线，需要重新公开并发布才会回来。'),
+          cta: pub ? '全部公开' : '全部私密',
+          onConfirm: go,
+        }).open()
       }
-      const run = (): void => void this.toggleMany(paths, target, scopeLabel)
-      if (!needConfirm) {
-        run()
-        return
-      }
-      // 一次改全库是重动作（116 篇），给一次确认，别让误点把整站下线
-      new ConfirmModal(this.app, {
-        title: target ? `把${scopeLabel}笔记设为公开？` : `把${scopeLabel}笔记设为私密？`,
-        body:
-          `这会改动 ${paths.length} 篇笔记的 public 字段。` +
-          (target ? '' : '设为私密后它们会从线上博客下线，需要重新公开并发布才会回来。'),
-        cta: target ? '全部公开' : '全部私密',
-        onConfirm: run,
-      }).open()
+      btn.addEventListener('click', run)
+      btn.addEventListener('keydown', (ev: KeyboardEvent) => {
+        if (ev.key === 'Enter' || ev.key === ' ') run(ev)
+      })
+      box.appendChild(btn)
     }
+    return box
+  }
 
-    let dragging = false
-    let moved = false
-    const fromEvent = (clientX: number): number => {
-      const r = sw.getBoundingClientRect()
-      if (r.width <= 0) return 0.5
-      return Math.max(0, Math.min(1, (clientX - r.left) / r.width))
+  /**
+   * 按当前公开状态给两个按钮上色：已经全公开就点亮「公开」，
+   * 已经全私密就点亮「私密」，部分公开时两个都不点亮。
+   */
+  private paintBatchButtons(batch: HTMLElement, allPub: boolean, nonePub: boolean): void {
+    for (const btn of Array.from(batch.querySelectorAll<HTMLElement>('.blog-pub-bbtn'))) {
+      const pub = btn.dataset.pub === '1'
+      btn.classList.toggle('active', pub ? allPub : nonePub)
     }
-
-    sw.addEventListener('pointerdown', (ev: PointerEvent) => {
-      ev.preventDefault()
-      ev.stopPropagation()
-      dragging = true
-      moved = false
-      this.dragSw = sw
-      // 不用 setPointerCapture：它对合成事件/某些指针会抛 NotFoundError，
-      // 抛了就会中断这个 handler（place() 永远跑不到，表现为「拖了没反应」）。
-      // 改成在 window 上挂 move/up —— 手指移出滑块也不丢，更稳。
-      window.addEventListener('pointermove', onMove, true)
-      window.addEventListener('pointerup', onUp, true)
-      window.addEventListener('pointercancel', onUp, true)
-      place(fromEvent(ev.clientX))
-    })
-    const onMove = (ev: PointerEvent): void => {
-      if (!dragging) return
-      ev.preventDefault()
-      ev.stopPropagation()
-      moved = true
-      place(fromEvent(ev.clientX))
-    }
-    const onUp = (ev: PointerEvent): void => {
-      if (!dragging) return
-      dragging = false
-      this.dragSw = null
-      window.removeEventListener('pointermove', onMove, true)
-      window.removeEventListener('pointerup', onUp, true)
-      window.removeEventListener('pointercancel', onUp, true)
-      // 没拖动就是单击：点哪端跳哪端；点在当前状态那一侧则反向切
-      if (!moved) {
-        const cur = sw.classList.contains('on') ? 1 : sw.classList.contains('off') ? 0 : 0.5
-        const hit = fromEvent(ev.clientX)
-        value = hit >= 0.5 ? 1 : 0
-        if (Math.abs(hit - cur) < 0.25) value = cur >= 0.75 ? 0 : 1
-        place(value)
-      }
-      commit()
-    }
-
-    // 键盘：左右箭头 / Home / End
-    sw.addEventListener('keydown', (ev: KeyboardEvent) => {
-      let next: number | null = null
-      if (ev.key === 'ArrowLeft') next = 0
-      else if (ev.key === 'ArrowRight') next = 1
-      else if (ev.key === 'Home') next = 0
-      else if (ev.key === 'End') next = 1
-      if (next === null) return
-      ev.preventDefault()
-      ev.stopPropagation()
-      place(next)
-      commit()
-    })
-
-    return sw
   }
 
   /** 某文件夹下所有已纳入管理的笔记路径 */
@@ -504,7 +433,7 @@ export class ExplorerBadges {
     return out
   }
 
-  /** 顶部工具条：一个三态滑块管全库（左端全部私密，右端全部公开） */
+  /** 顶部工具条：两个按钮管全库（公开 / 私密） */
   private addNavSwitch(): void {
     const leaf = this.app.workspace.getLeavesOfType('file-explorer')[0]
     const bar = leaf?.view.containerEl.querySelector('.nav-buttons-container')
@@ -512,41 +441,33 @@ export class ExplorerBadges {
     const wrap = document.createElement('div')
     wrap.className = 'clickable-icon nav-action-button blog-pub-navwrap'
     wrap.setAttribute(MARK_NAV, 'all')
-    // 全库是重动作（116 篇），拖到某一端仍要确认一次，别让误拖把整站下线。
-    const sw = this.buildSlider('全库', () => Array.from(this.notes.keys()), true)
-    wrap.appendChild(sw)
+    // 全库是重动作（上百篇），点下去仍要确认一次，别让误点把整站下线。
+    wrap.appendChild(this.buildBatchButtons('全库', () => Array.from(this.notes.keys()), true))
     bar.appendChild(wrap)
   }
 
-  /** 刷新顶部滑块的状态（全公开 / 全私密 / 部分公开） */
+  /** 刷新顶部按钮的点亮状态（全公开 / 全私密 / 部分公开） */
   private updateNavSwitch(): void {
-    const sw = document.querySelector<HTMLElement>(`[${MARK_NAV}] .blog-pub-slider`)
-    if (!sw) return
+    const batch = document.querySelector<HTMLElement>(`[${MARK_NAV}] .blog-pub-batch`)
+    if (!batch) return
     const all = Array.from(this.notes.values())
     const pubCount = all.filter(Boolean).length
     const allPub = all.length > 0 && pubCount === all.length
     const nonePub = pubCount === 0
-    sw.classList.toggle('on', allPub)
-    sw.classList.toggle('off', nonePub)
-    sw.classList.toggle('part', !allPub && !nonePub)
+    this.paintBatchButtons(batch, allPub, nonePub)
     const label = allPub
       ? `全库 ${all.length} 篇全部公开`
       : nonePub
         ? `全库 ${all.length} 篇全部私密`
         : `全库 ${all.length} 篇里 ${pubCount} 篇公开`
-    sw.setAttribute('aria-label', label + '（左右拖动：左端全部私密，右端全部公开）')
-    sw.setAttribute('aria-valuetext', label)
-    if (sw !== this.dragSw) {
-      const place = this.sliderPlace.get(sw)
-      if (place) place(allPub ? 1 : nonePub ? 0 : 0.5)
-    }
+    batch.setAttribute('aria-label', label)
   }
 
   /** 停用时把注入的东西都摘掉，别留一堆点了没反应的开关 */
   private stripAll(): void {
     for (const el of Array.from(
       document.querySelectorAll(
-        '.blog-pub-sw, .blog-pub-slider, .blog-pub-folder, [data-blog-pub], [data-blog-pub-folder], [data-blog-pub-nav]',
+        '.blog-pub-sw, .blog-pub-batch, .blog-pub-folder, [data-blog-pub], [data-blog-pub-folder], [data-blog-pub-nav]',
       ),
     )) {
       el.remove()

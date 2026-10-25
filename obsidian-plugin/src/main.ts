@@ -57,41 +57,31 @@ const EXPLORER_CSS = `
 /* 文件行：开关贴到行尾（和文件夹行对齐，不然它紧跟在标题后面） */
 .nav-file-title .blog-pub-sw { margin-left: auto; }
 
-/* 批量滑块（文件夹 / 全库）：三态，左端=全部私密，右端=全部公开。
-   单篇用开关是因为它只有两态；批量必须能选方向 —— 部分公开的文件夹
-   要一键变全私密，开关那个「只有一个方向」的推断做不到。
-   所以批量做成可以左右拖的滑块，而且比单篇开关大一点好按。 */
-.blog-pub-slider {
-  position: relative; flex-shrink: 0; margin-left: 6px;
-  width: 44px; height: 15px; border-radius: 999px;
-  background: var(--background-modifier-border);
-  cursor: grab; user-select: none;
-  touch-action: none; /* 手机上拖动时不要把页面一起滚了 */
-  transition: background-color .15s ease;
+/* 批量按钮（文件夹 / 全库）：两个明确的「公开」「私密」。
+   做成一个连体的分段控件（共用外框、中间一道分隔线），比两个独立小胶囊
+   紧凑得多，视觉上也只占「一个控件」的位置。 */
+.blog-pub-batch {
+  margin-left: 6px; flex-shrink: 0;
+  display: inline-flex; align-items: stretch;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px; overflow: hidden;
 }
-.blog-pub-slider.on { background: #2570cc; }
-.blog-pub-slider.off { background: var(--background-modifier-border); }
-/* 部分公开：底色只填一半，一眼看出「不是整齐的」 */
-.blog-pub-slider.part {
-  background: linear-gradient(
-    to right,
-    #2570cc 0 50%,
-    var(--background-modifier-border) 50% 100%
-  );
+.blog-pub-bbtn {
+  font-size: 10px; line-height: 12px; padding: 1px 5px;
+  cursor: pointer; user-select: none;
+  color: var(--text-faint); background: transparent;
+  transition: background-color .12s ease, color .12s ease;
 }
-.blog-pub-slider .blog-pub-knob {
-  position: absolute; top: 1.5px; left: 1px;
-  width: 12px; height: 12px; border-radius: 50%;
-  background: var(--text-on-accent, #fff);
-  box-shadow: 0 1px 2px rgba(0,0,0,.3);
-  pointer-events: none;
+.blog-pub-bbtn + .blog-pub-bbtn { border-left: 1px solid var(--background-modifier-border); }
+.blog-pub-bbtn:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
+.blog-pub-bbtn.active {
+  background: #2570cc; color: var(--text-on-accent, #fff);
 }
-.blog-pub-slider:hover { box-shadow: 0 0 0 2px var(--background-modifier-hover); }
-.blog-pub-slider:active { cursor: grabbing; }
-/* 拖动中给个描边，让用户知道抓住了 */
-.blog-pub-slider:focus-visible { box-shadow: 0 0 0 2px #2570cc; }
+.blog-pub-bbtn.active:hover { background: #2570cc; color: var(--text-on-accent, #fff); }
+body.theme-dark .blog-pub-bbtn.active,
+body.theme-dark .blog-pub-bbtn.active:hover { background: #5b9bf8; }
 
-/* 文件夹行尾：计数常驻（不悬停也能看到公开了几篇），滑块跟后面 */
+/* 文件夹行尾：计数常驻（不悬停也能看到公开了几篇），按钮组跟后面 */
 .blog-pub-folder {
   margin-left: auto; flex-shrink: 0;
   display: flex; align-items: center; gap: 4px;
@@ -100,17 +90,12 @@ const EXPLORER_CSS = `
   font-size: 10px; line-height: 15px; color: var(--text-faint);
   font-variant-numeric: tabular-nums;
 }
-/* 顶部工具条里的滑块：跟着 nav-action-button 的尺寸走 */
+/* 顶部工具条里的按钮组：跟着 nav-action-button 的尺寸走 */
 .blog-pub-navwrap { display: inline-flex; align-items: center; padding: 0 4px; }
 
 /* 深色主题下用亮一档的蓝，否则 #2570cc 压在深底上发闷。
    （.theme-dark 是 Obsidian 挂在 body 上的，不需要插件自己判断。） */
 body.theme-dark .blog-pub-sw.on { background: #5b9bf8; }
-body.theme-dark .blog-pub-slider.on { background: #5b9bf8; }
-body.theme-dark .blog-pub-slider.part {
-  background: linear-gradient(to right, #5b9bf8 0 50%, var(--background-modifier-border) 50% 100%);
-}
-body.theme-dark .blog-pub-slider:focus-visible { box-shadow: 0 0 0 2px #5b9bf8; }
 `
 
 /** 后台服务子进程的通信句柄（utilityProcess 或 child_process 的统一外观） */
