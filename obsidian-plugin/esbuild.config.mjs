@@ -1,4 +1,5 @@
 import esbuild from 'esbuild'
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -65,8 +66,18 @@ function buildTemplateModule() {
   const count = Object.keys(files).length
   console.log(`  模板文件: ${count} 个，${(total / 1024).toFixed(0)} KB`)
 
+  // 模板指纹：插件升级后，<dataDir>/site-template 里还留着旧版本铺开的文件。
+  // templateReady() 原来只检查文件「存在」，于是旧模板永远不会被覆盖 ——
+  // 表现为「点『更新源码』没反应」：复制过去的内容和线上一致，git 没有 diff，不推送。
+  // 把内容摘要带进去，落盘后写一份 .template-rev，不一致就整体重铺。
+  const rev = crypto.createHash('sha256').update(JSON.stringify(files)).digest('hex').slice(0, 16)
+  console.log(`  模板指纹: ${rev}`)
+
   return {
-    code: `// 由 esbuild.config.mjs 自动生成：站点模板文件表（${count} 个文件）\nexport const TEMPLATE_FILES = ${JSON.stringify(files)}\n`,
+    code:
+      `// 由 esbuild.config.mjs 自动生成：站点模板文件表（${count} 个文件）\n` +
+      `export const TEMPLATE_REV = ${JSON.stringify(rev)}\n` +
+      `export const TEMPLATE_FILES = ${JSON.stringify(files)}\n`,
     count,
     total,
   }
