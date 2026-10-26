@@ -6,7 +6,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 
-const BASE = 'http://127.0.0.1:3457'
+/**
+ * 端口跟随 MGR_PORT，和 manager.mjs 用同一个变量。
+ * 写死 3457 的后果：本机要是已经开着管理器，e2e-run.sh 会先把那个进程杀掉，
+ * 用户手上正用着的窗口就没了。改成可配置后，测试能挑个空端口自己跑。
+ */
+const BASE = 'http://127.0.0.1:' + (Number(process.env.MGR_PORT) || 3457)
 const TEMP = os.tmpdir()
 /**
  * 与 manager.mjs 保持同一套数据目录解析规则：个人数据在用户区，源码目录保持干净。

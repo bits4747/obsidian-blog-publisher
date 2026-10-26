@@ -21,7 +21,7 @@ const META = {
   '01': { id: 'study', zh: '墨绿书斋', en: 'Ink Study', dzh: '左目录 + 右正文的双栏书页，暖纸底全衬线，适合长文阅读', den: 'Two-column book page: contents on the left, text on the right — warm paper, full serif' },
   '03': { id: 'sakura', zh: '樱纸', en: 'Sakura Paper', dzh: '目录横排到正文上方、首页单列大留白，极浅粉白配玫红', den: 'Horizontal contents above the text, single-column index home — pale pink and rose' },
   '04': { id: 'terminal', zh: '终端', en: 'Terminal', dzh: '右侧 tagbar + 满宽正文，全等宽字体与命令行列表', den: 'Right-hand tagbar, full-width text, all-monospace with command-line lists' },
-  '05': { id: 'mono', zh: '极简黑白', en: 'Mono', dzh: '不要目录，正文满宽居中，首页是纯文字索引表', den: 'No contents panel at all — full-width centered text, index-style home' },
+  '05': { id: 'mono', zh: '极简黑白', en: 'Mono', dzh: '正文满宽居中，首页是纯文字索引表，纯白纯黑零圆角', den: 'Full-width centered text with an index-style home — pure black and white, no rounded corners' },
 }
 
 /** 从 CSS 里取几个颜色，画预设卡片的缩略色块 */

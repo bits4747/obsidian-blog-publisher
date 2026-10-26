@@ -23,7 +23,9 @@ else
 fi
 
 # 管理器监听的端口（与 manager.mjs 里的 PORT 一致）
-PORT="${PORT:-3457}"
+# 下面第 0 步会 kill 掉占用这个端口的进程 —— 所以测试默认用 3458 这个测试专用端口，
+# 不去动用户可能正开着的 3457。想换端口就自己传 PORT=xxxx。
+PORT="${PORT:-3458}"
 
 # 0. 清理上一轮残留：先杀掉占用端口的旧进程（否则新实例绑定失败）
 if command -v netstat >/dev/null 2>&1; then
@@ -62,12 +64,12 @@ git -C "$T/mgr-remoteB.git" symbolic-ref HEAD refs/heads/main
 
 # 1. 启动管理器（用独立的临时数据目录，别动用户已有的连接与令牌）
 E2E_DATA="$T/mgr-e2e-data"
-OBSIDIAN_BLOG_DATA="$E2E_DATA" node scripts/manager.mjs > "$T/mgr-run.log" 2>&1 &
+OBSIDIAN_BLOG_DATA="$E2E_DATA" MGR_PORT="$PORT" node scripts/manager.mjs > "$T/mgr-run.log" 2>&1 &
 MGR_PID=$!
 sleep 3
 
 # 2. 跑测试
-OBSIDIAN_BLOG_DATA="$E2E_DATA" node scripts/e2e-test.mjs
+OBSIDIAN_BLOG_DATA="$E2E_DATA" MGR_PORT="$PORT" node scripts/e2e-test.mjs
 EXIT=$?
 
 # 3. 收尾

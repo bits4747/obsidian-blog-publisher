@@ -160,6 +160,36 @@ export const UI = `<!DOCTYPE html>
      它们和成败混在同一视觉层级时，会让人把整次发布误判成成功（真实踩过）。 */
   .result pre .dim { opacity: .6; }
 
+  /* ---- 右上角操作提示：每次「发布 / 更新源码 / 保存外观」都要有一条
+     从「进行中」走到「成功 / 失败」的提示。用户反馈只看顶部小胶囊分不清
+     「还没推送上去」和「正在跑」，所以做成独立浮层，带转圈和耗时。
+     top 值让出顶栏高度：顶栏是 sticky 且要能点（发布 / 外观按钮就在那儿），
+     贴 top:14px 会把按钮盖住 —— 实测截图确认过，所以往下挪到顶栏之下。 ---- */
+  .toasts { position: fixed; top: 76px; right: 14px; z-index: 90; display: flex; flex-direction: column;
+            gap: 8px; width: min(370px, calc(100vw - 28px)); pointer-events: none; }
+  .toast { pointer-events: auto; background: var(--card); border: 1px solid var(--border); border-radius: 11px;
+           padding: 10px 12px; box-shadow: 0 10px 30px var(--shadow); font-size: 14px;
+           animation: tin .18s ease-out; }
+  @keyframes tin { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+  .toast .th { display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: 14.5px; }
+  .toast .th .tt { flex: 1; min-width: 0; }
+  .toast .th .x { cursor: pointer; color: var(--muted-2); font-weight: 400; padding: 0 2px; flex-shrink: 0; }
+  .toast .th .x:hover { color: var(--fg); }
+  .toast .tb { margin-top: 5px; color: var(--muted); font-size: 13.5px; line-height: 1.55; word-break: break-word; }
+  .toast .spin { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--accent);
+                 border-top-color: transparent; animation: tspin .8s linear infinite; flex-shrink: 0; }
+  @keyframes tspin { to { transform: rotate(360deg); } }
+  .toast .ic { width: 15px; height: 15px; border-radius: 50%; flex-shrink: 0; display: inline-flex;
+               align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; }
+  .toast .ic.ok { background: var(--ok); } .toast .ic.bad { background: var(--bad); }
+  .toast.busy { border-left: 3px solid var(--accent); }
+  .toast.ok   { border-left: 3px solid var(--ok); }
+  .toast.bad  { border-left: 3px solid var(--bad); }
+  .toast .tb details { margin-top: 5px; }
+  .toast .tb pre { margin: 5px 0 0; white-space: pre-wrap; font: 11.5px/1.6 Consolas, monospace;
+                   color: var(--muted-2); max-height: 170px; overflow: auto; }
+  .toast .tb a { color: var(--accent); }
+
   /* ---- 单库信息条：一行搞定，不再用卡片 ---- */
   .vbar { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
           padding: 0 2px 12px; font-size: 14px; }
@@ -260,6 +290,10 @@ export const UI = `<!DOCTYPE html>
   <button class="btn-publish" id="pubBtn" onclick="doPublish()" data-i18n="publishBtn">⟳ 发布到 GitHub</button>
 </div></div>
 
+<!-- 右上角操作提示：发布 / 更新源码 / 保存外观都会在这里出现一条
+     从「进行中」到「已上线」或「失败」的提示条，失败时可直接展开看日志。 -->
+<div class="toasts" id="toasts"></div>
+
 <div class="authbar hidden" id="authBar">
   <span data-i18n="authBarText"></span>
   <button class="mini" onclick="openAuthDialog()" data-i18n="authBarBtn">现在授权</button>
@@ -346,6 +380,20 @@ const DICT = {
     liveOk: function (s) { return '已上线（用时 ' + s + ' 秒）' },
     liveTimeout: '等了 4 分钟还没上线，构建可能失败了，请到 GitHub 仓库的 Actions 页面看一眼',
     liveOpen: '打开线上页面',
+    toastClose: '关闭提示',
+    toastDetail: '查看详情',
+    toastPublishTitle: '发布到 GitHub',
+    toastSourceTitle: '更新站点源码',
+    toastThemeTitle: '保存自定义外观',
+    toastStarting: '正在准备…',
+    toastPushed: '已推送，正在等 GitHub 构建上线',
+    toastNothingToPush: '没有新的改动可推送（线上已是最新）',
+    toastDone: '完成',
+    toastFailed: '失败',
+    toastPublishOk: '发布成功',
+    toastSourceOk: '源码已更新',
+    toastThemeOk: '外观已保存并推送',
+    toastThemeSavedOnly: '外观已保存到仓库（尚未推送）',
     vaultSettings: '设置',
     themeBtn: '外观',
     themeTitle: '自定义外观',
@@ -555,6 +603,20 @@ const DICT = {
     liveOk: function (s) { return 'Live (took ' + s + 's)' },
     liveTimeout: 'Still not live after 4 minutes — the build may have failed. Check the Actions tab of the GitHub repo.',
     liveOpen: 'Open live site',
+    toastClose: 'Dismiss',
+    toastDetail: 'Details',
+    toastPublishTitle: 'Publish to GitHub',
+    toastSourceTitle: 'Update site source',
+    toastThemeTitle: 'Save custom appearance',
+    toastStarting: 'Preparing…',
+    toastPushed: 'Pushed — waiting for the GitHub build to go live',
+    toastNothingToPush: 'Nothing new to push (the site is already up to date)',
+    toastDone: 'Done',
+    toastFailed: 'Failed',
+    toastPublishOk: 'Published',
+    toastSourceOk: 'Source updated',
+    toastThemeOk: 'Appearance saved and pushed',
+    toastThemeSavedOnly: 'Appearance saved to the repo (not pushed yet)',
     vaultSettings: 'Settings',
     themeBtn: 'Appearance',
     themeTitle: 'Custom appearance',
@@ -1035,6 +1097,85 @@ function setResult(kind, text, detail) {  const el = document.getElementById('re
     }
     d.appendChild(sm); d.appendChild(pre); el.appendChild(d);
   }
+}
+// ---- 右上角操作提示（toast）----
+// 为什么要单独一套：顶部那条小胶囊只显示最新一句话，用户看不出
+// 「点了没反应 / 正在跑 / 已经推上去等构建 / 彻底失败」这四种状态的区别，
+// 反馈里说的就是「不知道是没推送成功还是正在更新」。
+// 这里每条操作给一张卡片，从转圈开始，最后定格成 ✓ 或 ✗，失败可展开日志。
+// 生命周期：busy 卡片不自动消失（让人随时能看见还在跑），成功 6 秒后收起，失败留着等用户关。
+let toastSeq = 0;
+const TOAST_LIVE = new Map(); // id -> { el, titleEl, bodyEl, spinEl, icEl, timer }
+function toastOpen(title, body) {
+  const box = document.getElementById('toasts');
+  if (!box) return 0;
+  // 顶栏是 sticky、高度会随窗口宽度换行变化，写死 top 会在窄窗口里盖住「发布」按钮。
+  // 每次开新提示时按顶栏真实底边重算一次，永远贴在它下面。
+  try {
+    const bar = document.querySelector('.statusbar');
+    if (bar) box.style.top = Math.round(bar.getBoundingClientRect().bottom + 10) + 'px';
+  } catch (e) { /* 取不到就用 CSS 里的兜底值 */ }
+  const id = ++toastSeq;
+  const el = document.createElement('div');
+  el.className = 'toast busy';
+  const th = document.createElement('div'); th.className = 'th';
+  const spin = document.createElement('span'); spin.className = 'spin';
+  const ic = document.createElement('span'); ic.className = 'ic'; ic.style.display = 'none';
+  const tt = document.createElement('span'); tt.className = 'tt'; tt.textContent = title;
+  const x = document.createElement('span'); x.className = 'x'; x.textContent = '×';
+  x.title = t('toastClose');
+  x.onclick = () => toastDrop(id);
+  th.appendChild(spin); th.appendChild(ic); th.appendChild(tt); th.appendChild(x);
+  const tb = document.createElement('div'); tb.className = 'tb';
+  if (body) tb.textContent = body;
+  el.appendChild(th); el.appendChild(tb);
+  box.appendChild(el);
+  TOAST_LIVE.set(id, { el, tt, tb, spin, ic, timer: 0 });
+  return id;
+}
+/** 把一条提示改成终态：kind = 'ok' | 'bad' | 'busy' */
+function toastSet(id, kind, title, body, detail, linkUrl) {
+  const rec = TOAST_LIVE.get(id);
+  if (!rec) return;
+  const { el, tt, tb, spin, ic } = rec;
+  if (rec.timer) { clearTimeout(rec.timer); rec.timer = 0; }
+  el.className = 'toast ' + (kind || 'busy');
+  if (kind === 'ok' || kind === 'bad') {
+    spin.style.display = 'none';
+    ic.style.display = '';
+    ic.className = 'ic ' + kind;
+    ic.textContent = kind === 'ok' ? '✓' : '!';
+  } else {
+    spin.style.display = '';
+    ic.style.display = 'none';
+  }
+  if (title) tt.textContent = title;
+  tb.innerHTML = '';
+  if (body) {
+    const s = document.createElement('div'); s.textContent = body; tb.appendChild(s);
+  }
+  if (linkUrl) {
+    const a = document.createElement('a');
+    a.href = linkUrl; a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = t('liveOpen');
+    a.style.display = 'inline-block'; a.style.marginTop = '4px';
+    tb.appendChild(a);
+  }
+  if (detail) {
+    const d = document.createElement('details');
+    const sm = document.createElement('summary'); sm.textContent = t('toastDetail');
+    const pre = document.createElement('pre'); pre.textContent = String(detail);
+    d.appendChild(sm); d.appendChild(pre); tb.appendChild(d);
+  }
+  // 成功 6 秒后自动收；失败不自动收（用户可能正要复制报错）
+  if (kind === 'ok') rec.timer = setTimeout(() => toastDrop(id), 6000);
+}
+function toastDrop(id) {
+  const rec = TOAST_LIVE.get(id);
+  if (!rec) return;
+  if (rec.timer) clearTimeout(rec.timer);
+  TOAST_LIVE.delete(id);
+  try { rec.el.remove(); } catch (e) { /* 已经不在 DOM 里 */ }
 }
 // 判断一行发布日志是否属于「关键成败」。非关键的一般是顺带成功的说明
 // （站名变量已写入之类），它们成功与否都不影响内容有没有上线。
@@ -1620,6 +1761,9 @@ function openTheme() {
     btn.disabled = true; other.disabled = true;
     btn.textContent = alsoPublish ? t('themePublishing') : t('themeSaving');
     clearMsg();
+    // 弹窗里的提示会被「保存成功后自动关窗」吞掉，所以同时在右上角留一条：
+    // 关窗之后用户还能看见「外观已保存并推送 / 失败原因」。
+    const tid = alsoPublish ? toastOpen(t('toastThemeTitle'), t('toastStarting')) : 0;
     try {
       const r = alsoPublish
         ? await api('/api/theme/publish', { css })
@@ -1628,19 +1772,37 @@ function openTheme() {
         if (r.failed) {
           // 文件已经写进工作副本，只是没推上去 —— 这一点必须说清，
           // 否则用户会以为连保存都失败了，重开弹窗发现内容还在，反而更困惑。
-          say('bad', t('themePublishFail') + ((r.log && r.log[r.log.length - 1]) || ''));
+          const msg = t('themePublishFail') + ((r.log && r.log[r.log.length - 1]) || '');
+          say('bad', msg);
+          toastSet(tid, 'bad', t('toastFailed'), msg);
         } else if (r.pushed) {
-          say('ok', (r.log && r.log[0]) || t('themeSaved'));
+          const msg = (r.log && r.log[0]) || t('themeSaved');
+          say('ok', msg);
+          toastSet(tid, 'busy', t('toastThemeTitle'), t('toastPushed'), (r.log || []).join('\\n'));
+          // 外观推送也要等 Pages 构建，同样把上线进度显示到底
+          if (r.commit) {
+            let since = Date.now();
+            try { const b = await api('/api/live'); if (b && b.generatedAt) since = b.generatedAt; } catch { /* 取不到就退回开始时刻 */ }
+            void waitUntilLive(since, r.commit, '', tid, 'theme');
+          } else {
+            toastSet(tid, 'ok', t('toastThemeOk'), msg);
+          }
           setTimeout(() => { const x = document.getElementById('themeDlg'); if (x) x.remove(); }, 1600);
         } else {
-          say('ok', (r.log && r.log[0]) || t('themeSaved'));
+          const msg = (r.log && r.log[0]) || t('themeSaved');
+          say('ok', msg);
+          toastSet(tid, 'ok', t('toastThemeSavedOnly'), msg);
         }
       } else {
         say('ok', t('themeSaved'));
+        // 「只保存」也要提示：这条明确写着「还没上线」，避免用户以为已经生效
+        toastSet(tid, 'ok', t('toastThemeSavedOnly'), t('themeSaved'));
       }
       try { await loadState(); } catch (e) { /* 状态刷新失败不影响保存结果 */ }
     } catch (e) {
-      say('bad', (alsoPublish ? t('themePublishFail') : t('themeSaveFail')) + e.message);
+      const msg = (alsoPublish ? t('themePublishFail') : t('themeSaveFail')) + e.message;
+      say('bad', msg);
+      if (tid) toastSet(tid, 'bad', t('toastFailed'), msg);
     } finally {
       btn.disabled = false; other.disabled = false;
       btn.textContent = old;
@@ -2114,12 +2276,14 @@ async function toggleAll(pub) {
   await refreshChanges(); updateVaultCounts(); promptPending();
 }
 
-// 发布：反馈直接出现在右上角状态栏，不需要滚到底部
+// 发布：顶部状态栏保留一句话结论，右上角另开一条进度提示（从转圈走到 ✓/✗）。
 async function doPublish() {
   const btn = document.getElementById('pubBtn');
   btn.disabled = true;
   const old = btn.textContent; btn.textContent = t('publishing');
   setResult('busy', t('publishing'));
+  // 每次发布都新开一条提示：用户点了几次就有几条，能看清「这次到底走到哪一步」
+  const tid = toastOpen(t('toastPublishTitle'), t('toastStarting'));
   // 基线必须在**推送完成之后**取。推送前取的话，上一笔提交的构建如果正好在这几秒内
   // 落地，就会被误判成「本次已上线」——实测踩到过：状态栏显示「已上线（用时 5 秒）」，
   // 但实际部署的是上一版。推送后再取，基线里已经包含任何更早完成的构建，
@@ -2134,20 +2298,30 @@ async function doPublish() {
       // 推送失败时，界面上必须一眼看出「没上线」——真实踩过坑：失败那行夹在
       // 几条成功日志（本地写入 / 站名变量同步）中间，用户以为已经发布了。
       // 网络类失败单独给一句人话（多半是加速器），具体报错降到最后一行。
-      if (r.failKind === 'network') setResult('alert', t('pushNetworkFail'), lines.join('\\n'));
-      else setResult('err', summary === t('publishDone') ? t('publishErr') : summary, lines.join('\\n'));
+      if (r.failKind === 'network') {
+        setResult('alert', t('pushNetworkFail'), lines.join('\\n'));
+        toastSet(tid, 'bad', t('toastFailed'), t('pushNetworkFail'), lines.join('\\n'));
+      } else {
+        setResult('err', summary === t('publishDone') ? t('publishErr') : summary, lines.join('\\n'));
+        toastSet(tid, 'bad', t('toastFailed'), summary === t('publishDone') ? t('publishErr') : summary, lines.join('\\n'));
+      }
     } else {
       setResult('ok', summary + (r.pushed ? t('pushed') : ''), lines.join('\\n'));
       // 推上去只是第一步：Pages 还要构建 + 部署（实测 40~90 秒）。
       // 这里不阻塞按钮，后台轮询把「还要等多久 / 已经上线」显示出来。
       if (r.pushed) {
+        toastSet(tid, 'busy', t('toastPublishTitle'), t('toastPushed'), lines.join('\\n'));
         let since = publishStart;
         try { const b = await api('/api/live'); if (b && b.generatedAt) since = b.generatedAt; } catch { /* 取不到就退回开始时刻 */ }
-        void waitUntilLive(since, r.commit, r.siteUrl);
+        void waitUntilLive(since, r.commit, r.siteUrl, tid, 'publish');
+      } else {
+        // 没东西可推也是一种明确的「完成」，别让它停在转圈上让人以为还在跑
+        toastSet(tid, 'ok', t('toastDone'), t('toastNothingToPush'), lines.join('\\n'));
       }
     }
   } catch (e) {
     setResult('err', t('publishFail') + e.message);
+    toastSet(tid, 'bad', t('toastFailed'), t('publishFail') + e.message);
     // 授权问题导致的失败：直接把授权窗弹出来，省得用户去找那个按钮
     if (e.needAuth) openAuthDialog();
   } finally {
@@ -2161,24 +2335,38 @@ async function doPublish() {
 // 判定优先用提交 SHA（线上产物里带 GITHUB_SHA），拿不到再退回比构建时间。
 // 连续点两次发布时，靠 liveSeq 让上一轮作废，免得旧轮询把新结果覆盖掉。
 let liveSeq = 0;
-async function waitUntilLive(baselineAt, sha, siteUrl) {
+async function waitUntilLive(baselineAt, sha, siteUrl, toastId, kind) {
   const seq = ++liveSeq;
   const t0 = Date.now();
   const LIMIT = 4 * 60 * 1000;
   const q = (sha ? 'sha=' + encodeURIComponent(sha) : 'since=' + encodeURIComponent(String(baselineAt)));
+  const okTitle = kind === 'source' ? t('toastSourceOk')
+    : kind === 'theme' ? t('toastThemeOk')
+    : t('toastPublishOk');
+  const busyTitle = kind === 'source' ? t('toastSourceTitle')
+    : kind === 'theme' ? t('toastThemeTitle')
+    : t('toastPublishTitle');
   while (Date.now() - t0 < LIMIT) {
     if (seq !== liveSeq) return;
-    setResult('busy', tf('liveBuilding', Math.round((Date.now() - t0) / 1000)));
+    const secs = Math.round((Date.now() - t0) / 1000);
+    setResult('busy', tf('liveBuilding', secs));
+    // 提示条同步显示已经等了多久，避免用户以为卡死
+    if (toastId) toastSet(toastId, 'busy', busyTitle, tf('liveBuilding', secs));
     let r = null;
     try { r = await api('/api/live?' + q); } catch { /* 网络抖一下就继续等 */ }
     if (seq !== liveSeq) return;
     if (r && r.live) {
-      setResult('ok', tf('liveOk', Math.round((Date.now() - t0) / 1000)), (r.siteUrl || siteUrl || '') + '?fresh=' + Date.now());
+      const took = Math.round((Date.now() - t0) / 1000);
+      setResult('ok', tf('liveOk', took), (r.siteUrl || siteUrl || '') + '?fresh=' + Date.now());
+      if (toastId) toastSet(toastId, 'ok', okTitle, tf('liveOk', took), '', r.siteUrl || siteUrl || '');
       return;
     }
     await new Promise((res) => setTimeout(res, 3000));
   }
-  if (seq === liveSeq) setResult('alert', t('liveTimeout'), siteUrl || '');
+  if (seq === liveSeq) {
+    setResult('alert', t('liveTimeout'), siteUrl || '');
+    if (toastId) toastSet(toastId, 'bad', t('toastFailed'), t('liveTimeout'));
+  }
 }
 
 // 「更新源码」：把工具目录里的站点源码（src/、scripts/、.github/ 与顶层配置）
@@ -2190,6 +2378,7 @@ async function doUpdateSource() {
   btn.disabled = true;
   const old = btn.textContent; btn.textContent = t('updatingSrc');
   setResult('busy', t('updatingSrc'));
+  const tid = toastOpen(t('toastSourceTitle'), t('toastStarting'));
   // 与发布一样：源码推上去也要等 Pages 构建，顺手把上线进度显示出来。
   // 基线同样在推送完成之后取（原因见 doPublish 里的注释）。
   const srcStart = Date.now();
@@ -2197,18 +2386,27 @@ async function doUpdateSource() {
     const r = await api('/api/update-source', undefined, 'POST');
     const lines = r.log || [];
     if (r.failed) {
-      if (r.failKind === 'network') setResult('alert', t('pushNetworkFail'), lines.join('\\n'));
-      else setResult('err', lines[0] || t('publishErr'), lines.join('\\n'));
+      if (r.failKind === 'network') {
+        setResult('alert', t('pushNetworkFail'), lines.join('\\n'));
+        toastSet(tid, 'bad', t('toastFailed'), t('pushNetworkFail'), lines.join('\\n'));
+      } else {
+        setResult('err', lines[0] || t('publishErr'), lines.join('\\n'));
+        toastSet(tid, 'bad', t('toastFailed'), lines[0] || t('publishErr'), lines.join('\\n'));
+      }
     } else {
       setResult('ok', (lines[0] || t('srcSynced')) + (r.pushed ? t('pushed') : ''), lines.join('\\n'));
       if (r.pushed) {
+        toastSet(tid, 'busy', t('toastSourceTitle'), t('toastPushed'), lines.join('\\n'));
         let since = srcStart;
         try { const b = await api('/api/live'); if (b && b.generatedAt) since = b.generatedAt; } catch { /* 取不到就退回开始时刻 */ }
-        void waitUntilLive(since, r.commit, '');
+        void waitUntilLive(since, r.commit, '', tid, 'source');
+      } else {
+        toastSet(tid, 'ok', t('toastDone'), t('toastNothingToPush'), lines.join('\\n'));
       }
     }
   } catch (e) {
     setResult('err', t('srcUpdateFail') + e.message);
+    toastSet(tid, 'bad', t('toastFailed'), t('srcUpdateFail') + e.message);
     if (e.needAuth) openAuthDialog();
   } finally {
     btn.disabled = false; btn.textContent = old;
