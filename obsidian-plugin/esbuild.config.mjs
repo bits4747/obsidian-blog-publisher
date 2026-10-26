@@ -87,6 +87,55 @@ const tpl = buildTemplateModule()
 const tplPath = path.join(__dirname, 'src', '_template-files.js')
 fs.writeFileSync(tplPath, tpl.code, 'utf8')
 
+/**
+ * 装进 Obsidian 库：把构建产物复制到 <vault>/.obsidian/plugins/blog-publisher/。
+ *
+ * 为什么放在构建脚本里：这一步以前靠手工 `cp`，忘了就出现「改了源码、管理器里
+ * 看得见新东西、Obsidian 里还是旧的」——2026-10-26 连犯两次。构建产物与装好的
+ * 副本字节不一致属于部署遗漏，不是代码问题，所以让它跟着构建一起发生。
+ *
+ * 库路径来源：<数据目录>/local.json 的 vaultPaths（管理器「设置」里选的那个库），
+ * 取当前 active 连接；命令行版没设过库时跳过，只打印提示。
+ * 传 --no-deploy 可跳过（例如只想看构建结果）。
+ */
+function deployToVault() {
+  if (process.argv.includes('--no-deploy')) {
+    console.log('  跳过部署（--no-deploy）')
+    return
+  }
+  const dataDir =
+    process.platform === 'win32'
+      ? path.join(process.env.APPDATA || '', 'obsidian-blog')
+      : process.platform === 'darwin'
+        ? path.join(process.env.HOME || '', 'Library', 'Application Support', 'obsidian-blog')
+        : path.join(process.env.HOME || '', '.config', 'obsidian-blog')
+  const localFile = path.join(dataDir, 'local.json')
+  if (!fs.existsSync(localFile)) {
+    console.log('  未找到 local.json，跳过部署（管理器里选一次库路径即可）')
+    return
+  }
+  let vaultPath = ''
+  try {
+    const local = JSON.parse(fs.readFileSync(localFile, 'utf8'))
+    const id = local.active
+    vaultPath = (local.vaultPaths && id && local.vaultPaths[id]) || ''
+  } catch {
+    console.log('  local.json 解析失败，跳过部署')
+    return
+  }
+  if (!vaultPath || !fs.existsSync(vaultPath)) {
+    console.log('  未配置库路径，跳过部署')
+    return
+  }
+  const dest = path.join(vaultPath, '.obsidian', 'plugins', 'blog-publisher')
+  fs.mkdirSync(dest, { recursive: true })
+  for (const name of ['main.js', 'worker.js', 'manifest.json']) {
+    fs.copyFileSync(path.join(__dirname, name), path.join(dest, name))
+  }
+  console.log(`  已装进库：${dest}`)
+  console.log('  → Obsidian 里「重载插件」（或重启）才会生效')
+}
+
 const watch = process.argv.includes('--watch')
 
 const common = {
@@ -150,4 +199,5 @@ if (watch) {
     console.log(`✅ ${name} ${(size / 1024).toFixed(0)} KB`)
     if (r.warnings.length) r.warnings.forEach((w) => console.log('  warn: ' + w.text))
   }
+  deployToVault()
 }
