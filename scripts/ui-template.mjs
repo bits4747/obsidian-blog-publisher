@@ -224,6 +224,28 @@ export const UI = `<!DOCTYPE html>
   .theme-msg { font-size: 13.5px; margin-top: 8px; min-height: 16px; }
   .theme-msg.ok { color: var(--accent); }
   .theme-msg.bad { color: var(--bad); }
+  /* ---- 预设外观：一排可点的缩略卡片 ---- */
+  .preset-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 4px 0 14px; }
+  .preset {
+    flex: 1 1 132px; min-width: 132px; max-width: 190px; text-align: left; cursor: pointer;
+    border: 1px solid var(--border); border-radius: 10px; padding: 0; overflow: hidden;
+    background: var(--card); color: var(--fg); font: inherit;
+    transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+  }
+  .preset:hover { border-color: var(--accent); transform: translateY(-1px);
+                  box-shadow: 0 6px 16px -8px var(--shadow); }
+  .preset.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft-hover); }
+  /* 缩略图：用预设自己的四个颜色画一张小样，比文字名字更快认出来 */
+  .preset .sw { height: 54px; display: block; position: relative; }
+  .preset .sw i { position: absolute; display: block; border-radius: 3px; }
+  .preset .sw .bar { left: 8px; right: 8px; top: 7px; height: 6px; opacity: .85; }
+  .preset .sw .box { left: 8px; top: 20px; width: 44%; height: 24px; opacity: .55; }
+  .preset .sw .box2 { right: 8px; top: 20px; width: 34%; height: 24px; opacity: .35; }
+  .preset .sw .dot { left: 8px; top: 48px; width: 22px; height: 3px; opacity: .8; }
+  .preset .meta { padding: 7px 9px 9px; }
+  .preset .nm { font-size: 13px; font-weight: 600; display: block; }
+  .preset .ds { font-size: 11.5px; color: var(--muted-2); line-height: 1.35;
+                display: block; margin-top: 2px; }
   /* 插件用 iframe 嵌入（?embed=1）：Obsidian 左侧已经是文件树，
      这里的「搜索 + 文件夹网格」重复且挤，整块隐藏，只留连接 / 变更 / 流水 / 发布。 */
   body.embed-mode #mainCard { display: none; }
@@ -328,6 +350,8 @@ const DICT = {
     themeBtn: '外观',
     themeTitle: '自定义外观',
     themeIntro: '把你自己的 CSS 粘贴进来，就能改这个博客的颜色、字体、间距和版面位置。保存并发布后，网站 1~2 分钟内生效。',
+    themePresetIntro: '不想从零写？点一套现成的样式，它会填进下面的框里，你可以再改成自己的：',
+    themePresetApplied: function (name) { return '已填入「' + name + '」，改完记得点保存' },
     themeTipVars: '改颜色最省事的办法是覆盖这几个变量：',
     themeTipHook: '要调版面位置，可以对这几块写规则：',
     themePlaceholder: '/* 例：把强调色换成墨绿，正文用宋体 */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="main"] {\\n  max-width: 54rem;\\n}',
@@ -535,6 +559,8 @@ const DICT = {
     themeBtn: 'Appearance',
     themeTitle: 'Custom appearance',
     themeIntro: 'Paste your own CSS to change this blog’s colors, fonts, spacing and layout. After “Save and publish”, the site updates within 1–2 minutes.',
+    themePresetIntro: 'No CSS of your own yet? Start from one of these, then tweak it:',
+    themePresetApplied: function (name) { return 'Filled in “' + name + '” — remember to save' },
     themeTipVars: 'The easiest way to recolor is to override these variables:',
     themeTipHook: 'To move things around, target these regions:',
     themePlaceholder: '/* e.g. switch the accent to forest green and use a serif body font */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="main"] {\\n  max-width: 54rem;\\n}',
@@ -1410,6 +1436,10 @@ let setupConn = null, setupPicked = '';
 //   就等于把模板引擎暴露出去，安全与升级成本都不是这个项目该承担的。
 //   而 CSS 足以改颜色、字体、间距、显隐、位置（flex/grid 都可覆盖），
 //   又能保证用户写的东西永远不会被当成 HTML/JS 执行。
+// 内置预设外观。这里是一枚占位串，由 manager-core 在发出页面时替换成真实数据
+// （本文件整体是模板字面量，不能直接插值；预设在 scripts/theme-presets.mjs 里）。
+let PRESETS = "__THEME_PRESETS__";
+if (typeof PRESETS === 'string') PRESETS = [];
 let themeReopen = null;
 function openTheme() {
   themeReopen = openTheme;
@@ -1422,6 +1452,8 @@ function openTheme() {
     '<div class="panel wide">' +
       '<h2 data-i18n="themeTitle"></h2>' +
       '<div class="hint" data-i18n="themeIntro"></div>' +
+      '<div class="theme-tip" data-i18n="themePresetIntro"></div>' +
+      '<div class="preset-row" id="presetRow"></div>' +
       '<div class="theme-tip">' +
         '<span data-i18n="themeTipVars"></span> ' +
         '<code>--background</code> <code>--foreground</code> <code>--card</code> ' +
@@ -1471,10 +1503,60 @@ function openTheme() {
     $('themeSave').disabled = over;
   };
 
-  ta.addEventListener('input', () => { updateCount(); clearMsg(); });
+  ta.addEventListener('input', () => { updateCount(); clearMsg(); markPreset(matchPreset(ta.value)); });
 
   $('themeClose').onclick = () => d.remove();
   d.onclick = (e) => { if (e.target === d) d.remove(); };
+
+  // 预设卡片：点一下把整套 CSS 填进编辑器（不直接保存 —— 让用户先看一眼、
+  // 改两笔再保存，避免误点就把线上皮肤换掉）
+  const row = $('presetRow');
+  const renderPresets = () => {
+    if (!row) return;
+    if (!PRESETS.length) { row.style.display = 'none'; return; }
+    row.innerHTML = '';
+    PRESETS.forEach((p) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'preset';
+      b.dataset.id = p.id;
+      const sw = p.swatch || {};
+      const nm = (p.name && (p.name[LANG] || p.name.zh)) || p.id;
+      const ds = (p.desc && (p.desc[LANG] || p.desc.zh)) || '';
+      b.innerHTML =
+        '<span class="sw" style="background:' + (sw.bg || '#fff') + '">' +
+          '<i class="bar" style="background:' + (sw.fg || '#333') + '"></i>' +
+          '<i class="box" style="background:' + (sw.card || '#eee') + ';border:1px solid ' + (sw.accent || '#999') + '"></i>' +
+          '<i class="box2" style="background:' + (sw.card || '#eee') + ';border:1px solid ' + (sw.accent || '#999') + '"></i>' +
+          '<i class="dot" style="background:' + (sw.accent || '#999') + '"></i>' +
+        '</span>' +
+        '<span class="meta"><span class="nm"></span><span class="ds"></span></span>';
+      b.querySelector('.nm').textContent = nm;
+      b.querySelector('.ds').textContent = ds;
+      b.onclick = () => {
+        ta.value = p.css;
+        updateCount();
+        clearMsg();
+        markPreset(p.id);
+        say('ok', tf('themePresetApplied', nm));
+        ta.focus();
+      };
+      row.appendChild(b);
+    });
+    markPreset(matchPreset(ta.value));
+  };
+  const markPreset = (id) => {
+    if (!row) return;
+    [...row.children].forEach((el) => el.classList.toggle('on', !!id && el.dataset.id === id));
+  };
+  // 编辑器里的内容正好等于某个预设时，把那张卡片点亮（用户能看出「我现在是这套」）
+  const matchPreset = (css) => {
+    const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
+    const v = norm(css);
+    if (!v) return '';
+    const hit = PRESETS.find((p) => norm(p.css) === v);
+    return hit ? hit.id : '';
+  };
 
   // 载入当前值：读接口不 clone、不扫库，工作副本没准备好时返回空串
   say('', t('themeLoading'));
@@ -1482,6 +1564,7 @@ function openTheme() {
     ta.value = r.css || '';
     maxBytes = r.maxBytes || maxBytes;
     updateCount();
+    renderPresets();
     if (!r.css) say('', t('themeEmpty'));
     else clearMsg();
   }).catch((e) => say('bad', t('themeLoadFail') + e.message));
@@ -1490,6 +1573,7 @@ function openTheme() {
     ta.value = '';
     updateCount();
     clearMsg();
+    markPreset('');
     say('', t('themeCleared'));
     ta.focus();
   };

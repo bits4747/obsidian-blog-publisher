@@ -3749,6 +3749,28 @@ var UI = `<!DOCTYPE html>
   .theme-msg { font-size: 13.5px; margin-top: 8px; min-height: 16px; }
   .theme-msg.ok { color: var(--accent); }
   .theme-msg.bad { color: var(--bad); }
+  /* ---- \u9884\u8BBE\u5916\u89C2\uFF1A\u4E00\u6392\u53EF\u70B9\u7684\u7F29\u7565\u5361\u7247 ---- */
+  .preset-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 4px 0 14px; }
+  .preset {
+    flex: 1 1 132px; min-width: 132px; max-width: 190px; text-align: left; cursor: pointer;
+    border: 1px solid var(--border); border-radius: 10px; padding: 0; overflow: hidden;
+    background: var(--card); color: var(--fg); font: inherit;
+    transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+  }
+  .preset:hover { border-color: var(--accent); transform: translateY(-1px);
+                  box-shadow: 0 6px 16px -8px var(--shadow); }
+  .preset.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft-hover); }
+  /* \u7F29\u7565\u56FE\uFF1A\u7528\u9884\u8BBE\u81EA\u5DF1\u7684\u56DB\u4E2A\u989C\u8272\u753B\u4E00\u5F20\u5C0F\u6837\uFF0C\u6BD4\u6587\u5B57\u540D\u5B57\u66F4\u5FEB\u8BA4\u51FA\u6765 */
+  .preset .sw { height: 54px; display: block; position: relative; }
+  .preset .sw i { position: absolute; display: block; border-radius: 3px; }
+  .preset .sw .bar { left: 8px; right: 8px; top: 7px; height: 6px; opacity: .85; }
+  .preset .sw .box { left: 8px; top: 20px; width: 44%; height: 24px; opacity: .55; }
+  .preset .sw .box2 { right: 8px; top: 20px; width: 34%; height: 24px; opacity: .35; }
+  .preset .sw .dot { left: 8px; top: 48px; width: 22px; height: 3px; opacity: .8; }
+  .preset .meta { padding: 7px 9px 9px; }
+  .preset .nm { font-size: 13px; font-weight: 600; display: block; }
+  .preset .ds { font-size: 11.5px; color: var(--muted-2); line-height: 1.35;
+                display: block; margin-top: 2px; }
   /* \u63D2\u4EF6\u7528 iframe \u5D4C\u5165\uFF08?embed=1\uFF09\uFF1AObsidian \u5DE6\u4FA7\u5DF2\u7ECF\u662F\u6587\u4EF6\u6811\uFF0C
      \u8FD9\u91CC\u7684\u300C\u641C\u7D22 + \u6587\u4EF6\u5939\u7F51\u683C\u300D\u91CD\u590D\u4E14\u6324\uFF0C\u6574\u5757\u9690\u85CF\uFF0C\u53EA\u7559\u8FDE\u63A5 / \u53D8\u66F4 / \u6D41\u6C34 / \u53D1\u5E03\u3002 */
   body.embed-mode #mainCard { display: none; }
@@ -3853,6 +3875,8 @@ const DICT = {
     themeBtn: '\u5916\u89C2',
     themeTitle: '\u81EA\u5B9A\u4E49\u5916\u89C2',
     themeIntro: '\u628A\u4F60\u81EA\u5DF1\u7684 CSS \u7C98\u8D34\u8FDB\u6765\uFF0C\u5C31\u80FD\u6539\u8FD9\u4E2A\u535A\u5BA2\u7684\u989C\u8272\u3001\u5B57\u4F53\u3001\u95F4\u8DDD\u548C\u7248\u9762\u4F4D\u7F6E\u3002\u4FDD\u5B58\u5E76\u53D1\u5E03\u540E\uFF0C\u7F51\u7AD9 1~2 \u5206\u949F\u5185\u751F\u6548\u3002',
+    themePresetIntro: '\u4E0D\u60F3\u4ECE\u96F6\u5199\uFF1F\u70B9\u4E00\u5957\u73B0\u6210\u7684\u6837\u5F0F\uFF0C\u5B83\u4F1A\u586B\u8FDB\u4E0B\u9762\u7684\u6846\u91CC\uFF0C\u4F60\u53EF\u4EE5\u518D\u6539\u6210\u81EA\u5DF1\u7684\uFF1A',
+    themePresetApplied: function (name) { return '\u5DF2\u586B\u5165\u300C' + name + '\u300D\uFF0C\u6539\u5B8C\u8BB0\u5F97\u70B9\u4FDD\u5B58' },
     themeTipVars: '\u6539\u989C\u8272\u6700\u7701\u4E8B\u7684\u529E\u6CD5\u662F\u8986\u76D6\u8FD9\u51E0\u4E2A\u53D8\u91CF\uFF1A',
     themeTipHook: '\u8981\u8C03\u7248\u9762\u4F4D\u7F6E\uFF0C\u53EF\u4EE5\u5BF9\u8FD9\u51E0\u5757\u5199\u89C4\u5219\uFF1A',
     themePlaceholder: '/* \u4F8B\uFF1A\u628A\u5F3A\u8C03\u8272\u6362\u6210\u58A8\u7EFF\uFF0C\u6B63\u6587\u7528\u5B8B\u4F53 */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="main"] {\\n  max-width: 54rem;\\n}',
@@ -4060,6 +4084,8 @@ const DICT = {
     themeBtn: 'Appearance',
     themeTitle: 'Custom appearance',
     themeIntro: 'Paste your own CSS to change this blog\u2019s colors, fonts, spacing and layout. After \u201CSave and publish\u201D, the site updates within 1\u20132 minutes.',
+    themePresetIntro: 'No CSS of your own yet? Start from one of these, then tweak it:',
+    themePresetApplied: function (name) { return 'Filled in \u201C' + name + '\u201D \u2014 remember to save' },
     themeTipVars: 'The easiest way to recolor is to override these variables:',
     themeTipHook: 'To move things around, target these regions:',
     themePlaceholder: '/* e.g. switch the accent to forest green and use a serif body font */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="main"] {\\n  max-width: 54rem;\\n}',
@@ -4935,6 +4961,10 @@ let setupConn = null, setupPicked = '';
 //   \u5C31\u7B49\u4E8E\u628A\u6A21\u677F\u5F15\u64CE\u66B4\u9732\u51FA\u53BB\uFF0C\u5B89\u5168\u4E0E\u5347\u7EA7\u6210\u672C\u90FD\u4E0D\u662F\u8FD9\u4E2A\u9879\u76EE\u8BE5\u627F\u62C5\u7684\u3002
 //   \u800C CSS \u8DB3\u4EE5\u6539\u989C\u8272\u3001\u5B57\u4F53\u3001\u95F4\u8DDD\u3001\u663E\u9690\u3001\u4F4D\u7F6E\uFF08flex/grid \u90FD\u53EF\u8986\u76D6\uFF09\uFF0C
 //   \u53C8\u80FD\u4FDD\u8BC1\u7528\u6237\u5199\u7684\u4E1C\u897F\u6C38\u8FDC\u4E0D\u4F1A\u88AB\u5F53\u6210 HTML/JS \u6267\u884C\u3002
+// \u5185\u7F6E\u9884\u8BBE\u5916\u89C2\u3002\u8FD9\u91CC\u662F\u4E00\u679A\u5360\u4F4D\u4E32\uFF0C\u7531 manager-core \u5728\u53D1\u51FA\u9875\u9762\u65F6\u66FF\u6362\u6210\u771F\u5B9E\u6570\u636E
+// \uFF08\u672C\u6587\u4EF6\u6574\u4F53\u662F\u6A21\u677F\u5B57\u9762\u91CF\uFF0C\u4E0D\u80FD\u76F4\u63A5\u63D2\u503C\uFF1B\u9884\u8BBE\u5728 scripts/theme-presets.mjs \u91CC\uFF09\u3002
+let PRESETS = "__THEME_PRESETS__";
+if (typeof PRESETS === 'string') PRESETS = [];
 let themeReopen = null;
 function openTheme() {
   themeReopen = openTheme;
@@ -4947,6 +4977,8 @@ function openTheme() {
     '<div class="panel wide">' +
       '<h2 data-i18n="themeTitle"></h2>' +
       '<div class="hint" data-i18n="themeIntro"></div>' +
+      '<div class="theme-tip" data-i18n="themePresetIntro"></div>' +
+      '<div class="preset-row" id="presetRow"></div>' +
       '<div class="theme-tip">' +
         '<span data-i18n="themeTipVars"></span> ' +
         '<code>--background</code> <code>--foreground</code> <code>--card</code> ' +
@@ -4996,10 +5028,60 @@ function openTheme() {
     $('themeSave').disabled = over;
   };
 
-  ta.addEventListener('input', () => { updateCount(); clearMsg(); });
+  ta.addEventListener('input', () => { updateCount(); clearMsg(); markPreset(matchPreset(ta.value)); });
 
   $('themeClose').onclick = () => d.remove();
   d.onclick = (e) => { if (e.target === d) d.remove(); };
+
+  // \u9884\u8BBE\u5361\u7247\uFF1A\u70B9\u4E00\u4E0B\u628A\u6574\u5957 CSS \u586B\u8FDB\u7F16\u8F91\u5668\uFF08\u4E0D\u76F4\u63A5\u4FDD\u5B58 \u2014\u2014 \u8BA9\u7528\u6237\u5148\u770B\u4E00\u773C\u3001
+  // \u6539\u4E24\u7B14\u518D\u4FDD\u5B58\uFF0C\u907F\u514D\u8BEF\u70B9\u5C31\u628A\u7EBF\u4E0A\u76AE\u80A4\u6362\u6389\uFF09
+  const row = $('presetRow');
+  const renderPresets = () => {
+    if (!row) return;
+    if (!PRESETS.length) { row.style.display = 'none'; return; }
+    row.innerHTML = '';
+    PRESETS.forEach((p) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'preset';
+      b.dataset.id = p.id;
+      const sw = p.swatch || {};
+      const nm = (p.name && (p.name[LANG] || p.name.zh)) || p.id;
+      const ds = (p.desc && (p.desc[LANG] || p.desc.zh)) || '';
+      b.innerHTML =
+        '<span class="sw" style="background:' + (sw.bg || '#fff') + '">' +
+          '<i class="bar" style="background:' + (sw.fg || '#333') + '"></i>' +
+          '<i class="box" style="background:' + (sw.card || '#eee') + ';border:1px solid ' + (sw.accent || '#999') + '"></i>' +
+          '<i class="box2" style="background:' + (sw.card || '#eee') + ';border:1px solid ' + (sw.accent || '#999') + '"></i>' +
+          '<i class="dot" style="background:' + (sw.accent || '#999') + '"></i>' +
+        '</span>' +
+        '<span class="meta"><span class="nm"></span><span class="ds"></span></span>';
+      b.querySelector('.nm').textContent = nm;
+      b.querySelector('.ds').textContent = ds;
+      b.onclick = () => {
+        ta.value = p.css;
+        updateCount();
+        clearMsg();
+        markPreset(p.id);
+        say('ok', tf('themePresetApplied', nm));
+        ta.focus();
+      };
+      row.appendChild(b);
+    });
+    markPreset(matchPreset(ta.value));
+  };
+  const markPreset = (id) => {
+    if (!row) return;
+    [...row.children].forEach((el) => el.classList.toggle('on', !!id && el.dataset.id === id));
+  };
+  // \u7F16\u8F91\u5668\u91CC\u7684\u5185\u5BB9\u6B63\u597D\u7B49\u4E8E\u67D0\u4E2A\u9884\u8BBE\u65F6\uFF0C\u628A\u90A3\u5F20\u5361\u7247\u70B9\u4EAE\uFF08\u7528\u6237\u80FD\u770B\u51FA\u300C\u6211\u73B0\u5728\u662F\u8FD9\u5957\u300D\uFF09
+  const matchPreset = (css) => {
+    const norm = (s) => String(s || '').replace(/s+/g, ' ').trim();
+    const v = norm(css);
+    if (!v) return '';
+    const hit = PRESETS.find((p) => norm(p.css) === v);
+    return hit ? hit.id : '';
+  };
 
   // \u8F7D\u5165\u5F53\u524D\u503C\uFF1A\u8BFB\u63A5\u53E3\u4E0D clone\u3001\u4E0D\u626B\u5E93\uFF0C\u5DE5\u4F5C\u526F\u672C\u6CA1\u51C6\u5907\u597D\u65F6\u8FD4\u56DE\u7A7A\u4E32
   say('', t('themeLoading'));
@@ -5007,6 +5089,7 @@ function openTheme() {
     ta.value = r.css || '';
     maxBytes = r.maxBytes || maxBytes;
     updateCount();
+    renderPresets();
     if (!r.css) say('', t('themeEmpty'));
     else clearMsg();
   }).catch((e) => say('bad', t('themeLoadFail') + e.message));
@@ -5015,6 +5098,7 @@ function openTheme() {
     ta.value = '';
     updateCount();
     clearMsg();
+    markPreset('');
     say('', t('themeCleared'));
     ta.focus();
   };
@@ -5683,6 +5767,100 @@ setInterval(async () => {
 // \u515C\u5E95\uFF1A\u5E93\u88AB\u5916\u90E8\u6539\u52A8\uFF08\u540C\u6B65\u3001\u522B\u7684\u7F16\u8F91\u5668\uFF09\u65F6\u7248\u672C\u53F7\u4E0D\u4F1A\u53D8\uFF0C\u4ECD\u7136\u6BCF 8 \u79D2\u5168\u91CF\u5BF9\u4E00\u6B21
 setInterval(() => { loadState().catch(() => {}); }, 8000);
 </script></body></html>`;
+
+// ../scripts/theme-presets.mjs
+var THEME_PRESETS = [
+  {
+    "id": "study",
+    "name": {
+      "zh": "\u58A8\u7EFF\u4E66\u658B",
+      "en": "Ink Study"
+    },
+    "desc": {
+      "zh": "\u6696\u7EB8\u5E95 + \u677E\u58A8\u7EFF + \u5168\u886C\u7EBF\uFF0C\u9002\u5408\u957F\u6587\u9605\u8BFB",
+      "en": "Warm paper, pine green, full serif \u2014 made for long reads"
+    },
+    "swatch": {
+      "bg": "#f6f2e9",
+      "fg": "#22302a",
+      "accent": "#2f6b4f",
+      "card": "#fffdf6"
+    },
+    "css": "/* ============================================================\n   \u58A8\u7EFF\u4E66\u658B \u2014\u2014 \u6696\u7EB8\u5E95 + \u677E\u58A8\u7EFF + \u5168\u886C\u7EBF\n   \u9002\u5408\uFF1A\u7B14\u8BB0\u3001\u9898\u89E3\u3001\u8BFB\u4E66\u7B14\u8BB0\u8FD9\u7C7B\u957F\u6587\u9605\u8BFB\n   ============================================================ */\n\n:root {\n  --radius: 0.2rem;\n\n  --background: #f6f2e9;\n  --foreground: #22302a;\n\n  --card: #fffdf6;\n  --card-foreground: #22302a;\n  --popover: #fffdf6;\n  --popover-foreground: #22302a;\n\n  --primary: #2f6b4f;\n  --primary-foreground: #f6f2e9;\n\n  --secondary: #e9e3d3;\n  --secondary-foreground: #22302a;\n  --muted: #ece6d8;\n  --muted-foreground: #6d7c71;\n  --accent: #e2ece5;\n  --accent-foreground: #22302a;\n\n  --border: #dcd3c0;\n  --input: #dcd3c0;\n  --ring: rgba(47, 107, 79, 0.45);\n\n  --code-bg: #f1ecdf;\n  --code-head-bg: #e6dfcd;\n  --code-head-fg: #5d6b60;\n  --code-fg: #22302a;\n}\n\nhtml.dark {\n  --background: #141a17;\n  --foreground: #dfe7e0;\n\n  --card: #1b2320;\n  --card-foreground: #dfe7e0;\n  --popover: #1b2320;\n  --popover-foreground: #dfe7e0;\n\n  --primary: #6fc394;\n  --primary-foreground: #10201a;\n\n  --secondary: #232d28;\n  --secondary-foreground: #dfe7e0;\n  --muted: #232d28;\n  --muted-foreground: #93a79a;\n  --accent: #26332c;\n  --accent-foreground: #e6eee8;\n\n  --border: rgba(160, 190, 170, 0.2);\n  --input: rgba(160, 190, 170, 0.26);\n  --ring: rgba(111, 195, 148, 0.6);\n\n  --code-bg: #1a221e;\n  --code-head-bg: #232d28;\n  --code-head-fg: #9db3a4;\n  --code-fg: #dfe7e0;\n}\n\n/* \u6B63\u6587\u5168\u7528\u886C\u7EBF\uFF0C\u6807\u9898\u66F4\u91CD\u4E00\u4E9B\uFF0C\u8BFB\u8D77\u6765\u50CF\u4E00\u672C\u4E66 */\nbody,\n.markdown-body {\n  font-family: 'Songti SC', 'STSong', 'Noto Serif SC', 'Source Han Serif SC',\n    'SimSun', Georgia, 'Times New Roman', serif;\n}\n\n.markdown-body {\n  line-height: 1.95;\n  letter-spacing: 0.01em;\n}\n\n.markdown-body h1,\n.markdown-body h2,\n.markdown-body h3 {\n  letter-spacing: 0.02em;\n}\n\n/* \u6BB5\u843D\u9996\u884C\u7F29\u8FDB\u4E24\u5B57\uFF0C\u4E2D\u6587\u957F\u6587\u7684\u4F20\u7EDF\u6392\u7248 */\n.markdown-body p {\n  text-indent: 2em;\n  margin: 0.75em 0;\n}\n.markdown-body li p,\n.markdown-body blockquote p,\n.markdown-body td p,\n.markdown-body .callout p {\n  text-indent: 0;\n}\n\n/* \u4E8C\u7EA7\u6807\u9898\u505A\u6210\u300C\u5C0F\u8282\u300D\u7684\u6837\u5B50\uFF1A\u5DE6\u4FA7\u4E00\u9053\u7AD6\u7EBF\uFF0C\u4E0D\u8981\u4E0B\u5212\u7EBF */\n.markdown-body h2 {\n  border-bottom: none;\n  border-left: 3px solid var(--primary);\n  padding-left: 0.6em;\n  margin-top: 2.2em;\n}\n\n/* \u5F15\u7528\u5757\u6362\u6210\u7AD6\u6392\u6C14\u606F\u66F4\u6D53\u7684\u6D45\u8272\u5757 */\n.markdown-body blockquote {\n  border-left: 3px solid var(--primary);\n  background: color-mix(in srgb, var(--primary) 6%, transparent);\n  font-style: normal;\n}\n\n/* \u9876\u680F\uFF1A\u53BB\u6389\u6BDB\u73BB\u7483\uFF0C\u6539\u6210\u4E00\u6761\u7EB8\u8FB9 */\nheader.sticky {\n  background: var(--background);\n  backdrop-filter: none;\n  border-bottom: 1px solid var(--border);\n}\n\n/* \u9996\u9875\u5361\u7247\uFF1A\u7EC6\u8FB9\u6846 + \u6781\u8F7B\u7684\u7EB8\u9634\u5F71 */\n[data-region='folders'] a,\n[data-region='folders'] > * {\n  box-shadow: 0 1px 0 var(--border);\n  transition: box-shadow 0.18s ease, transform 0.18s ease;\n}\n[data-region='folders'] a:hover,\n[data-region='folders'] > *:hover {\n  box-shadow: 0 3px 14px rgba(47, 107, 79, 0.12);\n  transform: translateY(-1px);\n}\n\n/* \u7B14\u8BB0\u5217\u8868\uFF1A\u884C\u60AC\u505C\u65F6\u5DE6\u4FA7\u6D6E\u51FA\u4E00\u6761\u7EFF\u7EBF */\n[data-region='main'] li:hover {\n  background: color-mix(in srgb, var(--primary) 5%, transparent);\n}\n\n/* \u9605\u8BFB\u533A\u6536\u7A84\u4E00\u70B9\uFF0C\u4E00\u884C 34 \u5B57\u5DE6\u53F3\u6700\u8212\u670D */\n[data-region='note'] {\n  max-width: 46rem;\n}\n\n/* \u9875\u811A\u4F4E\u8C03 */\n[data-region='footer'] {\n  opacity: 0.75;\n  font-size: 0.72rem;\n  letter-spacing: 0.05em;\n}\n"
+  },
+  {
+    "id": "midnight",
+    "name": {
+      "zh": "\u975B\u84DD\u591C\u822A",
+      "en": "Indigo Night"
+    },
+    "desc": {
+      "zh": "\u6DF1\u6D77\u975B\u84DD + \u51B7\u767D\u5B57 + \u5706\u89D2\u73BB\u7483\u611F\uFF0C\u4E45\u770B\u4E0D\u523A\u773C",
+      "en": "Deep indigo, cool white, glassy rounded cards"
+    },
+    "swatch": {
+      "bg": "#f3f6fc",
+      "fg": "#14213d",
+      "accent": "#2f5fd0",
+      "card": "#ffffff"
+    },
+    "css": "/* ============================================================\n   \u975B\u84DD\u591C\u822A \u2014\u2014 \u6DF1\u6D77\u975B\u84DD + \u51B7\u767D\u5B57 + \u5706\u89D2\u73BB\u7483\u611F\n   \u9002\u5408\uFF1A\u6280\u672F\u7B14\u8BB0\u3001\u7B97\u6CD5\u9898\u89E3\uFF0C\u957F\u65F6\u95F4\u770B\u4E0D\u523A\u773C\n   ============================================================ */\n\n:root {\n  --radius: 0.9rem;\n\n  --background: #f3f6fc;\n  --foreground: #14213d;\n\n  --card: #ffffff;\n  --card-foreground: #14213d;\n  --popover: #ffffff;\n  --popover-foreground: #14213d;\n\n  --primary: #2f5fd0;\n  --primary-foreground: #ffffff;\n\n  --secondary: #e4ecfb;\n  --secondary-foreground: #1b2c52;\n  --muted: #e9eff9;\n  --muted-foreground: #5d6f92;\n  --accent: #dfe9fd;\n  --accent-foreground: #14213d;\n\n  --border: #d5e0f3;\n  --input: #d5e0f3;\n  --ring: rgba(47, 95, 208, 0.5);\n\n  --code-bg: #f5f8fd;\n  --code-head-bg: #e7eefb;\n  --code-head-fg: #5d6f92;\n  --code-fg: #14213d;\n}\n\nhtml.dark {\n  --background: #0b1020;\n  --foreground: #dbe4f7;\n\n  --card: #121a2e;\n  --card-foreground: #dbe4f7;\n  --popover: #121a2e;\n  --popover-foreground: #dbe4f7;\n\n  --primary: #6f9bff;\n  --primary-foreground: #08122b;\n\n  --secondary: #17223a;\n  --secondary-foreground: #dbe4f7;\n  --muted: #17223a;\n  --muted-foreground: #8fa3c8;\n  --accent: #1b2947;\n  --accent-foreground: #e7eeff;\n\n  --border: rgba(120, 160, 240, 0.2);\n  --input: rgba(120, 160, 240, 0.26);\n  --ring: rgba(111, 155, 255, 0.65);\n\n  --code-bg: #0f1729;\n  --code-head-bg: #17223a;\n  --code-head-fg: #8fa3c8;\n  --code-fg: #dbe4f7;\n}\n\n/* \u9876\u680F\u505A\u6210\u771F\u6B63\u7684\u73BB\u7483\u6761\uFF1A\u534A\u900F\u660E + \u6A21\u7CCA + \u4E00\u6761\u53D1\u5149\u7EBF */\nheader.sticky {\n  background: color-mix(in srgb, var(--background) 72%, transparent);\n  backdrop-filter: blur(14px) saturate(150%);\n  border-bottom: 1px solid color-mix(in srgb, var(--primary) 18%, transparent);\n  box-shadow: 0 1px 20px color-mix(in srgb, var(--primary) 10%, transparent);\n}\n\n/* \u7AD9\u540D\u7528\u6E10\u53D8\u5B57\uFF0C\u4E00\u4E2A\u5B57\u90FD\u4E0D\u591A\u5360\u5730\u65B9 */\n[data-region='header'] button:first-child {\n  background: linear-gradient(120deg, var(--primary), color-mix(in srgb, var(--primary) 45%, #a855f7));\n  -webkit-background-clip: text;\n  background-clip: text;\n  color: transparent;\n}\n\n/* \u9996\u9875\u6587\u4EF6\u5939\u5361\u7247\uFF1A\u66F4\u5927\u7684\u5706\u89D2 + \u60AC\u505C\u4E0A\u6D6E + \u4E3B\u8272\u63CF\u8FB9 */\n[data-region='folders'] a,\n[data-region='folders'] > * {\n  border-radius: 1rem;\n  border: 1px solid var(--border);\n  background: var(--card);\n  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease,\n    border-color 0.2s ease;\n}\n[data-region='folders'] a:hover,\n[data-region='folders'] > *:hover {\n  transform: translateY(-3px);\n  border-color: color-mix(in srgb, var(--primary) 45%, transparent);\n  box-shadow: 0 10px 28px -8px color-mix(in srgb, var(--primary) 35%, transparent);\n}\n\n/* \u7B14\u8BB0\u5217\u8868\u5BB9\u5668\uFF1A\u53BB\u6389\u786C\u8FB9\u6846\uFF0C\u6539\u6210\u67D4\u548C\u6295\u5F71 */\n[data-region='main'] section {\n  border: none;\n  box-shadow: 0 1px 2px rgba(20, 33, 61, 0.06), 0 8px 24px -12px rgba(20, 33, 61, 0.14);\n}\n\n/* \u5217\u8868\u884C\uFF1A\u60AC\u505C\u65F6\u4E3B\u8272\u5DE6\u79FB\u4E00\u9053 */\n[data-region='main'] li {\n  border-radius: 0.5rem;\n  transition: background 0.15s ease, padding-left 0.15s ease;\n}\n[data-region='main'] li:hover {\n  background: color-mix(in srgb, var(--primary) 7%, transparent);\n  padding-left: 0.35rem;\n}\n\n/* \u6B63\u6587\uFF1A\u65E0\u886C\u7EBF + \u7A0D\u7D27\u7684\u884C\u8DDD\uFF0C\u6280\u672F\u6587\u6863\u66F4\u5229\u843D */\nbody,\n.markdown-body {\n  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',\n    'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;\n}\n.markdown-body {\n  line-height: 1.82;\n}\n\n/* \u6807\u9898\u4FDD\u7559\u886C\u7EBF\uFF0C\u548C\u6B63\u6587\u5F62\u6210\u5BF9\u6BD4 */\n.markdown-body h1,\n.markdown-body h2,\n.markdown-body h3 {\n  font-family: 'Songti SC', 'STSong', 'Noto Serif SC', Georgia, serif;\n}\n\n/* \u884C\u5185\u4EE3\u7801\u67D3\u6210\u4E3B\u8272\uFF0C\u8BFB\u4EE3\u7801\u65F6\u66F4\u9192\u76EE */\n.markdown-body code.inline-code {\n  color: color-mix(in srgb, var(--primary) 85%, var(--foreground));\n  background: color-mix(in srgb, var(--primary) 8%, transparent);\n  border-color: color-mix(in srgb, var(--primary) 22%, transparent);\n}\n\n/* \u4EE3\u7801\u5757\u52A0\u4E00\u6761\u5DE6\u4FA7\u5F3A\u8C03\u7EBF */\n.markdown-body .code-block {\n  border-left: 3px solid color-mix(in srgb, var(--primary) 55%, transparent);\n}\n\n/* \u9605\u8BFB\u533A\u7A0D\u5BBD\uFF0C\u6280\u672F\u7B14\u8BB0\u5E38\u6709\u8868\u683C */\n[data-region='note'] {\n  max-width: 52rem;\n}\n"
+  },
+  {
+    "id": "sakura",
+    "name": {
+      "zh": "\u6A31\u7EB8",
+      "en": "Sakura Paper"
+    },
+    "desc": {
+      "zh": "\u6781\u6D45\u7C89\u767D + \u73AB\u7EA2\u70B9\u7F00 + \u5927\u7559\u767D\uFF0C\u8F7B\u76C8\u4E0D\u817B",
+      "en": "Pale pink, rose accent, generous whitespace"
+    },
+    "swatch": {
+      "bg": "#fdf8f8",
+      "fg": "#3a2b32",
+      "accent": "#d4577c",
+      "card": "#ffffff"
+    },
+    "css": "/* ============================================================\n   \u6A31\u7EB8 \u2014\u2014 \u6781\u6D45\u7C89\u767D + \u73AB\u7EA2\u70B9\u7F00 + \u5927\u7559\u767D\n   \u9002\u5408\uFF1A\u968F\u7B14\u3001\u751F\u6D3B\u8BB0\u5F55\uFF0C\u8F7B\u76C8\u4E0D\u817B\n   ============================================================ */\n\n:root {\n  --radius: 1.15rem;\n\n  --background: #fdf8f8;\n  --foreground: #3a2b32;\n\n  --card: #ffffff;\n  --card-foreground: #3a2b32;\n  --popover: #ffffff;\n  --popover-foreground: #3a2b32;\n\n  --primary: #d4577c;\n  --primary-foreground: #fffafb;\n\n  --secondary: #fbeef1;\n  --secondary-foreground: #4a343c;\n  --muted: #f8eef0;\n  --muted-foreground: #8b6f78;\n  --accent: #fce9ee;\n  --accent-foreground: #3a2b32;\n\n  --border: #f0dde2;\n  --input: #f0dde2;\n  --ring: rgba(212, 87, 124, 0.4);\n\n  --code-bg: #fbf3f5;\n  --code-head-bg: #f6e7eb;\n  --code-head-fg: #8b6f78;\n  --code-fg: #3a2b32;\n}\n\nhtml.dark {\n  --background: #1a1216;\n  --foreground: #f0dfe5;\n\n  --card: #241a1f;\n  --card-foreground: #f0dfe5;\n  --popover: #241a1f;\n  --popover-foreground: #f0dfe5;\n\n  --primary: #f089a8;\n  --primary-foreground: #24101a;\n\n  --secondary: #2e2027;\n  --secondary-foreground: #f0dfe5;\n  --muted: #2e2027;\n  --muted-foreground: #b898a2;\n  --accent: #35242c;\n  --accent-foreground: #f7e9ee;\n\n  --border: rgba(230, 170, 190, 0.18);\n  --input: rgba(230, 170, 190, 0.24);\n  --ring: rgba(240, 137, 168, 0.55);\n\n  --code-bg: #211820;\n  --code-head-bg: #2e2027;\n  --code-head-fg: #b898a2;\n  --code-fg: #f0dfe5;\n}\n\n/* \u9875\u9762\u9876\u90E8\u4E00\u5C42\u6781\u6DE1\u7684\u7C89\u8272\u6655\u67D3 */\nbody {\n  background-image: radial-gradient(\n    1200px 400px at 50% -120px,\n    color-mix(in srgb, var(--primary) 12%, transparent),\n    transparent 70%\n  );\n  background-repeat: no-repeat;\n}\n\n/* \u9876\u680F\u5B8C\u5168\u878D\u5165\u80CC\u666F\uFF0C\u53EA\u7559\u4E00\u6761\u6781\u6DE1\u7684\u5206\u9694 */\nheader.sticky {\n  background: color-mix(in srgb, var(--background) 80%, transparent);\n  backdrop-filter: blur(10px);\n  border-bottom: 1px solid color-mix(in srgb, var(--primary) 14%, transparent);\n}\n\n/* \u7AD9\u540D\u524D\u52A0\u4E00\u4E2A\u4E3B\u8272\u5706\u70B9\uFF08\u4E0D\u7528 \u273F \u4E4B\u7C7B\u7684\u7B26\u53F7\uFF1A\u5B57\u4F53\u7F3A\u5B57\u65F6\u4F1A\u88AB\u56DE\u9000\u6210\u65B9\u5757/\u53C9\uFF09 */\n[data-region='header'] button:first-child::before {\n  content: '';\n  display: inline-block;\n  width: 0.5em;\n  height: 0.5em;\n  margin-right: 0.45rem;\n  vertical-align: 0.05em;\n  border-radius: 999px;\n  background: var(--primary);\n  opacity: 0.9;\n}\n\n/* \u6587\u4EF6\u5939\u5361\u7247\uFF1A\u7C89\u8272\u67D4\u548C\u9634\u5F71\uFF0C\u5706\u89D2\u66F4\u5927 */\n[data-region='folders'] a,\n[data-region='folders'] > * {\n  border-radius: 1.15rem;\n  border: 1px solid color-mix(in srgb, var(--primary) 16%, transparent);\n  background: var(--card);\n  transition: transform 0.22s ease, box-shadow 0.22s ease;\n}\n[data-region='folders'] a:hover,\n[data-region='folders'] > *:hover {\n  transform: translateY(-2px) scale(1.008);\n  box-shadow: 0 14px 30px -14px color-mix(in srgb, var(--primary) 45%, transparent);\n}\n\n/* \u6807\u7B7E\u80F6\u56CA\uFF1A\u60AC\u505C\u53D8\u5B9E\u5FC3 */\n[data-region='main'] button[class*='rounded-full']:hover {\n  border-color: var(--primary);\n  color: var(--primary);\n}\n\n/* \u5217\u8868\u884C\u60AC\u505C\uFF1A\u6DE1\u7C89\u5E95 */\n[data-region='main'] li:hover {\n  background: color-mix(in srgb, var(--primary) 6%, transparent);\n  border-radius: 0.6rem;\n}\n\n/* \u6B63\u6587\u884C\u8DDD\u653E\u5927\uFF0C\u7559\u767D\u5145\u8DB3 */\n.markdown-body {\n  line-height: 2;\n  letter-spacing: 0.015em;\n}\n\n/* \u6807\u9898\u7528\u886C\u7EBF + \u4E3B\u8272\u4E0B\u7684\u5C0F\u5706\u70B9 */\n.markdown-body h2 {\n  border-bottom: none;\n  position: relative;\n  padding-left: 1.1em;\n}\n.markdown-body h2::before {\n  content: '';\n  position: absolute;\n  left: 0;\n  top: 0.62em;\n  width: 0.42em;\n  height: 0.42em;\n  border-radius: 999px;\n  background: var(--primary);\n}\n\n/* \u5F15\u7528\u5757\uFF1A\u7C89\u8272\u5DE6\u7EBF + \u65E0\u5E95\u8272 */\n.markdown-body blockquote {\n  border-left: 3px solid color-mix(in srgb, var(--primary) 55%, transparent);\n  background: transparent;\n  color: var(--muted-foreground);\n}\n\n/* \u9605\u8BFB\u533A\u7A84\u4E00\u70B9\uFF0C\u4E00\u884C 30 \u5B57\uFF0C\u6700\u653E\u677E */\n[data-region='note'] {\n  max-width: 42rem;\n}\n\n/* \u9875\u811A\u5C45\u4E2D\u3001\u52A0\u5B57\u8DDD */\n[data-region='footer'] {\n  justify-content: center;\n  letter-spacing: 0.08em;\n  opacity: 0.7;\n}\n"
+  },
+  {
+    "id": "terminal",
+    "name": {
+      "zh": "\u7EC8\u7AEF",
+      "en": "Terminal"
+    },
+    "desc": {
+      "zh": "\u7B49\u5BBD\u5B57\u4F53 + \u8367\u5149\u7EFF\uFF0C\u65E5\u95F4\u4EAE\u8272\u7EC8\u7AEF\u3001\u591C\u95F4\u7EAF\u9ED1\u7EC8\u7AEF",
+      "en": "Monospace and neon green \u2014 light terminal by day, black by night"
+    },
+    "swatch": {
+      "bg": "#f4f8f4",
+      "fg": "#16281b",
+      "accent": "#15803d",
+      "card": "#ffffff"
+    },
+    "css": "/* ============================================================\n   \u7EC8\u7AEF \u2014\u2014 \u7B49\u5BBD\u5B57\u4F53 + \u8367\u5149\u7EFF\uFF0C\u65E5\u95F4\u662F\u300C\u4EAE\u8272\u7EC8\u7AEF\u300D\uFF0C\u591C\u95F4\u662F\u300C\u7EAF\u9ED1\u7EC8\u7AEF\u300D\n   \u9002\u5408\uFF1A\u4EE3\u7801\u7B14\u8BB0\u3001\u547D\u4EE4\u884C\u8BB0\u5F55\uFF0C\u4E00\u773C\u5C31\u662F\u300C\u5DE5\u7A0B\u5E08\u7684\u535A\u5BA2\u300D\n   ============================================================ */\n\n/* ---------- \u65E5\u95F4\uFF1A\u4EAE\u8272\u7EC8\u7AEF\uFF08\u6D45\u7EFF\u7EB8\u5E95 + \u6DF1\u58A8\u7EFF\uFF09 ---------- */\n:root {\n  --radius: 0.25rem;\n\n  --background: #f4f8f4;\n  --foreground: #16281b;\n\n  --card: #ffffff;\n  --card-foreground: #16281b;\n  --popover: #ffffff;\n  --popover-foreground: #16281b;\n\n  --primary: #15803d;\n  --primary-foreground: #f4f8f4;\n\n  --secondary: #e8f0e9;\n  --secondary-foreground: #16281b;\n  --muted: #ebf2ec;\n  --muted-foreground: #55705c;\n  --accent: #dff0e3;\n  --accent-foreground: #16281b;\n\n  --border: #cfe0d3;\n  --input: #cfe0d3;\n  --ring: rgba(21, 128, 61, 0.45);\n\n  --code-bg: #eef5ef;\n  --code-head-bg: #e2ece4;\n  --code-head-fg: #55705c;\n  --code-fg: #16281b;\n\n  /* \u7EC8\u7AEF\u4E3B\u9898\u4E13\u7528\uFF1A\u65E5\u95F4\u7684\u300C\u8367\u5149\u300D\u8981\u538B\u6697\uFF0C\u5426\u5219\u6D45\u5E95\u4E0A\u770B\u4E0D\u6E05 */\n  --term-accent: #15803d;\n  --term-glow: rgba(21, 128, 61, 0.14);\n  --term-hover: rgba(21, 128, 61, 0.07);\n  --term-hover-fg: #0d3f20;\n  --term-line: rgba(21, 128, 61, 0.28);\n  --term-line-soft: rgba(21, 128, 61, 0.16);\n  --term-code-fg: #0f6b34;\n}\n\n/* ---------- \u591C\u95F4\uFF1A\u7EAF\u9ED1\u7EC8\u7AEF\uFF08\u9ED1\u5E95 + \u8367\u5149\u7EFF\uFF09 ---------- */\nhtml.dark {\n  --background: #0c0f0c;\n  --foreground: #d8f3d8;\n\n  --card: #121712;\n  --card-foreground: #d8f3d8;\n  --popover: #121712;\n  --popover-foreground: #d8f3d8;\n\n  --primary: #4ade80;\n  --primary-foreground: #07120a;\n\n  --secondary: #1a211a;\n  --secondary-foreground: #d8f3d8;\n  --muted: #1a211a;\n  --muted-foreground: #7f9a7f;\n  --accent: #1e2a1e;\n  --accent-foreground: #e6ffe6;\n\n  --border: rgba(120, 200, 140, 0.18);\n  --input: rgba(120, 200, 140, 0.24);\n  --ring: rgba(74, 222, 128, 0.6);\n\n  --code-bg: #0a0d0a;\n  --code-head-bg: #141a14;\n  --code-head-fg: #7f9a7f;\n  --code-fg: #d8f3d8;\n\n  --term-accent: #4ade80;\n  --term-glow: rgba(74, 222, 128, 0.07);\n  --term-hover: rgba(74, 222, 128, 0.07);\n  --term-hover-fg: #e9ffe9;\n  --term-line: rgba(74, 222, 128, 0.28);\n  --term-line-soft: rgba(74, 222, 128, 0.16);\n  --term-code-fg: #86efac;\n}\n\n/* \u5168\u7B49\u5BBD\u5B57\u4F53\uFF0C\u5B57\u8DDD\u7565\u677E */\nbody,\n.markdown-body,\n[data-region='header'] button,\n.font-serif {\n  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace,\n    SFMono-Regular, Menlo, Consolas, 'Microsoft YaHei', monospace;\n}\n.markdown-body {\n  letter-spacing: 0.02em;\n  line-height: 1.85;\n}\n\n/* \u7AD9\u540D\u524D\u52A0\u4E00\u4E2A\u7EC8\u7AEF\u63D0\u793A\u7B26 */\n[data-region='header'] button:first-child::before {\n  content: '> ';\n  color: var(--term-accent);\n  opacity: 0.9;\n}\n\n/* \u9876\u680F\uFF1A\u4E00\u6761\u7EC6\u7EFF\u7EBF + \u5FAE\u5F31\u7684\u8F89\u5149\uFF08\u65E5\u95F4\u662F\u6D45\u7EFF\u6655\uFF0C\u591C\u95F4\u662F\u8367\u5149\u6655\uFF09 */\nheader.sticky {\n  background: var(--background);\n  backdrop-filter: none;\n  border-bottom: 1px solid var(--term-line);\n  box-shadow: 0 0 24px var(--term-glow);\n}\n\n/* \u5361\u7247\uFF1A\u65B9\u89D2 + \u7EFF\u8272\u7EC6\u8FB9\uFF0C\u60AC\u505C\u65F6\u8FB9\u6846\u53D1\u4EAE */\n[data-region='folders'] a,\n[data-region='folders'] > * {\n  border-radius: 0.25rem;\n  border: 1px solid var(--term-line-soft);\n  background: var(--card);\n  transition: border-color 0.16s ease, box-shadow 0.16s ease;\n}\n[data-region='folders'] a:hover,\n[data-region='folders'] > *:hover {\n  border-color: var(--term-line);\n  box-shadow: 0 0 0 1px var(--term-line-soft), 0 0 22px var(--term-glow);\n}\n\n/* \u5217\u8868\u884C\uFF1A\u60AC\u505C\u65F6\u5DE6\u4FA7\u51FA\u73B0\u4E00\u4E2A\u65B9\u5757\u5149\u6807 */\n[data-region='main'] li {\n  position: relative;\n  transition: background 0.14s ease, color 0.14s ease;\n}\n[data-region='main'] li:hover {\n  background: var(--term-hover);\n  color: var(--term-hover-fg);\n}\n[data-region='main'] li:hover::before {\n  content: '';\n  position: absolute;\n  left: 0.2rem;\n  top: 50%;\n  width: 0.32rem;\n  height: 0.32rem;\n  transform: translateY(-50%);\n  background: var(--term-accent);\n}\n\n/* \u6807\u9898\uFF1A\u4E3B\u8272 + \u5168\u7B49\u5BBD */\n.markdown-body h1,\n.markdown-body h2,\n.markdown-body h3 {\n  color: var(--term-accent);\n  font-family: inherit;\n  letter-spacing: 0;\n}\n.markdown-body h2 {\n  border-bottom: 1px dashed var(--term-line);\n}\n\n/* \u94FE\u63A5\uFF1A\u7EFF\u8272 + \u865A\u7EBF\u5E95 */\n.markdown-body a.internal-link {\n  color: var(--term-accent);\n  border-bottom: 1px dashed var(--term-line);\n}\n.markdown-body a.internal-link:hover {\n  background: var(--term-hover);\n}\n\n/* \u884C\u5185\u4EE3\u7801\uFF1A\u7EFF\u5B57 + \u7EC8\u7AEF\u5E95\u8272 */\n.markdown-body code.inline-code {\n  background: var(--code-bg);\n  border: 1px solid var(--term-line);\n  color: var(--term-code-fg);\n}\n\n/* \u5F15\u7528\u5757\uFF1A\u5DE6\u7EFF\u7EBF + \u6781\u6DE1\u7EFF\u5E95 */\n.markdown-body blockquote {\n  border-left: 2px solid var(--term-line);\n  background: var(--term-hover);\n  color: var(--muted-foreground);\n}\n\n/* \u8868\u683C\uFF1A\u7EFF\u8272\u7F51\u683C */\n.markdown-body th {\n  background: var(--term-hover);\n  color: var(--term-accent);\n}\n.markdown-body tbody tr:nth-child(even) {\n  background: var(--term-hover);\n}\n\n/* \u9875\u811A\uFF1A\u50CF\u4E00\u884C shell \u8F93\u51FA */\n[data-region='footer'] {\n  border-top: 1px dashed var(--term-line-soft);\n  opacity: 0.8;\n}\n[data-region='footer'] > *::before {\n  content: '# ';\n  color: var(--term-accent);\n  opacity: 0.7;\n}\n"
+  },
+  {
+    "id": "mono",
+    "name": {
+      "zh": "\u6781\u7B80\u9ED1\u767D",
+      "en": "Mono"
+    },
+    "desc": {
+      "zh": "\u7EAF\u767D / \u7EAF\u9ED1\uFF0C\u65E0\u5F69\u8272\uFF0C\u53EA\u9760\u5B57\u91CD\u4E0E\u7559\u767D",
+      "en": "Pure black and white, no color at all"
+    },
+    "swatch": {
+      "bg": "#ffffff",
+      "fg": "#111111",
+      "accent": "#111111",
+      "card": "#ffffff"
+    },
+    "css": "/* ============================================================\n   \u6781\u7B80\u9ED1\u767D \u2014\u2014 \u7EAF\u767D / \u7EAF\u9ED1\uFF0C\u65E0\u5F69\u8272\uFF0C\u53EA\u9760\u5B57\u91CD\u4E0E\u7559\u767D\n   \u9002\u5408\uFF1A\u4E0D\u60F3\u88AB\u989C\u8272\u5E72\u6270\uFF0C\u4E13\u5FC3\u5199\u4F5C\u4E0E\u9605\u8BFB\n   ============================================================ */\n\n:root {\n  --radius: 0;\n\n  --background: #ffffff;\n  --foreground: #111111;\n\n  --card: #ffffff;\n  --card-foreground: #111111;\n  --popover: #ffffff;\n  --popover-foreground: #111111;\n\n  --primary: #111111;\n  --primary-foreground: #ffffff;\n\n  --secondary: #f4f4f4;\n  --secondary-foreground: #111111;\n  --muted: #f6f6f6;\n  --muted-foreground: #6b6b6b;\n  --accent: #eeeeee;\n  --accent-foreground: #111111;\n\n  --border: #e2e2e2;\n  --input: #e2e2e2;\n  --ring: rgba(17, 17, 17, 0.35);\n\n  --code-bg: #f7f7f7;\n  --code-head-bg: #efefef;\n  --code-head-fg: #6b6b6b;\n  --code-fg: #111111;\n}\n\nhtml.dark {\n  --background: #0d0d0d;\n  --foreground: #ededed;\n\n  --card: #141414;\n  --card-foreground: #ededed;\n  --popover: #141414;\n  --popover-foreground: #ededed;\n\n  --primary: #ededed;\n  --primary-foreground: #0d0d0d;\n\n  --secondary: #1c1c1c;\n  --secondary-foreground: #ededed;\n  --muted: #1c1c1c;\n  --muted-foreground: #9a9a9a;\n  --accent: #222222;\n  --accent-foreground: #f5f5f5;\n\n  --border: #2a2a2a;\n  --input: #2a2a2a;\n  --ring: rgba(237, 237, 237, 0.4);\n\n  --code-bg: #101010;\n  --code-head-bg: #1a1a1a;\n  --code-head-fg: #9a9a9a;\n  --code-fg: #ededed;\n}\n\n/* \u9876\u680F\uFF1A\u7EAF\u767D/\u7EAF\u9ED1\uFF0C\u4E00\u6761 1px \u5B9E\u7EBF */\nheader.sticky {\n  background: var(--background);\n  backdrop-filter: none;\n  border-bottom: 1px solid var(--border);\n}\n\n/* \u7AD9\u540D\u5168\u5927\u5199 + \u5BBD\u5B57\u8DDD\uFF0C\u6742\u5FD7\u5C01\u9762\u611F */\n[data-region='header'] button:first-child {\n  text-transform: uppercase;\n  letter-spacing: 0.14em;\n  font-size: 0.82rem;\n  font-weight: 700;\n}\n\n/* \u5361\u7247\uFF1A\u65B9\u89D2 + 1px \u7EBF\uFF0C\u60AC\u505C\u53EA\u53D8\u7EBF\u8272 */\n[data-region='folders'] a,\n[data-region='folders'] > * {\n  border-radius: 0;\n  border: 1px solid var(--border);\n  background: transparent;\n  transition: border-color 0.15s ease;\n}\n[data-region='folders'] a:hover,\n[data-region='folders'] > *:hover {\n  border-color: var(--foreground);\n}\n\n/* \u5217\u8868\u5BB9\u5668\uFF1A\u53BB\u6389\u5706\u89D2\u4E0E\u5916\u9634\u5F71 */\n[data-region='main'] section {\n  border-radius: 0;\n  border: 1px solid var(--border);\n  box-shadow: none;\n  background: transparent;\n}\n\n/* \u5217\u8868\u884C\uFF1A\u60AC\u505C\u53EA\u7528\u6781\u6D45\u7070\uFF0C\u4E0D\u52A0\u8272 */\n[data-region='main'] li:hover {\n  background: var(--muted);\n  border-radius: 0;\n}\n\n/* \u6B63\u6587\uFF1A\u65E0\u886C\u7EBF\uFF0C\u884C\u8DDD\u7565\u5927 */\n.markdown-body {\n  line-height: 1.9;\n}\n\n/* \u6807\u9898\uFF1A\u65E0\u886C\u7EBF + \u7D27\u5B57\u8DDD\uFF0C\u4E8C\u7EA7\u6807\u9898\u53EA\u7559\u7EC6\u7EBF */\n.markdown-body h1,\n.markdown-body h2,\n.markdown-body h3 {\n  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',\n    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;\n  letter-spacing: -0.01em;\n}\n.markdown-body h2 {\n  border-bottom: 1px solid var(--border);\n  padding-bottom: 0.35em;\n}\n\n/* \u94FE\u63A5\uFF1A\u53EA\u7528\u4E0B\u5212\u7EBF\u533A\u5206\uFF0C\u4E0D\u7528\u989C\u8272 */\n.markdown-body a.internal-link {\n  color: inherit;\n  border-bottom: 1px solid var(--foreground);\n  text-decoration: none;\n}\n.markdown-body a.internal-link:hover {\n  background: var(--muted);\n}\n.markdown-body a.external-link {\n  color: inherit;\n  text-decoration: underline;\n  text-underline-offset: 0.2em;\n}\n\n/* \u5F15\u7528\u5757\uFF1A\u5DE6\u4FA7\u7C97\u9ED1\u7EBF\uFF0C\u65E0\u5E95\u8272 */\n.markdown-body blockquote {\n  border-left: 3px solid var(--foreground);\n  background: transparent;\n  border-radius: 0;\n  color: var(--muted-foreground);\n  font-style: italic;\n}\n\n/* \u884C\u5185\u4EE3\u7801\uFF1A\u65B9\u89D2\u63CF\u8FB9 */\n.markdown-body code.inline-code {\n  border-radius: 0;\n  background: var(--code-bg);\n  border: 1px solid var(--border);\n}\n\n/* \u4EE3\u7801\u5757\uFF1A\u65E0\u5706\u89D2 */\n.markdown-body .code-block {\n  border-radius: 0;\n}\n\n/* \u6807\u7B7E\u80F6\u56CA\uFF1A\u65B9\u89D2 */\n[data-region='main'] button[class*='rounded-full'] {\n  border-radius: 0;\n}\n\n/* \u9605\u8BFB\u533A\u6536\u7A84\uFF0C\u5DE6\u53F3\u5927\u91CF\u7559\u767D */\n[data-region='note'] {\n  max-width: 40rem;\n}\n\n/* \u9875\u811A\uFF1A\u5C45\u4E2D + \u5927\u5199\u5B57\u8DDD */\n[data-region='footer'] {\n  justify-content: center;\n  text-transform: uppercase;\n  letter-spacing: 0.12em;\n  opacity: 0.55;\n}\n"
+  }
+];
 
 // ../scripts/manager-core.mjs
 function createManager(opts) {
@@ -7106,7 +7284,7 @@ function createManager(opts) {
     try {
       if (req.method === "GET" && (url === "/" || url.startsWith("/?"))) {
         res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-        res.end(UI);
+        res.end(UI.replace('"__THEME_PRESETS__"', () => JSON.stringify(THEME_PRESETS)));
         return;
       }
       const { connections, conn, vaultPath, workdir, local } = activeConfig();

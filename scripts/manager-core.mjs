@@ -20,6 +20,7 @@ import { spawnSync } from 'node:child_process'
 import http from 'node:http'
 import matter from 'gray-matter'
 import { UI } from './ui-template.mjs'
+import { THEME_PRESETS } from './theme-presets.mjs'
 
 /**
  * @param {object} opts
@@ -1957,7 +1958,11 @@ export function createManager(opts) {
     try {
       if (req.method === 'GET' && (url === '/' || url.startsWith('/?'))) {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
-        res.end(UI)
+        // 预设外观随页面下发：ui-template.mjs 整体是模板字面量，不能直接插值，
+        // 所以留了 __THEME_PRESETS__ 占位，在这里换成真实数据。
+        // 用 JSON.parse 前的 JSON.stringify 包一层再替换，避免内容里的 $& 之类
+        // 被 String.replace 当成替换模式吃掉。
+        res.end(UI.replace('"__THEME_PRESETS__"', () => JSON.stringify(THEME_PRESETS)))
         return
       }
       const { connections, conn, vaultPath, workdir, local } = activeConfig()
