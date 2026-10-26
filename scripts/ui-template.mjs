@@ -208,6 +208,22 @@ export const UI = `<!DOCTYPE html>
   .authbar .mini { margin-left: auto; }
   .tokenrow { display: flex; gap: 8px; align-items: flex-start; }
   .tokenrow input { flex: 1; font-family: ui-monospace, Consolas, monospace; font-size: 14px; }
+  /* ---- 自定义外观：一大块等宽文本框 ---- */
+  .dialog .panel.wide { max-width: 780px; }
+  .theme-editor { width: 100%; box-sizing: border-box; min-height: 340px; resize: vertical;
+                  font-family: ui-monospace, Consolas, "Cascadia Mono", monospace; font-size: 13px;
+                  line-height: 1.55; tab-size: 2; padding: 11px 12px; border-radius: 9px;
+                  background: var(--field); color: var(--fg); border: 1px solid var(--border-soft); }
+  .theme-editor:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .theme-bar { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .theme-bar .cnt { margin-left: auto; font-size: 13px; color: var(--muted-2); }
+  .theme-bar .cnt.over { color: var(--bad); font-weight: 600; }
+  .theme-tip { font-size: 13.5px; color: var(--muted); margin: 2px 0 10px; line-height: 1.6; }
+  .theme-tip code { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px;
+                    background: var(--chip); padding: 1px 5px; border-radius: 5px; }
+  .theme-msg { font-size: 13.5px; margin-top: 8px; min-height: 16px; }
+  .theme-msg.ok { color: var(--accent); }
+  .theme-msg.bad { color: var(--bad); }
   /* 插件用 iframe 嵌入（?embed=1）：Obsidian 左侧已经是文件树，
      这里的「搜索 + 文件夹网格」重复且挤，整块隐藏，只留连接 / 变更 / 流水 / 发布。 */
   body.embed-mode #mainCard { display: none; }
@@ -237,6 +253,7 @@ export const UI = `<!DOCTYPE html>
   <span class="vmeta" id="vbMeta"></span>
   <span class="vspacer"></span>
   <a class="vlink hidden" id="vbLink" target="_blank" rel="noopener" data-i18n="openSite">↗ 打开网页</a>
+  <button class="mini" id="themeBtn" onclick="openTheme()" data-i18n="themeBtn">外观</button>
   <button class="mini" id="setupBtn" onclick="openActiveSetup()" data-i18n="vaultSettings">设置</button>
 </div>
 
@@ -308,6 +325,26 @@ const DICT = {
     liveTimeout: '等了 4 分钟还没上线，构建可能失败了，请到 GitHub 仓库的 Actions 页面看一眼',
     liveOpen: '打开线上页面',
     vaultSettings: '设置',
+    themeBtn: '外观',
+    themeTitle: '自定义外观',
+    themeIntro: '把你自己的 CSS 粘贴进来，就能改这个博客的颜色、字体、间距和版面位置。保存并发布后，网站 1~2 分钟内生效。',
+    themeTipVars: '改颜色最省事的办法是覆盖这几个变量：',
+    themeTipHook: '要调版面位置，可以对这几块写规则：',
+    themePlaceholder: '/* 例：把强调色换成墨绿，正文用宋体 */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="main"] {\\n  max-width: 54rem;\\n}',
+    themeEmpty: '还没有自定义外观（用默认主题）',
+    themeChars: function (n, max) { return n + ' / ' + max + ' 字符' },
+    themeSave: '保存',
+    themeSavePublish: '保存并发布',
+    themeSaving: '保存中…',
+    themePublishing: '保存并推送中…',
+    themeSaved: '已保存到仓库（还没上线，点「保存并发布」或「更新源码」才会生效）',
+    themeSaveFail: '保存失败：',
+    themePublishFail: '发布失败：',
+    themeCleared: '已清空自定义外观（恢复默认主题）',
+    themeLoading: '正在读取…',
+    themeLoadFail: '读取失败：',
+    themeGuide: '查看可用的变量和选择器',
+    themeClear: '清空',
 
     searchPh: '搜索笔记标题 / 路径…',
     expandAll: '一键展开',
@@ -495,6 +532,26 @@ const DICT = {
     liveTimeout: 'Still not live after 4 minutes — the build may have failed. Check the Actions tab of the GitHub repo.',
     liveOpen: 'Open live site',
     vaultSettings: 'Settings',
+    themeBtn: 'Appearance',
+    themeTitle: 'Custom appearance',
+    themeIntro: 'Paste your own CSS to change this blog’s colors, fonts, spacing and layout. After “Save and publish”, the site updates within 1–2 minutes.',
+    themeTipVars: 'The easiest way to recolor is to override these variables:',
+    themeTipHook: 'To move things around, target these regions:',
+    themePlaceholder: '/* e.g. switch the accent to forest green and use a serif body font */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="main"] {\\n  max-width: 54rem;\\n}',
+    themeEmpty: 'No custom appearance yet (using the default theme)',
+    themeChars: function (n, max) { return n + ' / ' + max + ' characters' },
+    themeSave: 'Save',
+    themeSavePublish: 'Save and publish',
+    themeSaving: 'Saving…',
+    themePublishing: 'Saving and pushing…',
+    themeSaved: 'Saved to the repo (not live yet — use “Save and publish” or “Update source” to apply it)',
+    themeSaveFail: 'Save failed: ',
+    themePublishFail: 'Publish failed: ',
+    themeCleared: 'Custom appearance cleared (back to the default theme)',
+    themeLoading: 'Loading…',
+    themeLoadFail: 'Load failed: ',
+    themeGuide: 'Show available variables and selectors',
+    themeClear: 'Clear',
     searchPh: 'Search note title / path…',
     expandAll: 'Expand all',
     collapseAll: 'Collapse all',
@@ -767,6 +824,18 @@ function refreshDlgsAfterLang() {
       authDialogReopen();
       const ni = document.getElementById('authMainDlg');
       if (ni && tv) ni.querySelector('#tokenIn').value = tv;
+    }
+  }
+  // 外观弹窗：重开会把「正在编辑但还没保存的 CSS」丢掉，这里先存下来再填回去。
+  // 不这么做的话，切一次界面语言就等于把用户粘的一大段样式清空 —— 很难受。
+  const td = document.getElementById('themeDlg');
+  if (td) {
+    const tcss = td.querySelector('#themeCss') ? td.querySelector('#themeCss').value : '';
+    td.remove();
+    if (themeReopen) {
+      themeReopen();
+      const ni = document.getElementById('themeCss');
+      if (ni && tcss) { ni.value = tcss; ni.dispatchEvent(new Event('input')); }
     }
   }
 }
@@ -1332,6 +1401,173 @@ function renderVaults() {
 
 // ---- 新建/修改连接：一个库 + 一个仓库，一步完成 ----
 let setupConn = null, setupPicked = '';
+// ---- 自定义外观 ----
+// 库主人在这个框里粘贴 CSS，保存后写进仓库的 public/theme.css，
+// 由 layout.tsx 以 <link> 引入（见 build-content.mjs 里的 theme.generated.ts）。
+//
+// 为什么只给 CSS、不给整页模板：
+//   站点是 Next 静态导出，页面结构在 React 里编译好了；要让用户改 HTML
+//   就等于把模板引擎暴露出去，安全与升级成本都不是这个项目该承担的。
+//   而 CSS 足以改颜色、字体、间距、显隐、位置（flex/grid 都可覆盖），
+//   又能保证用户写的东西永远不会被当成 HTML/JS 执行。
+let themeReopen = null;
+function openTheme() {
+  themeReopen = openTheme;
+  const old = document.getElementById('themeDlg');
+  if (old) old.remove();
+  const d = document.createElement('div');
+  d.className = 'dialog'; d.id = 'themeDlg';
+  // 这段 HTML 在服务端模板字面量里，只能用单引号拼接（不能用反引号/模板占位）
+  d.innerHTML =
+    '<div class="panel wide">' +
+      '<h2 data-i18n="themeTitle"></h2>' +
+      '<div class="hint" data-i18n="themeIntro"></div>' +
+      '<div class="theme-tip">' +
+        '<span data-i18n="themeTipVars"></span> ' +
+        '<code>--background</code> <code>--foreground</code> <code>--card</code> ' +
+        '<code>--primary</code> <code>--muted-foreground</code> <code>--border</code> ' +
+        '<code>--radius</code>' +
+      '</div>' +
+      '<div class="theme-tip">' +
+        '<span data-i18n="themeTipHook"></span> ' +
+        '<code>[data-region="header"]</code> <code>[data-region="main"]</code> ' +
+        '<code>[data-region="note"]</code> <code>[data-region="folders"]</code> ' +
+        '<code>[data-region="footer"]</code>' +
+      '</div>' +
+      '<textarea class="theme-editor" id="themeCss" spellcheck="false" data-i18n-ph="themePlaceholder"></textarea>' +
+      '<div class="theme-bar">' +
+        '<button class="mini" id="themeGuide" data-i18n="themeGuide"></button>' +
+        '<button class="mini" id="themeClear" data-i18n="themeClear"></button>' +
+        '<span class="cnt" id="themeCnt"></span>' +
+      '</div>' +
+      '<div class="theme-msg" id="themeMsg"></div>' +
+      '<div class="actions">' +
+        '<button class="ghost" id="themeClose" data-i18n="cancel"></button>' +
+        '<button class="ghost" id="themeSave" data-i18n="themeSave"></button>' +
+        '<button id="themePub" data-i18n="themeSavePublish"></button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(d);
+  applyLang();
+
+  const $ = (id) => d.querySelector('#' + id);
+  const ta = $('themeCss');
+  const msg = $('themeMsg');
+  const cnt = $('themeCnt');
+  let maxBytes = 200 * 1024;
+
+  const say = (kind, text) => { msg.className = 'theme-msg ' + kind; msg.textContent = text; };
+  const clearMsg = () => { msg.className = 'theme-msg'; msg.textContent = ''; };
+
+  // 计数按**字节**算，与服务端的 200KB 上限一致：
+  // 中文注释一个字符占 3 字节，按字符数显示会让用户以为还有空间却被拒绝。
+  const updateCount = () => {
+    const bytes = new Blob([ta.value]).size;
+    const over = bytes > maxBytes;
+    cnt.className = 'cnt' + (over ? ' over' : '');
+    // 用 KB 显示更贴近上限的语义（200KB 的上限按字符数说没有意义）
+    cnt.textContent = (bytes / 1024).toFixed(1) + ' / ' + Math.round(maxBytes / 1024) + ' KB';
+    $('themePub').disabled = over;
+    $('themeSave').disabled = over;
+  };
+
+  ta.addEventListener('input', () => { updateCount(); clearMsg(); });
+
+  $('themeClose').onclick = () => d.remove();
+  d.onclick = (e) => { if (e.target === d) d.remove(); };
+
+  // 载入当前值：读接口不 clone、不扫库，工作副本没准备好时返回空串
+  say('', t('themeLoading'));
+  api('/api/theme').then((r) => {
+    ta.value = r.css || '';
+    maxBytes = r.maxBytes || maxBytes;
+    updateCount();
+    if (!r.css) say('', t('themeEmpty'));
+    else clearMsg();
+  }).catch((e) => say('bad', t('themeLoadFail') + e.message));
+
+  $('themeClear').onclick = () => {
+    ta.value = '';
+    updateCount();
+    clearMsg();
+    say('', t('themeCleared'));
+    ta.focus();
+  };
+
+  // 指引：把可改的东西列出来，用户不用去翻源码
+  $('themeGuide').onclick = () => {
+    const guide = [
+      '/* ---- 颜色 / 圆角：覆盖 :root 里的变量即可，深色模式在 .dark 下 ---- */',
+      ':root {',
+      '  --background: oklch(0.99 0.004 250);   /* 页面底色 */',
+      '  --foreground: oklch(0.19 0.021 257);   /* 正文颜色 */',
+      '  --card: oklch(1 0 0);                  /* 卡片底色 */',
+      '  --primary: oklch(0.55 0.16 256);       /* 强调色（链接、按钮） */',
+      '  --muted-foreground: oklch(0.53 0.019 255); /* 次要文字 */',
+      '  --border: oklch(0.916 0.008 253);      /* 描边 */',
+      '  --radius: 0.625rem;                    /* 圆角 */',
+      '}',
+      '.dark {',
+      '  --background: oklch(0.17 0.022 256);',
+      '  --primary: oklch(0.72 0.155 252);',
+      '}',
+      '',
+      '/* ---- 版面位置：这几块都有 data-region，可直接改宽高与排布 ---- */',
+      '[data-region="header"] { /* 顶栏 */ }',
+      '[data-region="main"]   { max-width: 54rem; }  /* 内容区宽度 */',
+      '[data-region="note"]   { }                    /* 单篇笔记 */',
+      '[data-region="folders"] { }                   /* 首页文件夹网格 */',
+      '[data-region="footer"] { }                    /* 页脚 */',
+      '',
+      '/* ---- 字体 ---- */',
+      'body { font-family: "Songti SC", serif; }',
+    ].join('\\n');
+    // 追加而不是覆盖：用户可能已经写了一半
+    ta.value = ta.value.trim() ? ta.value.replace(/\\s*$/, '\\n\\n') + guide : guide;
+    updateCount();
+    ta.focus();
+  };
+
+  const save = async (alsoPublish) => {
+    const css = ta.value;
+    const btn = alsoPublish ? $('themePub') : $('themeSave');
+    const other = alsoPublish ? $('themeSave') : $('themePub');
+    const old = btn.textContent;
+    btn.disabled = true; other.disabled = true;
+    btn.textContent = alsoPublish ? t('themePublishing') : t('themeSaving');
+    clearMsg();
+    try {
+      const r = alsoPublish
+        ? await api('/api/theme/publish', { css })
+        : await api('/api/theme', { css });
+      if (alsoPublish) {
+        if (r.failed) {
+          // 文件已经写进工作副本，只是没推上去 —— 这一点必须说清，
+          // 否则用户会以为连保存都失败了，重开弹窗发现内容还在，反而更困惑。
+          say('bad', t('themePublishFail') + ((r.log && r.log[r.log.length - 1]) || ''));
+        } else if (r.pushed) {
+          say('ok', (r.log && r.log[0]) || t('themeSaved'));
+          setTimeout(() => { const x = document.getElementById('themeDlg'); if (x) x.remove(); }, 1600);
+        } else {
+          say('ok', (r.log && r.log[0]) || t('themeSaved'));
+        }
+      } else {
+        say('ok', t('themeSaved'));
+      }
+      try { await loadState(); } catch (e) { /* 状态刷新失败不影响保存结果 */ }
+    } catch (e) {
+      say('bad', (alsoPublish ? t('themePublishFail') : t('themeSaveFail')) + e.message);
+    } finally {
+      btn.disabled = false; other.disabled = false;
+      btn.textContent = old;
+      updateCount();
+    }
+  };
+
+  $('themeSave').onclick = () => save(false);
+  $('themePub').onclick = () => save(true);
+}
+
 // 顶部「设置」按钮：没有连接时是「新建」，有连接时编辑当前这个
 function openActiveSetup() {
   const cur = S.connections.find((c) => c.id === S.active) || null;

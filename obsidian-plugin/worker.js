@@ -3733,6 +3733,22 @@ var UI = `<!DOCTYPE html>
   .authbar .mini { margin-left: auto; }
   .tokenrow { display: flex; gap: 8px; align-items: flex-start; }
   .tokenrow input { flex: 1; font-family: ui-monospace, Consolas, monospace; font-size: 14px; }
+  /* ---- \u81EA\u5B9A\u4E49\u5916\u89C2\uFF1A\u4E00\u5927\u5757\u7B49\u5BBD\u6587\u672C\u6846 ---- */
+  .dialog .panel.wide { max-width: 780px; }
+  .theme-editor { width: 100%; box-sizing: border-box; min-height: 340px; resize: vertical;
+                  font-family: ui-monospace, Consolas, "Cascadia Mono", monospace; font-size: 13px;
+                  line-height: 1.55; tab-size: 2; padding: 11px 12px; border-radius: 9px;
+                  background: var(--field); color: var(--fg); border: 1px solid var(--border-soft); }
+  .theme-editor:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .theme-bar { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .theme-bar .cnt { margin-left: auto; font-size: 13px; color: var(--muted-2); }
+  .theme-bar .cnt.over { color: var(--bad); font-weight: 600; }
+  .theme-tip { font-size: 13.5px; color: var(--muted); margin: 2px 0 10px; line-height: 1.6; }
+  .theme-tip code { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px;
+                    background: var(--chip); padding: 1px 5px; border-radius: 5px; }
+  .theme-msg { font-size: 13.5px; margin-top: 8px; min-height: 16px; }
+  .theme-msg.ok { color: var(--accent); }
+  .theme-msg.bad { color: var(--bad); }
   /* \u63D2\u4EF6\u7528 iframe \u5D4C\u5165\uFF08?embed=1\uFF09\uFF1AObsidian \u5DE6\u4FA7\u5DF2\u7ECF\u662F\u6587\u4EF6\u6811\uFF0C
      \u8FD9\u91CC\u7684\u300C\u641C\u7D22 + \u6587\u4EF6\u5939\u7F51\u683C\u300D\u91CD\u590D\u4E14\u6324\uFF0C\u6574\u5757\u9690\u85CF\uFF0C\u53EA\u7559\u8FDE\u63A5 / \u53D8\u66F4 / \u6D41\u6C34 / \u53D1\u5E03\u3002 */
   body.embed-mode #mainCard { display: none; }
@@ -3762,6 +3778,7 @@ var UI = `<!DOCTYPE html>
   <span class="vmeta" id="vbMeta"></span>
   <span class="vspacer"></span>
   <a class="vlink hidden" id="vbLink" target="_blank" rel="noopener" data-i18n="openSite">\u2197 \u6253\u5F00\u7F51\u9875</a>
+  <button class="mini" id="themeBtn" onclick="openTheme()" data-i18n="themeBtn">\u5916\u89C2</button>
   <button class="mini" id="setupBtn" onclick="openActiveSetup()" data-i18n="vaultSettings">\u8BBE\u7F6E</button>
 </div>
 
@@ -3833,6 +3850,26 @@ const DICT = {
     liveTimeout: '\u7B49\u4E86 4 \u5206\u949F\u8FD8\u6CA1\u4E0A\u7EBF\uFF0C\u6784\u5EFA\u53EF\u80FD\u5931\u8D25\u4E86\uFF0C\u8BF7\u5230 GitHub \u4ED3\u5E93\u7684 Actions \u9875\u9762\u770B\u4E00\u773C',
     liveOpen: '\u6253\u5F00\u7EBF\u4E0A\u9875\u9762',
     vaultSettings: '\u8BBE\u7F6E',
+    themeBtn: '\u5916\u89C2',
+    themeTitle: '\u81EA\u5B9A\u4E49\u5916\u89C2',
+    themeIntro: '\u628A\u4F60\u81EA\u5DF1\u7684 CSS \u7C98\u8D34\u8FDB\u6765\uFF0C\u5C31\u80FD\u6539\u8FD9\u4E2A\u535A\u5BA2\u7684\u989C\u8272\u3001\u5B57\u4F53\u3001\u95F4\u8DDD\u548C\u7248\u9762\u4F4D\u7F6E\u3002\u4FDD\u5B58\u5E76\u53D1\u5E03\u540E\uFF0C\u7F51\u7AD9 1~2 \u5206\u949F\u5185\u751F\u6548\u3002',
+    themeTipVars: '\u6539\u989C\u8272\u6700\u7701\u4E8B\u7684\u529E\u6CD5\u662F\u8986\u76D6\u8FD9\u51E0\u4E2A\u53D8\u91CF\uFF1A',
+    themeTipHook: '\u8981\u8C03\u7248\u9762\u4F4D\u7F6E\uFF0C\u53EF\u4EE5\u5BF9\u8FD9\u51E0\u5757\u5199\u89C4\u5219\uFF1A',
+    themePlaceholder: '/* \u4F8B\uFF1A\u628A\u5F3A\u8C03\u8272\u6362\u6210\u58A8\u7EFF\uFF0C\u6B63\u6587\u7528\u5B8B\u4F53 */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="main"] {\\n  max-width: 54rem;\\n}',
+    themeEmpty: '\u8FD8\u6CA1\u6709\u81EA\u5B9A\u4E49\u5916\u89C2\uFF08\u7528\u9ED8\u8BA4\u4E3B\u9898\uFF09',
+    themeChars: function (n, max) { return n + ' / ' + max + ' \u5B57\u7B26' },
+    themeSave: '\u4FDD\u5B58',
+    themeSavePublish: '\u4FDD\u5B58\u5E76\u53D1\u5E03',
+    themeSaving: '\u4FDD\u5B58\u4E2D\u2026',
+    themePublishing: '\u4FDD\u5B58\u5E76\u63A8\u9001\u4E2D\u2026',
+    themeSaved: '\u5DF2\u4FDD\u5B58\u5230\u4ED3\u5E93\uFF08\u8FD8\u6CA1\u4E0A\u7EBF\uFF0C\u70B9\u300C\u4FDD\u5B58\u5E76\u53D1\u5E03\u300D\u6216\u300C\u66F4\u65B0\u6E90\u7801\u300D\u624D\u4F1A\u751F\u6548\uFF09',
+    themeSaveFail: '\u4FDD\u5B58\u5931\u8D25\uFF1A',
+    themePublishFail: '\u53D1\u5E03\u5931\u8D25\uFF1A',
+    themeCleared: '\u5DF2\u6E05\u7A7A\u81EA\u5B9A\u4E49\u5916\u89C2\uFF08\u6062\u590D\u9ED8\u8BA4\u4E3B\u9898\uFF09',
+    themeLoading: '\u6B63\u5728\u8BFB\u53D6\u2026',
+    themeLoadFail: '\u8BFB\u53D6\u5931\u8D25\uFF1A',
+    themeGuide: '\u67E5\u770B\u53EF\u7528\u7684\u53D8\u91CF\u548C\u9009\u62E9\u5668',
+    themeClear: '\u6E05\u7A7A',
 
     searchPh: '\u641C\u7D22\u7B14\u8BB0\u6807\u9898 / \u8DEF\u5F84\u2026',
     expandAll: '\u4E00\u952E\u5C55\u5F00',
@@ -4020,6 +4057,26 @@ const DICT = {
     liveTimeout: 'Still not live after 4 minutes \u2014 the build may have failed. Check the Actions tab of the GitHub repo.',
     liveOpen: 'Open live site',
     vaultSettings: 'Settings',
+    themeBtn: 'Appearance',
+    themeTitle: 'Custom appearance',
+    themeIntro: 'Paste your own CSS to change this blog\u2019s colors, fonts, spacing and layout. After \u201CSave and publish\u201D, the site updates within 1\u20132 minutes.',
+    themeTipVars: 'The easiest way to recolor is to override these variables:',
+    themeTipHook: 'To move things around, target these regions:',
+    themePlaceholder: '/* e.g. switch the accent to forest green and use a serif body font */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="main"] {\\n  max-width: 54rem;\\n}',
+    themeEmpty: 'No custom appearance yet (using the default theme)',
+    themeChars: function (n, max) { return n + ' / ' + max + ' characters' },
+    themeSave: 'Save',
+    themeSavePublish: 'Save and publish',
+    themeSaving: 'Saving\u2026',
+    themePublishing: 'Saving and pushing\u2026',
+    themeSaved: 'Saved to the repo (not live yet \u2014 use \u201CSave and publish\u201D or \u201CUpdate source\u201D to apply it)',
+    themeSaveFail: 'Save failed: ',
+    themePublishFail: 'Publish failed: ',
+    themeCleared: 'Custom appearance cleared (back to the default theme)',
+    themeLoading: 'Loading\u2026',
+    themeLoadFail: 'Load failed: ',
+    themeGuide: 'Show available variables and selectors',
+    themeClear: 'Clear',
     searchPh: 'Search note title / path\u2026',
     expandAll: 'Expand all',
     collapseAll: 'Collapse all',
@@ -4292,6 +4349,18 @@ function refreshDlgsAfterLang() {
       authDialogReopen();
       const ni = document.getElementById('authMainDlg');
       if (ni && tv) ni.querySelector('#tokenIn').value = tv;
+    }
+  }
+  // \u5916\u89C2\u5F39\u7A97\uFF1A\u91CD\u5F00\u4F1A\u628A\u300C\u6B63\u5728\u7F16\u8F91\u4F46\u8FD8\u6CA1\u4FDD\u5B58\u7684 CSS\u300D\u4E22\u6389\uFF0C\u8FD9\u91CC\u5148\u5B58\u4E0B\u6765\u518D\u586B\u56DE\u53BB\u3002
+  // \u4E0D\u8FD9\u4E48\u505A\u7684\u8BDD\uFF0C\u5207\u4E00\u6B21\u754C\u9762\u8BED\u8A00\u5C31\u7B49\u4E8E\u628A\u7528\u6237\u7C98\u7684\u4E00\u5927\u6BB5\u6837\u5F0F\u6E05\u7A7A \u2014\u2014 \u5F88\u96BE\u53D7\u3002
+  const td = document.getElementById('themeDlg');
+  if (td) {
+    const tcss = td.querySelector('#themeCss') ? td.querySelector('#themeCss').value : '';
+    td.remove();
+    if (themeReopen) {
+      themeReopen();
+      const ni = document.getElementById('themeCss');
+      if (ni && tcss) { ni.value = tcss; ni.dispatchEvent(new Event('input')); }
     }
   }
 }
@@ -4857,6 +4926,173 @@ function renderVaults() {
 
 // ---- \u65B0\u5EFA/\u4FEE\u6539\u8FDE\u63A5\uFF1A\u4E00\u4E2A\u5E93 + \u4E00\u4E2A\u4ED3\u5E93\uFF0C\u4E00\u6B65\u5B8C\u6210 ----
 let setupConn = null, setupPicked = '';
+// ---- \u81EA\u5B9A\u4E49\u5916\u89C2 ----
+// \u5E93\u4E3B\u4EBA\u5728\u8FD9\u4E2A\u6846\u91CC\u7C98\u8D34 CSS\uFF0C\u4FDD\u5B58\u540E\u5199\u8FDB\u4ED3\u5E93\u7684 public/theme.css\uFF0C
+// \u7531 layout.tsx \u4EE5 <link> \u5F15\u5165\uFF08\u89C1 build-content.mjs \u91CC\u7684 theme.generated.ts\uFF09\u3002
+//
+// \u4E3A\u4EC0\u4E48\u53EA\u7ED9 CSS\u3001\u4E0D\u7ED9\u6574\u9875\u6A21\u677F\uFF1A
+//   \u7AD9\u70B9\u662F Next \u9759\u6001\u5BFC\u51FA\uFF0C\u9875\u9762\u7ED3\u6784\u5728 React \u91CC\u7F16\u8BD1\u597D\u4E86\uFF1B\u8981\u8BA9\u7528\u6237\u6539 HTML
+//   \u5C31\u7B49\u4E8E\u628A\u6A21\u677F\u5F15\u64CE\u66B4\u9732\u51FA\u53BB\uFF0C\u5B89\u5168\u4E0E\u5347\u7EA7\u6210\u672C\u90FD\u4E0D\u662F\u8FD9\u4E2A\u9879\u76EE\u8BE5\u627F\u62C5\u7684\u3002
+//   \u800C CSS \u8DB3\u4EE5\u6539\u989C\u8272\u3001\u5B57\u4F53\u3001\u95F4\u8DDD\u3001\u663E\u9690\u3001\u4F4D\u7F6E\uFF08flex/grid \u90FD\u53EF\u8986\u76D6\uFF09\uFF0C
+//   \u53C8\u80FD\u4FDD\u8BC1\u7528\u6237\u5199\u7684\u4E1C\u897F\u6C38\u8FDC\u4E0D\u4F1A\u88AB\u5F53\u6210 HTML/JS \u6267\u884C\u3002
+let themeReopen = null;
+function openTheme() {
+  themeReopen = openTheme;
+  const old = document.getElementById('themeDlg');
+  if (old) old.remove();
+  const d = document.createElement('div');
+  d.className = 'dialog'; d.id = 'themeDlg';
+  // \u8FD9\u6BB5 HTML \u5728\u670D\u52A1\u7AEF\u6A21\u677F\u5B57\u9762\u91CF\u91CC\uFF0C\u53EA\u80FD\u7528\u5355\u5F15\u53F7\u62FC\u63A5\uFF08\u4E0D\u80FD\u7528\u53CD\u5F15\u53F7/\u6A21\u677F\u5360\u4F4D\uFF09
+  d.innerHTML =
+    '<div class="panel wide">' +
+      '<h2 data-i18n="themeTitle"></h2>' +
+      '<div class="hint" data-i18n="themeIntro"></div>' +
+      '<div class="theme-tip">' +
+        '<span data-i18n="themeTipVars"></span> ' +
+        '<code>--background</code> <code>--foreground</code> <code>--card</code> ' +
+        '<code>--primary</code> <code>--muted-foreground</code> <code>--border</code> ' +
+        '<code>--radius</code>' +
+      '</div>' +
+      '<div class="theme-tip">' +
+        '<span data-i18n="themeTipHook"></span> ' +
+        '<code>[data-region="header"]</code> <code>[data-region="main"]</code> ' +
+        '<code>[data-region="note"]</code> <code>[data-region="folders"]</code> ' +
+        '<code>[data-region="footer"]</code>' +
+      '</div>' +
+      '<textarea class="theme-editor" id="themeCss" spellcheck="false" data-i18n-ph="themePlaceholder"></textarea>' +
+      '<div class="theme-bar">' +
+        '<button class="mini" id="themeGuide" data-i18n="themeGuide"></button>' +
+        '<button class="mini" id="themeClear" data-i18n="themeClear"></button>' +
+        '<span class="cnt" id="themeCnt"></span>' +
+      '</div>' +
+      '<div class="theme-msg" id="themeMsg"></div>' +
+      '<div class="actions">' +
+        '<button class="ghost" id="themeClose" data-i18n="cancel"></button>' +
+        '<button class="ghost" id="themeSave" data-i18n="themeSave"></button>' +
+        '<button id="themePub" data-i18n="themeSavePublish"></button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(d);
+  applyLang();
+
+  const $ = (id) => d.querySelector('#' + id);
+  const ta = $('themeCss');
+  const msg = $('themeMsg');
+  const cnt = $('themeCnt');
+  let maxBytes = 200 * 1024;
+
+  const say = (kind, text) => { msg.className = 'theme-msg ' + kind; msg.textContent = text; };
+  const clearMsg = () => { msg.className = 'theme-msg'; msg.textContent = ''; };
+
+  // \u8BA1\u6570\u6309**\u5B57\u8282**\u7B97\uFF0C\u4E0E\u670D\u52A1\u7AEF\u7684 200KB \u4E0A\u9650\u4E00\u81F4\uFF1A
+  // \u4E2D\u6587\u6CE8\u91CA\u4E00\u4E2A\u5B57\u7B26\u5360 3 \u5B57\u8282\uFF0C\u6309\u5B57\u7B26\u6570\u663E\u793A\u4F1A\u8BA9\u7528\u6237\u4EE5\u4E3A\u8FD8\u6709\u7A7A\u95F4\u5374\u88AB\u62D2\u7EDD\u3002
+  const updateCount = () => {
+    const bytes = new Blob([ta.value]).size;
+    const over = bytes > maxBytes;
+    cnt.className = 'cnt' + (over ? ' over' : '');
+    // \u7528 KB \u663E\u793A\u66F4\u8D34\u8FD1\u4E0A\u9650\u7684\u8BED\u4E49\uFF08200KB \u7684\u4E0A\u9650\u6309\u5B57\u7B26\u6570\u8BF4\u6CA1\u6709\u610F\u4E49\uFF09
+    cnt.textContent = (bytes / 1024).toFixed(1) + ' / ' + Math.round(maxBytes / 1024) + ' KB';
+    $('themePub').disabled = over;
+    $('themeSave').disabled = over;
+  };
+
+  ta.addEventListener('input', () => { updateCount(); clearMsg(); });
+
+  $('themeClose').onclick = () => d.remove();
+  d.onclick = (e) => { if (e.target === d) d.remove(); };
+
+  // \u8F7D\u5165\u5F53\u524D\u503C\uFF1A\u8BFB\u63A5\u53E3\u4E0D clone\u3001\u4E0D\u626B\u5E93\uFF0C\u5DE5\u4F5C\u526F\u672C\u6CA1\u51C6\u5907\u597D\u65F6\u8FD4\u56DE\u7A7A\u4E32
+  say('', t('themeLoading'));
+  api('/api/theme').then((r) => {
+    ta.value = r.css || '';
+    maxBytes = r.maxBytes || maxBytes;
+    updateCount();
+    if (!r.css) say('', t('themeEmpty'));
+    else clearMsg();
+  }).catch((e) => say('bad', t('themeLoadFail') + e.message));
+
+  $('themeClear').onclick = () => {
+    ta.value = '';
+    updateCount();
+    clearMsg();
+    say('', t('themeCleared'));
+    ta.focus();
+  };
+
+  // \u6307\u5F15\uFF1A\u628A\u53EF\u6539\u7684\u4E1C\u897F\u5217\u51FA\u6765\uFF0C\u7528\u6237\u4E0D\u7528\u53BB\u7FFB\u6E90\u7801
+  $('themeGuide').onclick = () => {
+    const guide = [
+      '/* ---- \u989C\u8272 / \u5706\u89D2\uFF1A\u8986\u76D6 :root \u91CC\u7684\u53D8\u91CF\u5373\u53EF\uFF0C\u6DF1\u8272\u6A21\u5F0F\u5728 .dark \u4E0B ---- */',
+      ':root {',
+      '  --background: oklch(0.99 0.004 250);   /* \u9875\u9762\u5E95\u8272 */',
+      '  --foreground: oklch(0.19 0.021 257);   /* \u6B63\u6587\u989C\u8272 */',
+      '  --card: oklch(1 0 0);                  /* \u5361\u7247\u5E95\u8272 */',
+      '  --primary: oklch(0.55 0.16 256);       /* \u5F3A\u8C03\u8272\uFF08\u94FE\u63A5\u3001\u6309\u94AE\uFF09 */',
+      '  --muted-foreground: oklch(0.53 0.019 255); /* \u6B21\u8981\u6587\u5B57 */',
+      '  --border: oklch(0.916 0.008 253);      /* \u63CF\u8FB9 */',
+      '  --radius: 0.625rem;                    /* \u5706\u89D2 */',
+      '}',
+      '.dark {',
+      '  --background: oklch(0.17 0.022 256);',
+      '  --primary: oklch(0.72 0.155 252);',
+      '}',
+      '',
+      '/* ---- \u7248\u9762\u4F4D\u7F6E\uFF1A\u8FD9\u51E0\u5757\u90FD\u6709 data-region\uFF0C\u53EF\u76F4\u63A5\u6539\u5BBD\u9AD8\u4E0E\u6392\u5E03 ---- */',
+      '[data-region="header"] { /* \u9876\u680F */ }',
+      '[data-region="main"]   { max-width: 54rem; }  /* \u5185\u5BB9\u533A\u5BBD\u5EA6 */',
+      '[data-region="note"]   { }                    /* \u5355\u7BC7\u7B14\u8BB0 */',
+      '[data-region="folders"] { }                   /* \u9996\u9875\u6587\u4EF6\u5939\u7F51\u683C */',
+      '[data-region="footer"] { }                    /* \u9875\u811A */',
+      '',
+      '/* ---- \u5B57\u4F53 ---- */',
+      'body { font-family: "Songti SC", serif; }',
+    ].join('\\n');
+    // \u8FFD\u52A0\u800C\u4E0D\u662F\u8986\u76D6\uFF1A\u7528\u6237\u53EF\u80FD\u5DF2\u7ECF\u5199\u4E86\u4E00\u534A
+    ta.value = ta.value.trim() ? ta.value.replace(/\\s*$/, '\\n\\n') + guide : guide;
+    updateCount();
+    ta.focus();
+  };
+
+  const save = async (alsoPublish) => {
+    const css = ta.value;
+    const btn = alsoPublish ? $('themePub') : $('themeSave');
+    const other = alsoPublish ? $('themeSave') : $('themePub');
+    const old = btn.textContent;
+    btn.disabled = true; other.disabled = true;
+    btn.textContent = alsoPublish ? t('themePublishing') : t('themeSaving');
+    clearMsg();
+    try {
+      const r = alsoPublish
+        ? await api('/api/theme/publish', { css })
+        : await api('/api/theme', { css });
+      if (alsoPublish) {
+        if (r.failed) {
+          // \u6587\u4EF6\u5DF2\u7ECF\u5199\u8FDB\u5DE5\u4F5C\u526F\u672C\uFF0C\u53EA\u662F\u6CA1\u63A8\u4E0A\u53BB \u2014\u2014 \u8FD9\u4E00\u70B9\u5FC5\u987B\u8BF4\u6E05\uFF0C
+          // \u5426\u5219\u7528\u6237\u4F1A\u4EE5\u4E3A\u8FDE\u4FDD\u5B58\u90FD\u5931\u8D25\u4E86\uFF0C\u91CD\u5F00\u5F39\u7A97\u53D1\u73B0\u5185\u5BB9\u8FD8\u5728\uFF0C\u53CD\u800C\u66F4\u56F0\u60D1\u3002
+          say('bad', t('themePublishFail') + ((r.log && r.log[r.log.length - 1]) || ''));
+        } else if (r.pushed) {
+          say('ok', (r.log && r.log[0]) || t('themeSaved'));
+          setTimeout(() => { const x = document.getElementById('themeDlg'); if (x) x.remove(); }, 1600);
+        } else {
+          say('ok', (r.log && r.log[0]) || t('themeSaved'));
+        }
+      } else {
+        say('ok', t('themeSaved'));
+      }
+      try { await loadState(); } catch (e) { /* \u72B6\u6001\u5237\u65B0\u5931\u8D25\u4E0D\u5F71\u54CD\u4FDD\u5B58\u7ED3\u679C */ }
+    } catch (e) {
+      say('bad', (alsoPublish ? t('themePublishFail') : t('themeSaveFail')) + e.message);
+    } finally {
+      btn.disabled = false; other.disabled = false;
+      btn.textContent = old;
+      updateCount();
+    }
+  };
+
+  $('themeSave').onclick = () => save(false);
+  $('themePub').onclick = () => save(true);
+}
+
 // \u9876\u90E8\u300C\u8BBE\u7F6E\u300D\u6309\u94AE\uFF1A\u6CA1\u6709\u8FDE\u63A5\u65F6\u662F\u300C\u65B0\u5EFA\u300D\uFF0C\u6709\u8FDE\u63A5\u65F6\u7F16\u8F91\u5F53\u524D\u8FD9\u4E2A
 function openActiveSetup() {
   const cur = S.connections.find((c) => c.id === S.active) || null;
@@ -5764,6 +6000,29 @@ function createManager(opts) {
     return { local, connections, conn, vaultPath, workdir };
   }
   const TEMPLATE_ITEMS = ["package.json", "package-lock.json", "next.config.ts", "postcss.config.mjs", "components.json", "tsconfig.json", "src", "scripts/build-content.mjs", ".github"];
+  const THEME_REL = import_node_path.default.join("public", "theme.css");
+  const THEME_MAX_BYTES = 200 * 1024;
+  function readThemeCss(workdir) {
+    if (!workdir) return "";
+    try {
+      return import_node_fs.default.readFileSync(import_node_path.default.join(workdir, THEME_REL), "utf8");
+    } catch {
+      return "";
+    }
+  }
+  function writeThemeCss(workdir, css) {
+    const file = import_node_path.default.join(workdir, THEME_REL);
+    if (!css.trim()) {
+      try {
+        import_node_fs.default.rmSync(file, { force: true });
+      } catch {
+      }
+      return { bytes: 0, removed: true };
+    }
+    import_node_fs.default.mkdirSync(import_node_path.default.dirname(file), { recursive: true });
+    import_node_fs.default.writeFileSync(file, css.replace(/\r\n?/g, "\n"), "utf8");
+    return { bytes: Buffer.byteLength(css, "utf8"), removed: false };
+  }
   function initTemplate(workdir, overwrite = true) {
     import_node_fs.default.mkdirSync(workdir, { recursive: true });
     for (const item of TEMPLATE_ITEMS) {
@@ -6550,6 +6809,86 @@ function createManager(opts) {
     }
     return { failed, pushed, failKind, commit };
   }
+  async function publishThemeOnly(conn, workdir, lang, bytes) {
+    const msg2 = (key, ...args) => sm(lang, key, ...args);
+    const log2 = [];
+    const rel = "public/theme.css";
+    let failed = false;
+    let pushed = false;
+    let failKind = null;
+    try {
+      try {
+        git(["config", "user.email"], workdir);
+      } catch {
+        git(["config", "user.email", "manager@local"], workdir);
+        git(["config", "user.name", msg2("gitUserName")], workdir);
+      }
+      const dirty = git(["status", "--porcelain"], workdir).split("\n").map((l) => l.slice(3).trim()).filter(Boolean).filter((p) => p !== rel && !p.startsWith("public/theme.css"));
+      if (dirty.length > 0) {
+        log2.push(msg2("logThemeOtherDirty", dirty.length));
+      }
+      git(["add", "--", rel], workdir);
+      const staged = git(["diff", "--cached", "--name-only"], workdir).trim();
+      if (!staged) {
+        log2.push(msg2("logThemeNoChange"));
+      } else {
+        git(["commit", "-m", msg2("commitThemeMsg")], workdir);
+        const pre = preflightRemote(conn.repo);
+        if (!pre.ok) {
+          if (pre.network) failKind = "network";
+          const le = new Error(localizeRaw(lang, pre.detail || "unreachable"));
+          le.localized = true;
+          throw le;
+        }
+        const branch = conn.branch || "main";
+        try {
+          git(["pull", "--rebase", "--autostash", "--allow-unrelated-histories", "origin", branch], workdir);
+        } catch (pullErr) {
+          try {
+            git(["rebase", "--abort"], workdir);
+          } catch {
+          }
+          let remoteHas = "";
+          try {
+            remoteHas = git(["ls-remote", "--heads", "origin", branch], workdir);
+          } catch {
+            remoteHas = "unknown";
+          }
+          if (remoteHas.trim()) {
+            const le = new Error(localizeRaw(lang, String(pullErr && pullErr.message || pullErr).slice(0, 300)));
+            le.localized = true;
+            throw le;
+          }
+        }
+        try {
+          git(["push", "origin", "HEAD"], workdir);
+        } catch (e) {
+          const text = String(e && e.message || e);
+          if (/Could not connect|Failed to connect|unable to access|Connection was reset|timed out|SSL/i.test(text)) {
+            failKind = "network";
+          }
+          throw e;
+        }
+        pushed = true;
+        log2.push(msg2("logThemePushed", bytes));
+      }
+      if (pushed) {
+        const pg = await ensurePages(conn.repo);
+        if (pg.ok && pg.created) log2.push(msg2("logPagesOn"));
+        else if (!pg.ok) log2.push(msg2("logPagesFail") + localizeReason(lang, pg.reason || "") + (lang === "zh" ? "\uFF09" : ")"));
+      }
+    } catch (e) {
+      failed = true;
+      const rawMsg = String(e && e.message || e);
+      log2.push(msg2("logGitFail") + (e && e.localized ? rawMsg : localizeRaw(lang, rawMsg.slice(0, 300))));
+    }
+    let commit = "";
+    try {
+      commit = git(["rev-parse", "HEAD"], workdir).trim();
+    } catch {
+    }
+    return { failed, pushed, failKind, commit, log: log2 };
+  }
   async function updateSource(conn, workdir, lang) {
     const msg2 = (key, ...args) => sm(lang, key, ...args);
     const log2 = [];
@@ -6607,6 +6946,13 @@ function createManager(opts) {
       commitMsg: "\u53D1\u5E03\u66F4\u65B0 ",
       commitSrcMsg: "\u66F4\u65B0\u7AD9\u70B9\u6E90\u7801 ",
       logSrcSynced: "\u7AD9\u70B9\u6E90\u7801\u5DF2\u540C\u6B65\u5230\u5DE5\u4F5C\u526F\u672C",
+      // ---- 自定义外观 ----
+      errThemeType: "\u5916\u89C2\u5185\u5BB9\u5FC5\u987B\u662F\u6587\u672C\uFF08CSS\uFF09",
+      errThemeTooBig: (bytes, max) => `\u5916\u89C2\u592A\u5927\uFF08${Math.round(bytes / 1024)}KB\uFF09\uFF0C\u4E0A\u9650 ${Math.round(max / 1024)}KB\u3002\u8BF7\u7CBE\u7B80\u540E\u518D\u4FDD\u5B58\u3002`,
+      logThemeNoChange: "\u5916\u89C2\u6CA1\u6709\u53D8\u5316\uFF0C\u65E0\u9700\u63A8\u9001",
+      logThemePushed: (bytes) => `\u81EA\u5B9A\u4E49\u5916\u89C2\u5DF2\u63A8\u9001\uFF08${Math.round(bytes / 1024) || 1}KB\uFF09\uFF0CGitHub Actions \u6784\u5EFA\u4E2D\uFF081~2 \u5206\u949F\u540E\u7F51\u7AD9\u81EA\u52A8\u66F4\u65B0\uFF09`,
+      logThemeOtherDirty: (n) => `\u6CE8\u610F\uFF1A\u5DE5\u4F5C\u526F\u672C\u91CC\u8FD8\u6709 ${n} \u5904\u5176\u5B83\u6539\u52A8\u6CA1\u6709\u63D0\u4EA4\uFF0C\u672C\u6B21\u53EA\u63A8\u9001\u4E86\u5916\u89C2\u3002\u8981\u4E00\u5E76\u4E0A\u7EBF\u8BF7\u70B9\u300C\u53D1\u5E03\u300D\u6216\u300C\u66F4\u65B0\u6E90\u7801\u300D\u3002`,
+      commitThemeMsg: "\u66F4\u65B0\u81EA\u5B9A\u4E49\u5916\u89C2 ",
       gitUserName: "\u53D1\u5E03\u7BA1\u7406\u5668",
       pickDesc: "\u9009\u62E9\u4F60\u7684 Obsidian \u5E93\u6587\u4EF6\u5939\uFF08\u91CC\u9762\u5E94\u6709 .obsidian \u76EE\u5F55\uFF09",
       // ---- 原始错误的本地化分类（git / 网络 / GitHub 响应本身都是英文的）----
@@ -6668,6 +7014,13 @@ function createManager(opts) {
       commitMsg: "Publish update ",
       commitSrcMsg: "Update site source ",
       logSrcSynced: "Site source synced to the working copy",
+      // ---- Custom appearance ----
+      errThemeType: "Appearance must be text (CSS)",
+      errThemeTooBig: (bytes, max) => `Appearance is too large (${Math.round(bytes / 1024)}KB); the limit is ${Math.round(max / 1024)}KB. Trim it and save again.`,
+      logThemeNoChange: "Appearance unchanged \u2014 nothing to push",
+      logThemePushed: (bytes) => `Custom appearance pushed (${Math.round(bytes / 1024) || 1}KB). GitHub Actions is building \u2014 the site updates in 1\u20132 minutes.`,
+      logThemeOtherDirty: (n) => `Note: ${n} other change(s) in the working copy were not committed. Only the appearance was pushed. Use Publish or Update source to ship them.`,
+      commitThemeMsg: "Update custom appearance ",
       gitUserName: "Publish Manager",
       pickDesc: "Choose your Obsidian vault folder (it should contain a .obsidian folder)",
       // ---- Localized buckets for raw errors (git / network / GitHub replies are English) ----
@@ -7023,6 +7376,72 @@ function createManager(opts) {
         }
         const r = await updateSource(conn, wd.workdir, langOf(req));
         json(res, 200, { log: r.log, failed: r.failed, pushed: r.pushed, failKind: r.failKind || null, commit: r.commit || "" });
+        return;
+      }
+      if (req.method === "GET" && url === "/api/theme") {
+        const css = readThemeCss(workdir);
+        json(res, 200, {
+          css,
+          bytes: Buffer.byteLength(css, "utf8"),
+          maxBytes: THEME_MAX_BYTES,
+          hasWorkdir: !!workdir && import_node_fs.default.existsSync(workdir)
+        });
+        return;
+      }
+      if (req.method === "POST" && url === "/api/theme") {
+        if (!conn) return json(res, 400, { error: sm(langOf(req), "errNoActive") });
+        const { css } = JSON.parse(body);
+        if (typeof css !== "string") return json(res, 400, { error: sm(langOf(req), "errThemeType") });
+        const bytes = Buffer.byteLength(css, "utf8");
+        if (bytes > THEME_MAX_BYTES) {
+          return json(res, 400, { error: sm(langOf(req), "errThemeTooBig", bytes, THEME_MAX_BYTES) });
+        }
+        const wd = ensureWorkdir(conn);
+        if (wd.error) {
+          return json(res, 500, { error: sm(langOf(req), "errWorkdirFail") + localizeRaw(langOf(req), wd.error) });
+        }
+        if (wd.errKey) {
+          return json(res, 500, {
+            error: sm(langOf(req), "errWorkdirFail") + sm(langOf(req), wd.errKey, localizeRaw(langOf(req), wd.errArg)),
+            needAuth: wd.errKey === "errRepoUnreachable"
+          });
+        }
+        const r = writeThemeCss(wd.workdir, css);
+        bumpRev();
+        json(res, 200, { ok: true, bytes: r.bytes, removed: r.removed });
+        return;
+      }
+      if (req.method === "POST" && url === "/api/theme/publish") {
+        if (!conn) return json(res, 400, { error: sm(langOf(req), "errNoActive") });
+        const { css } = JSON.parse(body);
+        if (typeof css !== "string") return json(res, 400, { error: sm(langOf(req), "errThemeType") });
+        const bytes = Buffer.byteLength(css, "utf8");
+        if (bytes > THEME_MAX_BYTES) {
+          return json(res, 400, { error: sm(langOf(req), "errThemeTooBig", bytes, THEME_MAX_BYTES) });
+        }
+        const wd = ensureWorkdir(conn);
+        if (wd.error) {
+          return json(res, 500, { error: sm(langOf(req), "errWorkdirFail") + localizeRaw(langOf(req), wd.error) });
+        }
+        if (wd.errKey) {
+          return json(res, 500, {
+            error: sm(langOf(req), "errWorkdirFail") + sm(langOf(req), wd.errKey, localizeRaw(langOf(req), wd.errArg)),
+            needAuth: wd.errKey === "errRepoUnreachable"
+          });
+        }
+        const w = writeThemeCss(wd.workdir, css);
+        bumpRev();
+        const r = await publishThemeOnly(conn, wd.workdir, langOf(req), w.bytes);
+        json(res, 200, {
+          ok: !r.failed,
+          bytes: w.bytes,
+          removed: w.removed,
+          failed: r.failed,
+          pushed: r.pushed,
+          failKind: r.failKind || null,
+          commit: r.commit || "",
+          log: r.log
+        });
         return;
       }
       if (req.method === "POST" && url === "/api/repo/create") {

@@ -188,5 +188,54 @@ console.log('\n=== 12. 回归：所有内部 api() 调用点都不退化成 GET 
   ok(bad.length === 0, '无「无 body 且无 method」的写接口调用', JSON.stringify(bad))
 }
 
+console.log('\n=== 13. 自定义外观（public/theme.css） ===')
+// 库主人在管理器「外观」里粘贴的 CSS：存进工作副本的 public/theme.css，
+// 构建时由 build-content.mjs 算出 theme.generated.ts，layout 以 <link> 引入。
+// 这一节锁死「存 / 读 / 清空 / 超限 / 保存并发布」几条链路。
+{
+  await api('/api/connection/switch', { id: idA })
+  const wdA = path.join(DATA_DIR, 'repos', idA)
+  const themeFile = path.join(wdA, 'public', 'theme.css')
+
+  // 初始为空（A 由模板初始化，没写过外观）
+  let t = await api('/api/theme')
+  ok(t.css === '', '初始无自定义外观', JSON.stringify(t.css).slice(0, 40))
+  ok(t.maxBytes === 200 * 1024, '上限 200KB 已下发，实际 ' + t.maxBytes)
+
+  const css = ':root { --primary: oklch(0.48 0.11 155); }\n[data-region="main"] { max-width: 44rem; }\n'
+  t = await api('/api/theme', { css })
+  ok(t.ok === true && t.bytes === Buffer.byteLength(css), '保存返回字节数，实际 ' + t.bytes)
+  ok(exists(themeFile) && fs.readFileSync(themeFile, 'utf8') === css, '已写入工作副本 public/theme.css')
+  t = await api('/api/theme')
+  ok(t.css === css, '读回内容一致')
+
+  // 超限必须拒绝（防止误粘贴巨型文件把仓库和构建撑坏）
+  let tooBig = false
+  try { await api('/api/theme', { css: 'a{}'.repeat(80 * 1024) }) }
+  catch (e) { tooBig = true; console.log('  拒绝原因:', e.message) }
+  ok(tooBig, '超过 200KB 被拒绝')
+  ok(fs.readFileSync(themeFile, 'utf8') === css, '被拒后原文件未被破坏')
+
+  // 保存并发布：只推 theme.css
+  t = await api('/api/theme/publish', { css })
+  ok(t.ok === true && t.pushed === true, '保存并发布成功', JSON.stringify(t.failed || ''))
+  const remoteFiles = gitRun('git', ['ls-tree', '-r', '--name-only', 'HEAD'], { cwd: REMOTE_A }).split('\n')
+  ok(remoteFiles.includes('public/theme.css'), '远端仓库含 public/theme.css')
+  ok(gitRun('git', ['show', 'HEAD:public/theme.css'], { cwd: REMOTE_A }) === css.trim(), '远端内容与提交一致')
+
+  // 清空 = 删除文件（回到默认主题），而不是留一个空文件
+  t = await api('/api/theme', { css: '   ' })
+  ok(t.removed === true, '空白内容被视为清除')
+  ok(!exists(themeFile), '文件已删除')
+  t = await api('/api/theme')
+  ok(t.css === '', '清空后读回为空')
+
+  // 外观按连接隔离：切到 C 不该看到 A 的 CSS
+  await api('/api/connection/switch', { id: idC })
+  t = await api('/api/theme')
+  ok(t.css === '' && t.hasWorkdir === true, '切到 C 后读接口正常且无继承外观，hasWorkdir=' + t.hasWorkdir)
+  await api('/api/connection/switch', { id: idA })
+}
+
 console.log(`\n===== 结果：${pass} 通过 / ${fail} 失败 =====`)
 process.exit(fail ? 1 : 0)

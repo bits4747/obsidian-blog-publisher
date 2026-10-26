@@ -439,6 +439,53 @@ export function createManager(opts) {
   const TEMPLATE_ITEMS = ['package.json', 'package-lock.json', 'next.config.ts', 'postcss.config.mjs', 'components.json', 'tsconfig.json', 'src', 'scripts/build-content.mjs', '.github']
 
   /**
+   * 自定义外观：库主人在管理器里粘贴的一段 CSS，最终存成仓库里的 public/theme.css。
+   *
+   * 为什么放在**仓库**里、而不是管理器本地配置里：
+   *   站点是 GitHub Actions 从仓库构建的，CI 看不到本机的 DATA_DIR。
+   *   只有把 theme.css 提交进仓库，构建时才能把它一起打进 out/。
+   *
+   * 为什么是 public/ 而不是 src/：
+   *   public/ 下的文件由 Next 的 output:'export' 原样拷进 out/，不经过打包器，
+   *   所以用户写的 CSS 不会被当成模块处理，也不需要改任何 .tsx。
+   *   同时 public/ 不在 TEMPLATE_ITEMS 里 —— initTemplate() 不会碰它，
+   *   用户的外观不会在「更新源码」时被模板覆盖掉。
+   *
+   * 上限 200KB：正常的主题微调远到不了，设一个上限只是防止误粘贴一个巨型文件
+   * 把仓库和构建撑坏。
+   */
+  const THEME_REL = path.join('public', 'theme.css')
+  const THEME_MAX_BYTES = 200 * 1024
+
+  /** 读当前连接的自定义 CSS（工作副本还没准备好时按空处理，绝不为了读它去 clone） */
+  function readThemeCss(workdir) {
+    if (!workdir) return ''
+    try {
+      return fsSync.readFileSync(path.join(workdir, THEME_REL), 'utf8')
+    } catch {
+      return ''
+    }
+  }
+
+  /** 写入/清除自定义 CSS。返回 { bytes, removed }；内容为空串时删除文件。 */
+  function writeThemeCss(workdir, css) {
+    const file = path.join(workdir, THEME_REL)
+    if (!css.trim()) {
+      try {
+        fsSync.rmSync(file, { force: true })
+      } catch {
+        /* 本来就没有 */
+      }
+      return { bytes: 0, removed: true }
+    }
+    fsSync.mkdirSync(path.dirname(file), { recursive: true })
+    // 统一用 \n 行尾：Windows 上粘贴的文本常带 \r\n，换台机器构建时
+    // git 的 autocrlf 会让它来回变，导致「什么都没改却出现一个 diff」。
+    fsSync.writeFileSync(file, css.replace(/\r\n?/g, '\n'), 'utf8')
+    return { bytes: Buffer.byteLength(css, 'utf8'), removed: false }
+  }
+
+  /**
    * 把模板同步进工作副本。
    *
    * overwrite=false（已有站点、只想补齐缺失文件）时**仍然要处理删除**：
@@ -1544,6 +1591,106 @@ export function createManager(opts) {
   }
 
   /**
+   * 只把 public/theme.css 提交推上去（「保存并发布外观」用）。
+   *
+   * 为什么不复用 updateSource()：那个是全量覆盖模板 + git add -A，
+   * 会把工作副本里所有未发布的笔记改动一起推上线 —— 用户只是想换个配色，
+   * 不该因此把还没想好要不要公开的笔记发出去。
+   *
+   * 所以这里只 add 一个文件；如果还有别的改动就明确报出来，让用户自己决定
+   * 走「发布」（笔记）还是「更新源码」（站点代码），而不是替用户做决定。
+   */
+  async function publishThemeOnly(conn, workdir, lang, bytes) {
+    const msg = (key, ...args) => sm(lang, key, ...args)
+    const log = []
+    const rel = 'public/theme.css'
+    let failed = false
+    let pushed = false
+    let failKind = null
+    try {
+      // 仓库未配置身份时兜底（与 gitCommitPush 一致，避免 commit 直接失败）
+      try {
+        git(['config', 'user.email'], workdir)
+      } catch {
+        git(['config', 'user.email', 'manager@local'], workdir)
+        git(['config', 'user.name', msg('gitUserName')], workdir)
+      }
+      // 检查「除了 theme.css 之外是否还有未提交的改动」。
+      // 有的话不能只 add 一个文件就推：那会让用户以为其它改动也一起上线了。
+      const dirty = git(['status', '--porcelain'], workdir)
+        .split('\n')
+        .map((l) => l.slice(3).trim())
+        .filter(Boolean)
+        .filter((p) => p !== rel && !p.startsWith('public/theme.css'))
+      if (dirty.length > 0) {
+        log.push(msg('logThemeOtherDirty', dirty.length))
+      }
+      git(['add', '--', rel], workdir)
+      const staged = git(['diff', '--cached', '--name-only'], workdir).trim()
+      if (!staged) {
+        log.push(msg('logThemeNoChange'))
+      } else {
+        git(['commit', '-m', msg('commitThemeMsg')], workdir)
+        const pre = preflightRemote(conn.repo)
+        if (!pre.ok) {
+          if (pre.network) failKind = 'network'
+          const le = new Error(localizeRaw(lang, pre.detail || 'unreachable'))
+          le.localized = true
+          throw le
+        }
+        const branch = conn.branch || 'main'
+        try {
+          git(['pull', '--rebase', '--autostash', '--allow-unrelated-histories', 'origin', branch], workdir)
+        } catch (pullErr) {
+          try {
+            git(['rebase', '--abort'], workdir)
+          } catch {
+            /* 没有进行中的 rebase */
+          }
+          let remoteHas = ''
+          try {
+            remoteHas = git(['ls-remote', '--heads', 'origin', branch], workdir)
+          } catch {
+            remoteHas = 'unknown'
+          }
+          if (remoteHas.trim()) {
+            const le = new Error(localizeRaw(lang, String((pullErr && pullErr.message) || pullErr).slice(0, 300)))
+            le.localized = true
+            throw le
+          }
+        }
+        try {
+          git(['push', 'origin', 'HEAD'], workdir)
+        } catch (e) {
+          const text = String((e && e.message) || e)
+          if (/Could not connect|Failed to connect|unable to access|Connection was reset|timed out|SSL/i.test(text)) {
+            failKind = 'network'
+          }
+          throw e
+        }
+        pushed = true
+        log.push(msg('logThemePushed', bytes))
+      }
+      if (pushed) {
+        const pg = await ensurePages(conn.repo)
+        if (pg.ok && pg.created) log.push(msg('logPagesOn'))
+        else if (!pg.ok) log.push(msg('logPagesFail') + localizeReason(lang, pg.reason || '') + (lang === 'zh' ? '）' : ')'))
+      }
+    } catch (e) {
+      failed = true
+      const rawMsg = String((e && e.message) || e)
+      log.push(msg('logGitFail') + (e && e.localized ? rawMsg : localizeRaw(lang, rawMsg.slice(0, 300))))
+    }
+    let commit = ''
+    try {
+      commit = git(['rev-parse', 'HEAD'], workdir).trim()
+    } catch {
+      /* 拿不到 SHA 只是少了精确判定，不影响发布本身 */
+    }
+    return { failed, pushed, failKind, commit, log }
+  }
+
+  /**
    * 「更新源码」：把工具目录里的站点源码（src/、scripts/build-content.mjs、.github/
    * 与顶层配置文件）**全量覆盖**进工作副本，再提交推送，让 GitHub Actions 重新构建。
    *
@@ -1614,6 +1761,13 @@ export function createManager(opts) {
       commitMsg: '发布更新 ',
       commitSrcMsg: '更新站点源码 ',
       logSrcSynced: '站点源码已同步到工作副本',
+      // ---- 自定义外观 ----
+      errThemeType: '外观内容必须是文本（CSS）',
+      errThemeTooBig: (bytes, max) => `外观太大（${Math.round(bytes / 1024)}KB），上限 ${Math.round(max / 1024)}KB。请精简后再保存。`,
+      logThemeNoChange: '外观没有变化，无需推送',
+      logThemePushed: (bytes) => `自定义外观已推送（${Math.round(bytes / 1024) || 1}KB），GitHub Actions 构建中（1~2 分钟后网站自动更新）`,
+      logThemeOtherDirty: (n) => `注意：工作副本里还有 ${n} 处其它改动没有提交，本次只推送了外观。要一并上线请点「发布」或「更新源码」。`,
+      commitThemeMsg: '更新自定义外观 ',
       gitUserName: '发布管理器',
       pickDesc: '选择你的 Obsidian 库文件夹（里面应有 .obsidian 目录）',
       // ---- 原始错误的本地化分类（git / 网络 / GitHub 响应本身都是英文的）----
@@ -1675,6 +1829,13 @@ export function createManager(opts) {
       commitMsg: 'Publish update ',
       commitSrcMsg: 'Update site source ',
       logSrcSynced: 'Site source synced to the working copy',
+      // ---- Custom appearance ----
+      errThemeType: 'Appearance must be text (CSS)',
+      errThemeTooBig: (bytes, max) => `Appearance is too large (${Math.round(bytes / 1024)}KB); the limit is ${Math.round(max / 1024)}KB. Trim it and save again.`,
+      logThemeNoChange: 'Appearance unchanged — nothing to push',
+      logThemePushed: (bytes) => `Custom appearance pushed (${Math.round(bytes / 1024) || 1}KB). GitHub Actions is building — the site updates in 1–2 minutes.`,
+      logThemeOtherDirty: (n) => `Note: ${n} other change(s) in the working copy were not committed. Only the appearance was pushed. Use Publish or Update source to ship them.`,
+      commitThemeMsg: 'Update custom appearance ',
       gitUserName: 'Publish Manager',
       pickDesc: 'Choose your Obsidian vault folder (it should contain a .obsidian folder)',
       // ---- Localized buckets for raw errors (git / network / GitHub replies are English) ----
@@ -2121,6 +2282,84 @@ export function createManager(opts) {
         }
         const r = await updateSource(conn, wd.workdir, langOf(req))
         json(res, 200, { log: r.log, failed: r.failed, pushed: r.pushed, failKind: r.failKind || null, commit: r.commit || '' })
+        return
+      }
+
+      // 自定义外观：读 / 存库主人粘贴的 CSS（存进仓库的 public/theme.css）。
+      // GET 时带上文件大小与上限，界面可以提前提示「太大了」；
+      // 顺带给出站点是否已经就绪，没就绪时前端禁用「保存并发布」而不是让用户白等。
+      if (req.method === 'GET' && url === '/api/theme') {
+        const css = readThemeCss(workdir)
+        json(res, 200, {
+          css,
+          bytes: Buffer.byteLength(css, 'utf8'),
+          maxBytes: THEME_MAX_BYTES,
+          hasWorkdir: !!workdir && fsSync.existsSync(workdir),
+        })
+        return
+      }
+
+      if (req.method === 'POST' && url === '/api/theme') {
+        if (!conn) return json(res, 400, { error: sm(langOf(req), 'errNoActive') })
+        const { css } = JSON.parse(body)
+        if (typeof css !== 'string') return json(res, 400, { error: sm(langOf(req), 'errThemeType') })
+        const bytes = Buffer.byteLength(css, 'utf8')
+        if (bytes > THEME_MAX_BYTES) {
+          return json(res, 400, { error: sm(langOf(req), 'errThemeTooBig', bytes, THEME_MAX_BYTES) })
+        }
+        const wd = ensureWorkdir(conn)
+        if (wd.error) {
+          return json(res, 500, { error: sm(langOf(req), 'errWorkdirFail') + localizeRaw(langOf(req), wd.error) })
+        }
+        if (wd.errKey) {
+          return json(res, 500, {
+            error: sm(langOf(req), 'errWorkdirFail') + sm(langOf(req), wd.errKey, localizeRaw(langOf(req), wd.errArg)),
+            needAuth: wd.errKey === 'errRepoUnreachable',
+          })
+        }
+        const r = writeThemeCss(wd.workdir, css)
+        bumpRev()
+        json(res, 200, { ok: true, bytes: r.bytes, removed: r.removed })
+        return
+      }
+
+      // 保存外观并立刻提交推送，让 CI 重新构建（等价于「保存」+「更新源码」）。
+      // 单独做一条路径而不是让界面连打两个接口：中间失败时状态是可见的
+      // （文件已写、但没推上去），比界面自己编排更容易说清。
+      if (req.method === 'POST' && url === '/api/theme/publish') {
+        if (!conn) return json(res, 400, { error: sm(langOf(req), 'errNoActive') })
+        const { css } = JSON.parse(body)
+        if (typeof css !== 'string') return json(res, 400, { error: sm(langOf(req), 'errThemeType') })
+        const bytes = Buffer.byteLength(css, 'utf8')
+        if (bytes > THEME_MAX_BYTES) {
+          return json(res, 400, { error: sm(langOf(req), 'errThemeTooBig', bytes, THEME_MAX_BYTES) })
+        }
+        const wd = ensureWorkdir(conn)
+        if (wd.error) {
+          return json(res, 500, { error: sm(langOf(req), 'errWorkdirFail') + localizeRaw(langOf(req), wd.error) })
+        }
+        if (wd.errKey) {
+          return json(res, 500, {
+            error: sm(langOf(req), 'errWorkdirFail') + sm(langOf(req), wd.errKey, localizeRaw(langOf(req), wd.errArg)),
+            needAuth: wd.errKey === 'errRepoUnreachable',
+          })
+        }
+        const w = writeThemeCss(wd.workdir, css)
+        bumpRev()
+        // 只推 theme.css：这里不该顺带把笔记也发出去（用户可能还没准备好公开某些笔记）。
+        // 但 git add -A 会把工作副本里已有的其它改动一起带上，所以先确认
+        // 「除了 theme.css 之外没有别的改动」，有就让用户走「发布」或「更新源码」。
+        const r = await publishThemeOnly(conn, wd.workdir, langOf(req), w.bytes)
+        json(res, 200, {
+          ok: !r.failed,
+          bytes: w.bytes,
+          removed: w.removed,
+          failed: r.failed,
+          pushed: r.pushed,
+          failKind: r.failKind || null,
+          commit: r.commit || '',
+          log: r.log,
+        })
         return
       }
 
