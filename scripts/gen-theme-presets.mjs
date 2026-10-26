@@ -18,11 +18,10 @@ const OUT = path.join(__dirname, 'theme-presets.mjs')
 
 /** 文件名的编号即顺序；中文名取破折号后的部分 */
 const META = {
-  '01': { id: 'study', zh: '墨绿书斋', en: 'Ink Study', dzh: '暖纸底 + 松墨绿 + 全衬线，适合长文阅读', den: 'Warm paper, pine green, full serif — made for long reads' },
-  '02': { id: 'midnight', zh: '靛蓝夜航', en: 'Indigo Night', dzh: '深海靛蓝 + 冷白字 + 圆角玻璃感，久看不刺眼', den: 'Deep indigo, cool white, glassy rounded cards' },
-  '03': { id: 'sakura', zh: '樱纸', en: 'Sakura Paper', dzh: '极浅粉白 + 玫红点缀 + 大留白，轻盈不腻', den: 'Pale pink, rose accent, generous whitespace' },
-  '04': { id: 'terminal', zh: '终端', en: 'Terminal', dzh: '等宽字体 + 荧光绿，日间亮色终端、夜间纯黑终端', den: 'Monospace and neon green — light terminal by day, black by night' },
-  '05': { id: 'mono', zh: '极简黑白', en: 'Mono', dzh: '纯白 / 纯黑，无彩色，只靠字重与留白', den: 'Pure black and white, no color at all' },
+  '01': { id: 'study', zh: '墨绿书斋', en: 'Ink Study', dzh: '左目录 + 右正文的双栏书页，暖纸底全衬线，适合长文阅读', den: 'Two-column book page: contents on the left, text on the right — warm paper, full serif' },
+  '03': { id: 'sakura', zh: '樱纸', en: 'Sakura Paper', dzh: '目录横排到正文上方、首页单列大留白，极浅粉白配玫红', den: 'Horizontal contents above the text, single-column index home — pale pink and rose' },
+  '04': { id: 'terminal', zh: '终端', en: 'Terminal', dzh: '右侧 tagbar + 满宽正文，全等宽字体与命令行列表', den: 'Right-hand tagbar, full-width text, all-monospace with command-line lists' },
+  '05': { id: 'mono', zh: '极简黑白', en: 'Mono', dzh: '不要目录，正文满宽居中，首页是纯文字索引表', den: 'No contents panel at all — full-width centered text, index-style home' },
 }
 
 /** 从 CSS 里取几个颜色，画预设卡片的缩略色块 */
