@@ -3669,21 +3669,11 @@ var UI = `<!DOCTYPE html>
   .btn-publish { background: var(--accent); padding: 9px 18px; font-size: 15.5px; font-weight: 600;
                  box-shadow: 0 1px 2px rgba(37,112,204,.3); white-space: nowrap; }
   .btn-publish:hover:not(:disabled) { background: var(--accent-hover); }
-  .result { display: flex; align-items: center; gap: 7px; font-size: 15px; padding: 6px 12px;
-            border-radius: 999px; max-width: 620px; }
-  .result.busy { background: var(--accent-soft); color: var(--accent); }
-  .result.ok   { background: var(--okbg); color: var(--okfg); }
-  .result.err  { background: var(--errbg); color: var(--errfg); }
-  .result .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .result details { font-weight: 400; } .result summary { cursor: pointer; opacity: .75; }
-  .result pre { margin: 6px 0 0; white-space: pre-wrap; font: 11.5px/1.6 Consolas, monospace; }
-  /* \u63A8\u9001\u5931\u8D25\uFF08\u591A\u534A\u662F\u52A0\u901F\u5668\uFF09\u65F6\u7684\u9AD8\u4EAE\u6761\uFF1A\u5706\u89D2\u80F6\u56CA\u5F62\u6491\u4E0D\u4E0B\u6574\u53E5\u8BDD\uFF0C\u800C\u4E14\u5931\u8D25\u63D0\u793A
-     \u5FC5\u987B\u4E00\u773C\u770B\u5230\u2014\u2014\u5355\u72EC\u7528\u4E00\u5F20\u5B9E\u5FC3\u7EA2\u6761\uFF0C\u4E0D\u8DDF\u5176\u5B83\u65E5\u5FD7\u6DF7\u5728\u4E00\u8D77\u3002 */
-  .result.alert { color: #fff; background: var(--bad); font-weight: 600; border-radius: 10px; }
-  .result.alert .txt { white-space: normal; overflow: visible; }
+  /* \u9876\u680F\u91CC\u539F\u6765\u7684\u300C\u7ED3\u679C\u5C0F\u80F6\u56CA\u300D\u5DF2\u6309\u7528\u6237\u8981\u6C42\u5220\u9664\uFF1A\u6240\u6709\u64CD\u4F5C\u7ED3\u679C\u7EDF\u4E00\u8D70\u53F3\u4E0A\u89D2\u5F39\u7A97\uFF0C
+     \u9876\u680F\u4E0D\u518D\u6709\u4EFB\u4F55\u4F1A\u81EA\u5DF1\u53D8\u5316\u7684\u5C0F\u5757\u3002 */
   /* \u975E\u5173\u952E\u7684\u300C\u987A\u5E26\u6210\u529F\u300D\u65E5\u5FD7\uFF08\u7AD9\u540D\u53D8\u91CF\u540C\u6B65\u7B49\uFF09\u6DE1\u4E00\u6863\uFF1A
      \u5B83\u4EEC\u548C\u6210\u8D25\u6DF7\u5728\u540C\u4E00\u89C6\u89C9\u5C42\u7EA7\u65F6\uFF0C\u4F1A\u8BA9\u4EBA\u628A\u6574\u6B21\u53D1\u5E03\u8BEF\u5224\u6210\u6210\u529F\uFF08\u771F\u5B9E\u8E29\u8FC7\uFF09\u3002 */
-  .result pre .dim { opacity: .6; }
+  .toast .tb pre .dim { opacity: .6; }
 
   /* ---- \u53F3\u4E0A\u89D2\u64CD\u4F5C\u63D0\u793A\uFF1A\u6BCF\u6B21\u300C\u53D1\u5E03 / \u66F4\u65B0\u6E90\u7801 / \u4FDD\u5B58\u5916\u89C2\u300D\u90FD\u8981\u6709\u4E00\u6761
      \u4ECE\u300C\u8FDB\u884C\u4E2D\u300D\u8D70\u5230\u300C\u6210\u529F / \u5931\u8D25\u300D\u7684\u63D0\u793A\u3002\u7528\u6237\u53CD\u9988\u53EA\u770B\u9876\u90E8\u5C0F\u80F6\u56CA\u5206\u4E0D\u6E05
@@ -3723,6 +3713,11 @@ var UI = `<!DOCTYPE html>
   .vbar .vmeta { color: var(--muted-2); font-size: 13.5px; }
   .vbar .vmeta b { color: var(--accent); font-weight: 600; }
   .vbar .vspacer { flex: 1; }
+  /* \u300C\u6709 N \u5904\u6539\u52A8\u8FD8\u6CA1\u53D1\u5E03\u300D\u7684\u5E38\u9A7B\u63D0\u9192\uFF1A\u5B83\u662F\u6301\u7EED\u72B6\u6001\uFF0C\u4E0D\u662F\u4E00\u6B21\u6027\u7ED3\u679C\uFF0C
+     \u6240\u4EE5\u7559\u5728\u4FE1\u606F\u6761\u4E0A\uFF08\u9876\u680F\u5C0F\u80F6\u56CA\u5220\u6389\u540E\u4ECE\u90A3\u91CC\u632A\u8FC7\u6765\u7684\uFF09\u3002 */
+  .vbar .pending { font-size: 13.5px; color: var(--warn-fg); background: var(--warn-bg);
+                   border: 1px solid var(--warn-bd); padding: 2px 9px; border-radius: 999px; font-weight: 500; }
+  .vbar .pending.hidden { display: none; }
   .vbar .vlink { display: inline-flex; align-items: center; gap: 3px; text-decoration: none;
                  font-size: 13.5px; color: var(--accent); padding: 2px 8px; border-radius: 6px;
                  background: var(--accent-soft); font-weight: 500; }
@@ -3809,7 +3804,6 @@ var UI = `<!DOCTYPE html>
 <div class="statusbar"><div class="inner">
   <span class="title" data-i18n="appTitle">\u53D1\u5E03\u7BA1\u7406\u5668</span>
   <span class="spacer"></span>
-  <span id="result" class="result hidden"><span class="txt"></span></span>
   <button class="mini" id="authBtn" onclick="openAuthDialog()" data-i18n="authBtn">GitHub \u6388\u6743</button>
   <button class="mini" id="srcBtn" onclick="doUpdateSource()" data-i18n="srcBtn">\u2B06 \u66F4\u65B0\u6E90\u7801</button>
   <button class="btn-publish" id="pubBtn" onclick="doPublish()" data-i18n="publishBtn">\u27F3 \u53D1\u5E03\u5230 GitHub</button>
@@ -3832,6 +3826,10 @@ var UI = `<!DOCTYPE html>
   <span class="vname" id="vbName"></span>
   <span class="vrepo" id="vbRepo"></span>
   <span class="vmeta" id="vbMeta"></span>
+  <!-- \u300C\u6709 N \u5904\u6539\u52A8\u8FD8\u6CA1\u53D1\u5E03\u300D\u7684\u5E38\u9A7B\u63D0\u9192\u3002\u539F\u6765\u662F\u9876\u680F\u5C0F\u80F6\u56CA\u91CC\u7684\u4E00\u53E5\u8BDD\uFF0C
+       \u5C0F\u80F6\u56CA\u6574\u4F53\u5220\u6389\u540E\uFF08\u7528\u6237\u8981\u6C42\u53EA\u4FDD\u7559\u5F39\u7A97\uFF09\u8FD9\u53E5\u8BDD\u632A\u5230\u8FD9\u91CC \u2014\u2014
+       \u5B83\u662F\u6301\u7EED\u72B6\u6001\uFF0C\u4E0D\u8BE5\u505A\u6210\u9700\u8981\u70B9\u6389\u7684\u5F39\u7A97\u3002 -->
+  <span class="pending hidden" id="pendingHint"></span>
   <span class="vspacer"></span>
   <a class="vlink hidden" id="vbLink" target="_blank" rel="noopener" data-i18n="openSite">\u2197 \u6253\u5F00\u7F51\u9875</a>
   <button class="mini" id="themeBtn" onclick="openTheme()" data-i18n="themeBtn">\u5916\u89C2</button>
@@ -3905,6 +3903,7 @@ const DICT = {
     liveOk: function (s) { return '\u5DF2\u4E0A\u7EBF\uFF08\u7528\u65F6 ' + s + ' \u79D2\uFF09' },
     liveTimeout: '\u7B49\u4E86 4 \u5206\u949F\u8FD8\u6CA1\u4E0A\u7EBF\uFF0C\u6784\u5EFA\u53EF\u80FD\u5931\u8D25\u4E86\uFF0C\u8BF7\u5230 GitHub \u4ED3\u5E93\u7684 Actions \u9875\u9762\u770B\u4E00\u773C',
     liveOpen: '\u6253\u5F00\u7EBF\u4E0A\u9875\u9762',
+    toastResultTitle: '\u64CD\u4F5C\u7ED3\u679C',
     toastClose: '\u5173\u95ED\u63D0\u793A',
     toastDetail: '\u67E5\u770B\u8BE6\u60C5',
     toastPublishTitle: '\u53D1\u5E03\u5230 GitHub',
@@ -4128,6 +4127,7 @@ const DICT = {
     liveOk: function (s) { return 'Live (took ' + s + 's)' },
     liveTimeout: 'Still not live after 4 minutes \u2014 the build may have failed. Check the Actions tab of the GitHub repo.',
     liveOpen: 'Open live site',
+    toastResultTitle: 'Result',
     toastClose: 'Dismiss',
     toastDetail: 'Details',
     toastPublishTitle: 'Publish to GitHub',
@@ -4600,45 +4600,57 @@ let authDialogReopen = null;
 // \u5168\u5C40\u6388\u6743\u5F39\u7A97\u4E0E\u300C\u5EFA\u4ED3\u5E93\u300D\u5F39\u7A97\u91CC\u7684\u6307\u5F15\u5171\u7528 id \u4F1A\u4E92\u76F8\u5E72\u6270\uFF08\u5207\u6362\u8BED\u8A00\u65F6\u9760 id \u627E\u5F39\u7A97\u91CD\u5F00\uFF09\uFF0C
 // \u6240\u4EE5\u5168\u5C40\u8FD9\u4E2A\u7528\u72EC\u7ACB id\u3002
 
-// ---- \u9876\u90E8\u7ED3\u679C\u53CD\u9988 ----
-function setResult(kind, text, detail) {  const el = document.getElementById('result');
-  el.className = 'result ' + kind;
-  el.innerHTML = '';
-  // \u26A0\uFE0F \u5C40\u90E8\u53D8\u91CF\u4E0D\u80FD\u53EB t\uFF1A\u4F1A\u906E\u853D\u5168\u5C40\u7684\u7FFB\u8BD1\u51FD\u6570 t(key)\uFF0C\u4E0B\u9762 t('detail') \u5C31\u4F1A\u62A5
-  // "t is not a function"\uFF08\u8FD9\u4E2A bug \u771F\u5B9E\u53D1\u751F\u8FC7\uFF0C\u8868\u73B0\u4E3A\u53D1\u5E03\u540E\u9876\u90E8\u663E\u793A Publish failed\uFF09\u3002
-  const span = document.createElement('span'); span.className = 'txt'; span.textContent = text;
-  el.appendChild(span);
-  if (detail) {
-    const d = document.createElement('details');
-    const sm = document.createElement('summary'); sm.textContent = t('detail');
-    // \u65E5\u5FD7\u6309\u300C\u662F\u4E0D\u662F\u5173\u952E\u6210\u8D25\u300D\u5206\u6863\uFF1A\u975E\u5173\u952E\u884C\uFF08\u7AD9\u540D\u53D8\u91CF\u540C\u6B65\u4E4B\u7C7B\u987A\u5E26\u6210\u529F\u7684\u8BDD\uFF09
-    // \u6DE1\u4E00\u6863\u663E\u793A\u3002\u5931\u8D25\u884C\u4FDD\u6301\u6B63\u5E38\u4EAE\u5EA6\uFF0C\u65B9\u4FBF\u5728\u5C55\u5F00\u540E\u4E00\u773C\u5B9A\u4F4D\u3002
-    const pre = document.createElement('pre');
-    for (const line of String(detail).split(String.fromCharCode(10))) {
-      const s = document.createElement('span');
-      s.textContent = line + String.fromCharCode(10);
-      if (!isCriticalLog(line)) s.className = 'dim';
-      pre.appendChild(s);
-    }
-    d.appendChild(sm); d.appendChild(pre); el.appendChild(d);
-  }
+// ---- \u64CD\u4F5C\u7ED3\u679C\u63D0\u793A\uFF08\u5F39\u7A97\uFF09----
+// \u5386\u53F2\uFF1A\u8FD9\u91CC\u539F\u6765\u662F\u9876\u680F\u7684\u4E00\u4E2A\u5C0F\u80F6\u56CA\uFF0C\u53EA\u663E\u793A\u6700\u65B0\u4E00\u53E5\u8BDD\u3002\u7528\u6237\u8981\u6C42\u300C\u4FDD\u7559\u5F39\u7A97\uFF0C
+// \u4E0D\u8981\u6700\u4E0A\u9762 github \u6388\u6743\u65C1\u8FB9\u7684\u5C0F\u5757\u300D\uFF0C\u5E76\u4E14\u300C\u5F39\u7A97\u8981\u4EBA\u70B9\u51FB\u624D\u6D88\u5931\u300D\u2014\u2014
+// \u81EA\u52A8\u6D88\u5931\u4F1A\u8BA9\u4EBA\u9519\u8FC7\u5931\u8D25\u539F\u56E0\uFF0C\u4E5F\u5206\u4E0D\u6E05\u300C\u6CA1\u63A8\u9001\u4E0A\u53BB\u300D\u548C\u300C\u6B63\u5728\u66F4\u65B0\u300D\u3002
+// \u6240\u4EE5\uFF1A\u5168\u5C40\u53EA\u7528\u4E00\u5F20\u300C\u6700\u8FD1\u7ED3\u679C\u300D\u5F39\u7A97\uFF0C\u65B0\u7ED3\u679C\u8986\u76D6\u65E7\u5185\u5BB9\uFF0C\u6210\u8D25\u90FD\u7559\u7740\u7B49\u7528\u6237\u70B9\u5173\u95ED\u3002
+let RESULT_TID = 0;
+function ensureResultToast() {
+  if (!RESULT_TID || !TOAST_LIVE.has(RESULT_TID)) RESULT_TID = toastOpen(t('toastResultTitle'), '');
+  return RESULT_TID;
+}
+function setResult(kind, text, detail) {
+  if (!text) return;
+  const map = { ok: 'ok', busy: 'busy', err: 'bad', alert: 'bad' };
+  const k = map[kind] || 'bad';
+  const id = ensureResultToast();
+  // detail \u6709\u65F6\u5C31\u662F\u4E00\u53E5\u7F51\u5740\uFF08\u300C\u7EBF\u4E0A\u5730\u5740\u300D\uFF09\u3002\u6574\u4E32\u90FD\u662F URL \u65F6\u6539\u6210\u53EF\u70B9\u7684\u94FE\u63A5\uFF0C
+  // \u4E0D\u585E\u8FDB\u7B49\u5BBD\u65E5\u5FD7\u5757\u91CC\u3002\u7528 indexOf \u5224\u65AD\u800C\u4E0D\u5199\u6B63\u5219\uFF1A\u672C\u6587\u4EF6\u5728\u6A21\u677F\u5B57\u9762\u91CF\u5185\uFF0C
+  // \u6B63\u5219\u91CC\u7684\u53CD\u659C\u6760\u4F1A\u5148\u88AB\u6A21\u677F\u5403\u6389\u4E00\u5C42\uFF08\u89C1 shortRepo \u7684\u6CE8\u91CA\uFF09\u3002
+  let url = '';
+  let rest = detail ? String(detail) : '';
+  if (rest.indexOf('http://') === 0 || rest.indexOf('https://') === 0) { url = rest; rest = ''; }
+  toastSet(id, k, text, '', rest, url);
+}
+function clearResult() {
+  if (RESULT_TID) { toastDrop(RESULT_TID); RESULT_TID = 0; }
 }
 // ---- \u53F3\u4E0A\u89D2\u64CD\u4F5C\u63D0\u793A\uFF08toast\uFF09----
 // \u4E3A\u4EC0\u4E48\u8981\u5355\u72EC\u4E00\u5957\uFF1A\u9876\u90E8\u90A3\u6761\u5C0F\u80F6\u56CA\u53EA\u663E\u793A\u6700\u65B0\u4E00\u53E5\u8BDD\uFF0C\u7528\u6237\u770B\u4E0D\u51FA
 // \u300C\u70B9\u4E86\u6CA1\u53CD\u5E94 / \u6B63\u5728\u8DD1 / \u5DF2\u7ECF\u63A8\u4E0A\u53BB\u7B49\u6784\u5EFA / \u5F7B\u5E95\u5931\u8D25\u300D\u8FD9\u56DB\u79CD\u72B6\u6001\u7684\u533A\u522B\uFF0C
 // \u53CD\u9988\u91CC\u8BF4\u7684\u5C31\u662F\u300C\u4E0D\u77E5\u9053\u662F\u6CA1\u63A8\u9001\u6210\u529F\u8FD8\u662F\u6B63\u5728\u66F4\u65B0\u300D\u3002
 // \u8FD9\u91CC\u6BCF\u6761\u64CD\u4F5C\u7ED9\u4E00\u5F20\u5361\u7247\uFF0C\u4ECE\u8F6C\u5708\u5F00\u59CB\uFF0C\u6700\u540E\u5B9A\u683C\u6210 \u2713 \u6216 \u2717\uFF0C\u5931\u8D25\u53EF\u5C55\u5F00\u65E5\u5FD7\u3002
-// \u751F\u547D\u5468\u671F\uFF1Abusy \u5361\u7247\u4E0D\u81EA\u52A8\u6D88\u5931\uFF08\u8BA9\u4EBA\u968F\u65F6\u80FD\u770B\u89C1\u8FD8\u5728\u8DD1\uFF09\uFF0C\u6210\u529F 6 \u79D2\u540E\u6536\u8D77\uFF0C\u5931\u8D25\u7559\u7740\u7B49\u7528\u6237\u5173\u3002
+// \u751F\u547D\u5468\u671F\uFF1Abusy \u5361\u7247\u4E0D\u81EA\u52A8\u6D88\u5931\uFF08\u8BA9\u4EBA\u968F\u65F6\u80FD\u770B\u89C1\u8FD8\u5728\u8DD1\uFF09\uFF1B\u6210\u529F\u548C\u5931\u8D25\u4E5F\u90FD\u7559\u7740\u4E0D\u81EA\u52A8\u6536\uFF0C
+// \u5FC5\u987B\u7528\u6237\u70B9\u5361\u7247\u53F3\u4E0A\u89D2\u7684 \xD7 \u624D\u6D88\u5931 \u2014\u2014 \u8981\u6C42\u300C\u5F39\u7A97\u8981\u4EBA\u70B9\u51FB\u624D\u6D88\u5931\u300D\u3002
 let toastSeq = 0;
 const TOAST_LIVE = new Map(); // id -> { el, titleEl, bodyEl, spinEl, icEl, timer }
 function toastOpen(title, body) {
   const box = document.getElementById('toasts');
   if (!box) return 0;
   // \u9876\u680F\u662F sticky\u3001\u9AD8\u5EA6\u4F1A\u968F\u7A97\u53E3\u5BBD\u5EA6\u6362\u884C\u53D8\u5316\uFF0C\u5199\u6B7B top \u4F1A\u5728\u7A84\u7A97\u53E3\u91CC\u76D6\u4F4F\u300C\u53D1\u5E03\u300D\u6309\u94AE\u3002
-  // \u6BCF\u6B21\u5F00\u65B0\u63D0\u793A\u65F6\u6309\u9876\u680F\u771F\u5B9E\u5E95\u8FB9\u91CD\u7B97\u4E00\u6B21\uFF0C\u6C38\u8FDC\u8D34\u5728\u5B83\u4E0B\u9762\u3002
+  // \u6BCF\u6B21\u5F00\u65B0\u63D0\u793A\u65F6\u6309\u300C\u9876\u680F + \u4FE1\u606F\u6761\u300D\u7684\u771F\u5B9E\u5E95\u8FB9\u91CD\u7B97\u4E00\u6B21\uFF0C\u6C38\u8FDC\u8D34\u5728\u5B83\u4EEC\u4E0B\u9762 \u2014\u2014
+  // \u53EA\u8BA9\u51FA\u9876\u680F\u662F\u4E0D\u591F\u7684\uFF1A\u4FE1\u606F\u6761\u53F3\u4FA7\u5C31\u662F\u300C\u5916\u89C2 / \u8BBE\u7F6E\u300D\u6309\u94AE\uFF0C\u63D0\u793A\u6761\u538B\u4E0A\u53BB\u5C31\u70B9\u4E0D\u5230\u4E86\u3002
   try {
+    let bottom = 0;
     const bar = document.querySelector('.statusbar');
-    if (bar) box.style.top = Math.round(bar.getBoundingClientRect().bottom + 10) + 'px';
+    if (bar) bottom = bar.getBoundingClientRect().bottom;
+    const vb = document.getElementById('vbar');
+    if (vb && vb.offsetParent !== null) {
+      const r2 = vb.getBoundingClientRect();
+      if (r2.height > 0 && r2.bottom > bottom) bottom = r2.bottom;
+    }
+    if (bottom > 0) box.style.top = Math.round(bottom + 10) + 'px';
   } catch (e) { /* \u53D6\u4E0D\u5230\u5C31\u7528 CSS \u91CC\u7684\u515C\u5E95\u503C */ }
   const id = ++toastSeq;
   const el = document.createElement('div');
@@ -4689,11 +4701,19 @@ function toastSet(id, kind, title, body, detail, linkUrl) {
   if (detail) {
     const d = document.createElement('details');
     const sm = document.createElement('summary'); sm.textContent = t('toastDetail');
-    const pre = document.createElement('pre'); pre.textContent = String(detail);
+    const pre = document.createElement('pre');
+    // \u65E5\u5FD7\u6309\u300C\u662F\u4E0D\u662F\u5173\u952E\u6210\u8D25\u300D\u5206\u6863\uFF1A\u975E\u5173\u952E\u884C\uFF08\u7AD9\u540D\u53D8\u91CF\u540C\u6B65\u4E4B\u7C7B\u987A\u5E26\u6210\u529F\u7684\u8BDD\uFF09
+    // \u6DE1\u4E00\u6863\u663E\u793A\u3002\u5931\u8D25\u884C\u4FDD\u6301\u6B63\u5E38\u4EAE\u5EA6\uFF0C\u65B9\u4FBF\u5C55\u5F00\u540E\u4E00\u773C\u5B9A\u4F4D\u3002
+    for (const line of String(detail).split(String.fromCharCode(10))) {
+      const s = document.createElement('span');
+      s.textContent = line + String.fromCharCode(10);
+      if (!isCriticalLog(line)) s.className = 'dim';
+      pre.appendChild(s);
+    }
     d.appendChild(sm); d.appendChild(pre); tb.appendChild(d);
   }
-  // \u6210\u529F 6 \u79D2\u540E\u81EA\u52A8\u6536\uFF1B\u5931\u8D25\u4E0D\u81EA\u52A8\u6536\uFF08\u7528\u6237\u53EF\u80FD\u6B63\u8981\u590D\u5236\u62A5\u9519\uFF09
-  if (kind === 'ok') rec.timer = setTimeout(() => toastDrop(id), 6000);
+  // \u4E0D\u81EA\u52A8\u6D88\u5931\uFF1A\u6210\u529F\u3001\u5931\u8D25\u3001\u8FDB\u884C\u4E2D\u90FD\u7559\u7740\uFF0C\u5FC5\u987B\u7528\u6237\u70B9 \xD7 \u624D\u6536\u8D77\u3002
+  // \u81EA\u52A8\u6536\u8D77\u4F1A\u8BA9\u4EBA\u6B63\u597D\u8D70\u5F00\u5C31\u9519\u8FC7\u7ED3\u679C\uFF0C\u53CD\u800C\u66F4\u5206\u4E0D\u6E05\u300C\u63A8\u4E0A\u53BB\u4E86\u6CA1\u6709\u300D\u3002
 }
 function toastDrop(id) {
   const rec = TOAST_LIVE.get(id);
@@ -4721,7 +4741,6 @@ function isCriticalLog(line) {
   for (const k of keys) if (s.indexOf(k) >= 0) return true;
   return false;
 }
-function clearResult() { document.getElementById('result').className = 'result hidden'; }
 // \u63D0\u793A\uFF1A\u672C\u6BB5\u5904\u5728\u670D\u52A1\u7AEF UI \u6A21\u677F\u5B57\u9762\u91CF\u5185\uFF0C\u6B63\u5219\u91CC\u7684\u53CD\u659C\u6760\u4F1A\u88AB\u6A21\u677F\u5B57\u9762\u91CF\u5148\u5403\u6389\u4E00\u5C42\uFF0C
 // \u6781\u6613\u5199\u51FA\u300C\u770B\u7740\u5BF9\u3001\u5230\u6D4F\u89C8\u5668\u5C31\u5E9F\u300D\u7684\u8868\u8FBE\u5F0F\u3002\u8FD9\u91CC\u6539\u7528 RegExp \u5B57\u7B26\u4E32 + \u5B57\u7B26\u7C7B\uFF0C
 // \u4E0D\u5199\u4EFB\u4F55\u53CD\u659C\u6760\uFF0C\u5F7B\u5E95\u907F\u5F00\u8FD9\u5C42\u8F6C\u4E49\u3002
@@ -4980,24 +4999,19 @@ function manualChanges() {
 
 // \u9876\u680F\u63D0\u793A\uFF1A\u53EA\u8BF4\u300C\u8FD8\u6709\u51E0\u5904\u8981\u53D1\u5E03\u300D\uFF0C\u4E0D\u518D\u9010\u6761\u62A5\u300C\u67D0\u67D0\u5DF2\u8BBE\u4E3A\u79C1\u5BC6\uFF0C\u8BB0\u5F97\u53D1\u5E03\u300D\u3002
 // \u81EA\u52A8\u540C\u6B65\u80FD\u5904\u7406\u7684\u6539\u52A8\u4E0D\u63D0\u793A\uFF08\u5B83\u4EEC\u4E5F\u4E0D\u4F1A\u51FA\u73B0\u5728\u4E09\u680F\u91CC\uFF09\u3002
+// \u4F4D\u7F6E\uFF1Avbar \u4E0A\u7684\u5E38\u9A7B\u5C0F\u5B57\uFF08\u9876\u680F\u5C0F\u80F6\u56CA\u5DF2\u6309\u7528\u6237\u8981\u6C42\u5220\u6389\uFF09\u3002
 let _pendingPrompt = '';
 function promptPending() {
   const m = manualChanges();
   const n = m.added.length + m.modified.length + m.deleted.length;
-  const el = document.getElementById('result');
-  if (!n) {
-    // \u53EA\u64A4\u6389\u81EA\u5DF1\u4E0A\u4E00\u6761\u63D0\u793A\uFF0C\u522B\u628A\u300C\u53D1\u5E03\u6210\u529F\u300D\u8FD9\u7C7B\u7ED3\u679C\u64E6\u6389
-    if (_pendingPrompt && el && el.textContent.trim() === _pendingPrompt) {
-      el.className = 'result';
-      el.innerHTML = '';
-    }
-    _pendingPrompt = '';
-    return;
-  }
+  const el = document.getElementById('pendingHint');
+  if (!el) return;
+  if (!n) { el.classList.add('hidden'); el.textContent = ''; _pendingPrompt = ''; return; }
   const msg = tf('pendingPrompt', n);
   if (msg === _pendingPrompt) return;
   _pendingPrompt = msg;
-  setResult('ok', msg);
+  el.textContent = msg;
+  el.classList.remove('hidden');
 }
 
 // \u6E05\u7A7A\u81EA\u52A8\u540C\u6B65\u6D41\u6C34\uFF08\u670D\u52A1\u7AEF\u843D\u76D8\uFF0C\u91CD\u542F\u4E5F\u4E0D\u4F1A\u56DE\u6765\uFF09
@@ -5806,8 +5820,6 @@ async function doPublish() {
   const btn = document.getElementById('pubBtn');
   btn.disabled = true;
   const old = btn.textContent; btn.textContent = t('publishing');
-  setResult('busy', t('publishing'));
-  // \u6BCF\u6B21\u53D1\u5E03\u90FD\u65B0\u5F00\u4E00\u6761\u63D0\u793A\uFF1A\u7528\u6237\u70B9\u4E86\u51E0\u6B21\u5C31\u6709\u51E0\u6761\uFF0C\u80FD\u770B\u6E05\u300C\u8FD9\u6B21\u5230\u5E95\u8D70\u5230\u54EA\u4E00\u6B65\u300D
   const tid = toastOpen(t('toastPublishTitle'), t('toastStarting'));
   // \u57FA\u7EBF\u5FC5\u987B\u5728**\u63A8\u9001\u5B8C\u6210\u4E4B\u540E**\u53D6\u3002\u63A8\u9001\u524D\u53D6\u7684\u8BDD\uFF0C\u4E0A\u4E00\u7B14\u63D0\u4EA4\u7684\u6784\u5EFA\u5982\u679C\u6B63\u597D\u5728\u8FD9\u51E0\u79D2\u5185
   // \u843D\u5730\uFF0C\u5C31\u4F1A\u88AB\u8BEF\u5224\u6210\u300C\u672C\u6B21\u5DF2\u4E0A\u7EBF\u300D\u2014\u2014\u5B9E\u6D4B\u8E29\u5230\u8FC7\uFF1A\u72B6\u6001\u680F\u663E\u793A\u300C\u5DF2\u4E0A\u7EBF\uFF08\u7528\u65F6 5 \u79D2\uFF09\u300D\uFF0C
@@ -5824,14 +5836,11 @@ async function doPublish() {
       // \u51E0\u6761\u6210\u529F\u65E5\u5FD7\uFF08\u672C\u5730\u5199\u5165 / \u7AD9\u540D\u53D8\u91CF\u540C\u6B65\uFF09\u4E2D\u95F4\uFF0C\u7528\u6237\u4EE5\u4E3A\u5DF2\u7ECF\u53D1\u5E03\u4E86\u3002
       // \u7F51\u7EDC\u7C7B\u5931\u8D25\u5355\u72EC\u7ED9\u4E00\u53E5\u4EBA\u8BDD\uFF08\u591A\u534A\u662F\u52A0\u901F\u5668\uFF09\uFF0C\u5177\u4F53\u62A5\u9519\u964D\u5230\u6700\u540E\u4E00\u884C\u3002
       if (r.failKind === 'network') {
-        setResult('alert', t('pushNetworkFail'), lines.join('\\n'));
         toastSet(tid, 'bad', t('toastFailed'), t('pushNetworkFail'), lines.join('\\n'));
       } else {
-        setResult('err', summary === t('publishDone') ? t('publishErr') : summary, lines.join('\\n'));
         toastSet(tid, 'bad', t('toastFailed'), summary === t('publishDone') ? t('publishErr') : summary, lines.join('\\n'));
       }
     } else {
-      setResult('ok', summary + (r.pushed ? t('pushed') : ''), lines.join('\\n'));
       // \u63A8\u4E0A\u53BB\u53EA\u662F\u7B2C\u4E00\u6B65\uFF1APages \u8FD8\u8981\u6784\u5EFA + \u90E8\u7F72\uFF08\u5B9E\u6D4B 40~90 \u79D2\uFF09\u3002
       // \u8FD9\u91CC\u4E0D\u963B\u585E\u6309\u94AE\uFF0C\u540E\u53F0\u8F6E\u8BE2\u628A\u300C\u8FD8\u8981\u7B49\u591A\u4E45 / \u5DF2\u7ECF\u4E0A\u7EBF\u300D\u663E\u793A\u51FA\u6765\u3002
       if (r.pushed) {
@@ -5845,7 +5854,6 @@ async function doPublish() {
       }
     }
   } catch (e) {
-    setResult('err', t('publishFail') + e.message);
     toastSet(tid, 'bad', t('toastFailed'), t('publishFail') + e.message);
     // \u6388\u6743\u95EE\u9898\u5BFC\u81F4\u7684\u5931\u8D25\uFF1A\u76F4\u63A5\u628A\u6388\u6743\u7A97\u5F39\u51FA\u6765\uFF0C\u7701\u5F97\u7528\u6237\u53BB\u627E\u90A3\u4E2A\u6309\u94AE
     if (e.needAuth) openAuthDialog();
@@ -5874,7 +5882,6 @@ async function waitUntilLive(baselineAt, sha, siteUrl, toastId, kind) {
   while (Date.now() - t0 < LIMIT) {
     if (seq !== liveSeq) return;
     const secs = Math.round((Date.now() - t0) / 1000);
-    setResult('busy', tf('liveBuilding', secs));
     // \u63D0\u793A\u6761\u540C\u6B65\u663E\u793A\u5DF2\u7ECF\u7B49\u4E86\u591A\u4E45\uFF0C\u907F\u514D\u7528\u6237\u4EE5\u4E3A\u5361\u6B7B
     if (toastId) toastSet(toastId, 'busy', busyTitle, tf('liveBuilding', secs));
     let r = null;
@@ -5882,14 +5889,12 @@ async function waitUntilLive(baselineAt, sha, siteUrl, toastId, kind) {
     if (seq !== liveSeq) return;
     if (r && r.live) {
       const took = Math.round((Date.now() - t0) / 1000);
-      setResult('ok', tf('liveOk', took), (r.siteUrl || siteUrl || '') + '?fresh=' + Date.now());
       if (toastId) toastSet(toastId, 'ok', okTitle, tf('liveOk', took), '', r.siteUrl || siteUrl || '');
       return;
     }
     await new Promise((res) => setTimeout(res, 3000));
   }
   if (seq === liveSeq) {
-    setResult('alert', t('liveTimeout'), siteUrl || '');
     if (toastId) toastSet(toastId, 'bad', t('toastFailed'), t('liveTimeout'));
   }
 }
@@ -5902,7 +5907,6 @@ async function doUpdateSource() {
   const btn = document.getElementById('srcBtn');
   btn.disabled = true;
   const old = btn.textContent; btn.textContent = t('updatingSrc');
-  setResult('busy', t('updatingSrc'));
   const tid = toastOpen(t('toastSourceTitle'), t('toastStarting'));
   // \u4E0E\u53D1\u5E03\u4E00\u6837\uFF1A\u6E90\u7801\u63A8\u4E0A\u53BB\u4E5F\u8981\u7B49 Pages \u6784\u5EFA\uFF0C\u987A\u624B\u628A\u4E0A\u7EBF\u8FDB\u5EA6\u663E\u793A\u51FA\u6765\u3002
   // \u57FA\u7EBF\u540C\u6837\u5728\u63A8\u9001\u5B8C\u6210\u4E4B\u540E\u53D6\uFF08\u539F\u56E0\u89C1 doPublish \u91CC\u7684\u6CE8\u91CA\uFF09\u3002
@@ -5912,14 +5916,11 @@ async function doUpdateSource() {
     const lines = r.log || [];
     if (r.failed) {
       if (r.failKind === 'network') {
-        setResult('alert', t('pushNetworkFail'), lines.join('\\n'));
         toastSet(tid, 'bad', t('toastFailed'), t('pushNetworkFail'), lines.join('\\n'));
       } else {
-        setResult('err', lines[0] || t('publishErr'), lines.join('\\n'));
         toastSet(tid, 'bad', t('toastFailed'), lines[0] || t('publishErr'), lines.join('\\n'));
       }
     } else {
-      setResult('ok', (lines[0] || t('srcSynced')) + (r.pushed ? t('pushed') : ''), lines.join('\\n'));
       if (r.pushed) {
         toastSet(tid, 'busy', t('toastSourceTitle'), t('toastPushed'), lines.join('\\n'));
         let since = srcStart;
@@ -5930,7 +5931,6 @@ async function doUpdateSource() {
       }
     }
   } catch (e) {
-    setResult('err', t('srcUpdateFail') + e.message);
     toastSet(tid, 'bad', t('toastFailed'), t('srcUpdateFail') + e.message);
     if (e.needAuth) openAuthDialog();
   } finally {

@@ -144,21 +144,11 @@ export const UI = `<!DOCTYPE html>
   .btn-publish { background: var(--accent); padding: 9px 18px; font-size: 15.5px; font-weight: 600;
                  box-shadow: 0 1px 2px rgba(37,112,204,.3); white-space: nowrap; }
   .btn-publish:hover:not(:disabled) { background: var(--accent-hover); }
-  .result { display: flex; align-items: center; gap: 7px; font-size: 15px; padding: 6px 12px;
-            border-radius: 999px; max-width: 620px; }
-  .result.busy { background: var(--accent-soft); color: var(--accent); }
-  .result.ok   { background: var(--okbg); color: var(--okfg); }
-  .result.err  { background: var(--errbg); color: var(--errfg); }
-  .result .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .result details { font-weight: 400; } .result summary { cursor: pointer; opacity: .75; }
-  .result pre { margin: 6px 0 0; white-space: pre-wrap; font: 11.5px/1.6 Consolas, monospace; }
-  /* 推送失败（多半是加速器）时的高亮条：圆角胶囊形撑不下整句话，而且失败提示
-     必须一眼看到——单独用一张实心红条，不跟其它日志混在一起。 */
-  .result.alert { color: #fff; background: var(--bad); font-weight: 600; border-radius: 10px; }
-  .result.alert .txt { white-space: normal; overflow: visible; }
+  /* 顶栏里原来的「结果小胶囊」已按用户要求删除：所有操作结果统一走右上角弹窗，
+     顶栏不再有任何会自己变化的小块。 */
   /* 非关键的「顺带成功」日志（站名变量同步等）淡一档：
      它们和成败混在同一视觉层级时，会让人把整次发布误判成成功（真实踩过）。 */
-  .result pre .dim { opacity: .6; }
+  .toast .tb pre .dim { opacity: .6; }
 
   /* ---- 右上角操作提示：每次「发布 / 更新源码 / 保存外观」都要有一条
      从「进行中」走到「成功 / 失败」的提示。用户反馈只看顶部小胶囊分不清
@@ -198,6 +188,11 @@ export const UI = `<!DOCTYPE html>
   .vbar .vmeta { color: var(--muted-2); font-size: 13.5px; }
   .vbar .vmeta b { color: var(--accent); font-weight: 600; }
   .vbar .vspacer { flex: 1; }
+  /* 「有 N 处改动还没发布」的常驻提醒：它是持续状态，不是一次性结果，
+     所以留在信息条上（顶栏小胶囊删掉后从那里挪过来的）。 */
+  .vbar .pending { font-size: 13.5px; color: var(--warn-fg); background: var(--warn-bg);
+                   border: 1px solid var(--warn-bd); padding: 2px 9px; border-radius: 999px; font-weight: 500; }
+  .vbar .pending.hidden { display: none; }
   .vbar .vlink { display: inline-flex; align-items: center; gap: 3px; text-decoration: none;
                  font-size: 13.5px; color: var(--accent); padding: 2px 8px; border-radius: 6px;
                  background: var(--accent-soft); font-weight: 500; }
@@ -284,7 +279,6 @@ export const UI = `<!DOCTYPE html>
 <div class="statusbar"><div class="inner">
   <span class="title" data-i18n="appTitle">发布管理器</span>
   <span class="spacer"></span>
-  <span id="result" class="result hidden"><span class="txt"></span></span>
   <button class="mini" id="authBtn" onclick="openAuthDialog()" data-i18n="authBtn">GitHub 授权</button>
   <button class="mini" id="srcBtn" onclick="doUpdateSource()" data-i18n="srcBtn">⬆ 更新源码</button>
   <button class="btn-publish" id="pubBtn" onclick="doPublish()" data-i18n="publishBtn">⟳ 发布到 GitHub</button>
@@ -307,6 +301,10 @@ export const UI = `<!DOCTYPE html>
   <span class="vname" id="vbName"></span>
   <span class="vrepo" id="vbRepo"></span>
   <span class="vmeta" id="vbMeta"></span>
+  <!-- 「有 N 处改动还没发布」的常驻提醒。原来是顶栏小胶囊里的一句话，
+       小胶囊整体删掉后（用户要求只保留弹窗）这句话挪到这里 ——
+       它是持续状态，不该做成需要点掉的弹窗。 -->
+  <span class="pending hidden" id="pendingHint"></span>
   <span class="vspacer"></span>
   <a class="vlink hidden" id="vbLink" target="_blank" rel="noopener" data-i18n="openSite">↗ 打开网页</a>
   <button class="mini" id="themeBtn" onclick="openTheme()" data-i18n="themeBtn">外观</button>
@@ -380,6 +378,7 @@ const DICT = {
     liveOk: function (s) { return '已上线（用时 ' + s + ' 秒）' },
     liveTimeout: '等了 4 分钟还没上线，构建可能失败了，请到 GitHub 仓库的 Actions 页面看一眼',
     liveOpen: '打开线上页面',
+    toastResultTitle: '操作结果',
     toastClose: '关闭提示',
     toastDetail: '查看详情',
     toastPublishTitle: '发布到 GitHub',
@@ -603,6 +602,7 @@ const DICT = {
     liveOk: function (s) { return 'Live (took ' + s + 's)' },
     liveTimeout: 'Still not live after 4 minutes — the build may have failed. Check the Actions tab of the GitHub repo.',
     liveOpen: 'Open live site',
+    toastResultTitle: 'Result',
     toastClose: 'Dismiss',
     toastDetail: 'Details',
     toastPublishTitle: 'Publish to GitHub',
@@ -1075,45 +1075,57 @@ let authDialogReopen = null;
 // 全局授权弹窗与「建仓库」弹窗里的指引共用 id 会互相干扰（切换语言时靠 id 找弹窗重开），
 // 所以全局这个用独立 id。
 
-// ---- 顶部结果反馈 ----
-function setResult(kind, text, detail) {  const el = document.getElementById('result');
-  el.className = 'result ' + kind;
-  el.innerHTML = '';
-  // ⚠️ 局部变量不能叫 t：会遮蔽全局的翻译函数 t(key)，下面 t('detail') 就会报
-  // "t is not a function"（这个 bug 真实发生过，表现为发布后顶部显示 Publish failed）。
-  const span = document.createElement('span'); span.className = 'txt'; span.textContent = text;
-  el.appendChild(span);
-  if (detail) {
-    const d = document.createElement('details');
-    const sm = document.createElement('summary'); sm.textContent = t('detail');
-    // 日志按「是不是关键成败」分档：非关键行（站名变量同步之类顺带成功的话）
-    // 淡一档显示。失败行保持正常亮度，方便在展开后一眼定位。
-    const pre = document.createElement('pre');
-    for (const line of String(detail).split(String.fromCharCode(10))) {
-      const s = document.createElement('span');
-      s.textContent = line + String.fromCharCode(10);
-      if (!isCriticalLog(line)) s.className = 'dim';
-      pre.appendChild(s);
-    }
-    d.appendChild(sm); d.appendChild(pre); el.appendChild(d);
-  }
+// ---- 操作结果提示（弹窗）----
+// 历史：这里原来是顶栏的一个小胶囊，只显示最新一句话。用户要求「保留弹窗，
+// 不要最上面 github 授权旁边的小块」，并且「弹窗要人点击才消失」——
+// 自动消失会让人错过失败原因，也分不清「没推送上去」和「正在更新」。
+// 所以：全局只用一张「最近结果」弹窗，新结果覆盖旧内容，成败都留着等用户点关闭。
+let RESULT_TID = 0;
+function ensureResultToast() {
+  if (!RESULT_TID || !TOAST_LIVE.has(RESULT_TID)) RESULT_TID = toastOpen(t('toastResultTitle'), '');
+  return RESULT_TID;
+}
+function setResult(kind, text, detail) {
+  if (!text) return;
+  const map = { ok: 'ok', busy: 'busy', err: 'bad', alert: 'bad' };
+  const k = map[kind] || 'bad';
+  const id = ensureResultToast();
+  // detail 有时就是一句网址（「线上地址」）。整串都是 URL 时改成可点的链接，
+  // 不塞进等宽日志块里。用 indexOf 判断而不写正则：本文件在模板字面量内，
+  // 正则里的反斜杠会先被模板吃掉一层（见 shortRepo 的注释）。
+  let url = '';
+  let rest = detail ? String(detail) : '';
+  if (rest.indexOf('http://') === 0 || rest.indexOf('https://') === 0) { url = rest; rest = ''; }
+  toastSet(id, k, text, '', rest, url);
+}
+function clearResult() {
+  if (RESULT_TID) { toastDrop(RESULT_TID); RESULT_TID = 0; }
 }
 // ---- 右上角操作提示（toast）----
 // 为什么要单独一套：顶部那条小胶囊只显示最新一句话，用户看不出
 // 「点了没反应 / 正在跑 / 已经推上去等构建 / 彻底失败」这四种状态的区别，
 // 反馈里说的就是「不知道是没推送成功还是正在更新」。
 // 这里每条操作给一张卡片，从转圈开始，最后定格成 ✓ 或 ✗，失败可展开日志。
-// 生命周期：busy 卡片不自动消失（让人随时能看见还在跑），成功 6 秒后收起，失败留着等用户关。
+// 生命周期：busy 卡片不自动消失（让人随时能看见还在跑）；成功和失败也都留着不自动收，
+// 必须用户点卡片右上角的 × 才消失 —— 要求「弹窗要人点击才消失」。
 let toastSeq = 0;
 const TOAST_LIVE = new Map(); // id -> { el, titleEl, bodyEl, spinEl, icEl, timer }
 function toastOpen(title, body) {
   const box = document.getElementById('toasts');
   if (!box) return 0;
   // 顶栏是 sticky、高度会随窗口宽度换行变化，写死 top 会在窄窗口里盖住「发布」按钮。
-  // 每次开新提示时按顶栏真实底边重算一次，永远贴在它下面。
+  // 每次开新提示时按「顶栏 + 信息条」的真实底边重算一次，永远贴在它们下面 ——
+  // 只让出顶栏是不够的：信息条右侧就是「外观 / 设置」按钮，提示条压上去就点不到了。
   try {
+    let bottom = 0;
     const bar = document.querySelector('.statusbar');
-    if (bar) box.style.top = Math.round(bar.getBoundingClientRect().bottom + 10) + 'px';
+    if (bar) bottom = bar.getBoundingClientRect().bottom;
+    const vb = document.getElementById('vbar');
+    if (vb && vb.offsetParent !== null) {
+      const r2 = vb.getBoundingClientRect();
+      if (r2.height > 0 && r2.bottom > bottom) bottom = r2.bottom;
+    }
+    if (bottom > 0) box.style.top = Math.round(bottom + 10) + 'px';
   } catch (e) { /* 取不到就用 CSS 里的兜底值 */ }
   const id = ++toastSeq;
   const el = document.createElement('div');
@@ -1164,11 +1176,19 @@ function toastSet(id, kind, title, body, detail, linkUrl) {
   if (detail) {
     const d = document.createElement('details');
     const sm = document.createElement('summary'); sm.textContent = t('toastDetail');
-    const pre = document.createElement('pre'); pre.textContent = String(detail);
+    const pre = document.createElement('pre');
+    // 日志按「是不是关键成败」分档：非关键行（站名变量同步之类顺带成功的话）
+    // 淡一档显示。失败行保持正常亮度，方便展开后一眼定位。
+    for (const line of String(detail).split(String.fromCharCode(10))) {
+      const s = document.createElement('span');
+      s.textContent = line + String.fromCharCode(10);
+      if (!isCriticalLog(line)) s.className = 'dim';
+      pre.appendChild(s);
+    }
     d.appendChild(sm); d.appendChild(pre); tb.appendChild(d);
   }
-  // 成功 6 秒后自动收；失败不自动收（用户可能正要复制报错）
-  if (kind === 'ok') rec.timer = setTimeout(() => toastDrop(id), 6000);
+  // 不自动消失：成功、失败、进行中都留着，必须用户点 × 才收起。
+  // 自动收起会让人正好走开就错过结果，反而更分不清「推上去了没有」。
 }
 function toastDrop(id) {
   const rec = TOAST_LIVE.get(id);
@@ -1196,7 +1216,6 @@ function isCriticalLog(line) {
   for (const k of keys) if (s.indexOf(k) >= 0) return true;
   return false;
 }
-function clearResult() { document.getElementById('result').className = 'result hidden'; }
 // 提示：本段处在服务端 UI 模板字面量内，正则里的反斜杠会被模板字面量先吃掉一层，
 // 极易写出「看着对、到浏览器就废」的表达式。这里改用 RegExp 字符串 + 字符类，
 // 不写任何反斜杠，彻底避开这层转义。
@@ -1455,24 +1474,19 @@ function manualChanges() {
 
 // 顶栏提示：只说「还有几处要发布」，不再逐条报「某某已设为私密，记得发布」。
 // 自动同步能处理的改动不提示（它们也不会出现在三栏里）。
+// 位置：vbar 上的常驻小字（顶栏小胶囊已按用户要求删掉）。
 let _pendingPrompt = '';
 function promptPending() {
   const m = manualChanges();
   const n = m.added.length + m.modified.length + m.deleted.length;
-  const el = document.getElementById('result');
-  if (!n) {
-    // 只撤掉自己上一条提示，别把「发布成功」这类结果擦掉
-    if (_pendingPrompt && el && el.textContent.trim() === _pendingPrompt) {
-      el.className = 'result';
-      el.innerHTML = '';
-    }
-    _pendingPrompt = '';
-    return;
-  }
+  const el = document.getElementById('pendingHint');
+  if (!el) return;
+  if (!n) { el.classList.add('hidden'); el.textContent = ''; _pendingPrompt = ''; return; }
   const msg = tf('pendingPrompt', n);
   if (msg === _pendingPrompt) return;
   _pendingPrompt = msg;
-  setResult('ok', msg);
+  el.textContent = msg;
+  el.classList.remove('hidden');
 }
 
 // 清空自动同步流水（服务端落盘，重启也不会回来）
@@ -2281,8 +2295,6 @@ async function doPublish() {
   const btn = document.getElementById('pubBtn');
   btn.disabled = true;
   const old = btn.textContent; btn.textContent = t('publishing');
-  setResult('busy', t('publishing'));
-  // 每次发布都新开一条提示：用户点了几次就有几条，能看清「这次到底走到哪一步」
   const tid = toastOpen(t('toastPublishTitle'), t('toastStarting'));
   // 基线必须在**推送完成之后**取。推送前取的话，上一笔提交的构建如果正好在这几秒内
   // 落地，就会被误判成「本次已上线」——实测踩到过：状态栏显示「已上线（用时 5 秒）」，
@@ -2299,14 +2311,11 @@ async function doPublish() {
       // 几条成功日志（本地写入 / 站名变量同步）中间，用户以为已经发布了。
       // 网络类失败单独给一句人话（多半是加速器），具体报错降到最后一行。
       if (r.failKind === 'network') {
-        setResult('alert', t('pushNetworkFail'), lines.join('\\n'));
         toastSet(tid, 'bad', t('toastFailed'), t('pushNetworkFail'), lines.join('\\n'));
       } else {
-        setResult('err', summary === t('publishDone') ? t('publishErr') : summary, lines.join('\\n'));
         toastSet(tid, 'bad', t('toastFailed'), summary === t('publishDone') ? t('publishErr') : summary, lines.join('\\n'));
       }
     } else {
-      setResult('ok', summary + (r.pushed ? t('pushed') : ''), lines.join('\\n'));
       // 推上去只是第一步：Pages 还要构建 + 部署（实测 40~90 秒）。
       // 这里不阻塞按钮，后台轮询把「还要等多久 / 已经上线」显示出来。
       if (r.pushed) {
@@ -2320,7 +2329,6 @@ async function doPublish() {
       }
     }
   } catch (e) {
-    setResult('err', t('publishFail') + e.message);
     toastSet(tid, 'bad', t('toastFailed'), t('publishFail') + e.message);
     // 授权问题导致的失败：直接把授权窗弹出来，省得用户去找那个按钮
     if (e.needAuth) openAuthDialog();
@@ -2349,7 +2357,6 @@ async function waitUntilLive(baselineAt, sha, siteUrl, toastId, kind) {
   while (Date.now() - t0 < LIMIT) {
     if (seq !== liveSeq) return;
     const secs = Math.round((Date.now() - t0) / 1000);
-    setResult('busy', tf('liveBuilding', secs));
     // 提示条同步显示已经等了多久，避免用户以为卡死
     if (toastId) toastSet(toastId, 'busy', busyTitle, tf('liveBuilding', secs));
     let r = null;
@@ -2357,14 +2364,12 @@ async function waitUntilLive(baselineAt, sha, siteUrl, toastId, kind) {
     if (seq !== liveSeq) return;
     if (r && r.live) {
       const took = Math.round((Date.now() - t0) / 1000);
-      setResult('ok', tf('liveOk', took), (r.siteUrl || siteUrl || '') + '?fresh=' + Date.now());
       if (toastId) toastSet(toastId, 'ok', okTitle, tf('liveOk', took), '', r.siteUrl || siteUrl || '');
       return;
     }
     await new Promise((res) => setTimeout(res, 3000));
   }
   if (seq === liveSeq) {
-    setResult('alert', t('liveTimeout'), siteUrl || '');
     if (toastId) toastSet(toastId, 'bad', t('toastFailed'), t('liveTimeout'));
   }
 }
@@ -2377,7 +2382,6 @@ async function doUpdateSource() {
   const btn = document.getElementById('srcBtn');
   btn.disabled = true;
   const old = btn.textContent; btn.textContent = t('updatingSrc');
-  setResult('busy', t('updatingSrc'));
   const tid = toastOpen(t('toastSourceTitle'), t('toastStarting'));
   // 与发布一样：源码推上去也要等 Pages 构建，顺手把上线进度显示出来。
   // 基线同样在推送完成之后取（原因见 doPublish 里的注释）。
@@ -2387,14 +2391,11 @@ async function doUpdateSource() {
     const lines = r.log || [];
     if (r.failed) {
       if (r.failKind === 'network') {
-        setResult('alert', t('pushNetworkFail'), lines.join('\\n'));
         toastSet(tid, 'bad', t('toastFailed'), t('pushNetworkFail'), lines.join('\\n'));
       } else {
-        setResult('err', lines[0] || t('publishErr'), lines.join('\\n'));
         toastSet(tid, 'bad', t('toastFailed'), lines[0] || t('publishErr'), lines.join('\\n'));
       }
     } else {
-      setResult('ok', (lines[0] || t('srcSynced')) + (r.pushed ? t('pushed') : ''), lines.join('\\n'));
       if (r.pushed) {
         toastSet(tid, 'busy', t('toastSourceTitle'), t('toastPushed'), lines.join('\\n'));
         let since = srcStart;
@@ -2405,7 +2406,6 @@ async function doUpdateSource() {
       }
     }
   } catch (e) {
-    setResult('err', t('srcUpdateFail') + e.message);
     toastSet(tid, 'bad', t('toastFailed'), t('srcUpdateFail') + e.message);
     if (e.needAuth) openAuthDialog();
   } finally {
