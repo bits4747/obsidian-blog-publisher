@@ -285,7 +285,7 @@ console.log('\n=== 14. 界面约定：弹窗手动关闭 + 宽度/字号解耦 =
 
   // 3b) 主题里不许用 max-width 改宽度（注释里提到是允许的，只看真实声明）
   const decls = [...presetsSrc.matchAll(/max-width:\s*[\d.]+rem/g)].map((m) => m[0])
-  ok(decls.length === 0, '六套主题预设都不写 max-width', JSON.stringify(decls))
+  ok(decls.length === 0, '每套主题预设都不写 max-width', JSON.stringify(decls))
 }
 
 console.log('\n=== 15. 外观面板：默认进列表 + 说明≤50字 + 预设预览图 ===')
@@ -312,9 +312,9 @@ console.log('\n=== 15. 外观面板：默认进列表 + 说明≤50字 + 预设�
   // 教程必须住在按钮后面，不能摊在面板上
   ok(/id="themeGuide"/.test(uiSrc) && /openThemeGuide/.test(uiSrc), '写 CSS 的教程在「写作指南」按钮里')
 
-  // 3) 预览图：六套预设 + 默认各有一张，id 必须对齐
+  // 3) 预览图：每套内置预设 + 默认各有一张，id 必须对齐
   const presetIds = [...presetsSrc.matchAll(/"id":\s*"([\w-]+)"/g)].map((m) => m[1])
-  ok(presetIds.length === 6, '内置预设 6 套，实际 ' + presetIds.length)
+  ok(presetIds.length === 4, '内置预设 4 套，实际 ' + presetIds.length)
   const previewIds = [...previewsSrc.matchAll(/^\s{2}"([\w-]+)":/gm)].map((m) => m[1])
   const missing = ['default'].concat(presetIds).filter((id) => !previewIds.includes(id))
   ok(missing.length === 0, '每套预设都有预览图（含默认）', JSON.stringify(missing))
