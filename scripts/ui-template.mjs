@@ -237,7 +237,7 @@ export const UI = `<!DOCTYPE html>
   .tokenrow input { flex: 1; font-family: ui-monospace, Consolas, monospace; font-size: 14px; }
   /* ---- 自定义外观：一大块等宽文本框 ---- */
   .dialog .panel.wide { max-width: 780px; }
-  .theme-editor { width: 100%; box-sizing: border-box; min-height: 340px; resize: vertical;
+  .theme-editor { width: 100%; box-sizing: border-box; min-height: 240px; resize: vertical;
                   font-family: ui-monospace, Consolas, "Cascadia Mono", monospace; font-size: 13px;
                   line-height: 1.55; tab-size: 2; padding: 11px 12px; border-radius: 9px;
                   background: var(--field); color: var(--fg); border: 1px solid var(--border-soft); }

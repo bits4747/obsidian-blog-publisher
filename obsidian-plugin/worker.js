@@ -3762,7 +3762,7 @@ var UI = `<!DOCTYPE html>
   .tokenrow input { flex: 1; font-family: ui-monospace, Consolas, monospace; font-size: 14px; }
   /* ---- \u81EA\u5B9A\u4E49\u5916\u89C2\uFF1A\u4E00\u5927\u5757\u7B49\u5BBD\u6587\u672C\u6846 ---- */
   .dialog .panel.wide { max-width: 780px; }
-  .theme-editor { width: 100%; box-sizing: border-box; min-height: 340px; resize: vertical;
+  .theme-editor { width: 100%; box-sizing: border-box; min-height: 240px; resize: vertical;
                   font-family: ui-monospace, Consolas, "Cascadia Mono", monospace; font-size: 13px;
                   line-height: 1.55; tab-size: 2; padding: 11px 12px; border-radius: 9px;
                   background: var(--field); color: var(--fg); border: 1px solid var(--border-soft); }
