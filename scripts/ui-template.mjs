@@ -301,7 +301,8 @@ export const UI = `<!DOCTYPE html>
     overflow: hidden; background: var(--bg); line-height: 0;
   }
   .preset-preview[hidden] { display: none; }
-  .preset-preview img { width: 100%; height: auto; display: block; }
+  .preset-preview img { width: 100%; height: auto; max-height: 216px; object-fit: cover;
+                        object-position: top left; display: block; }
   .preset-preview-empty {
     margin: -6px 0 12px; padding: 8px 11px; border: 1px dashed var(--border);
     border-radius: 9px; font-size: 12.5px; color: var(--muted-2);

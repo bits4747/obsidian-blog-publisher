@@ -22,6 +22,9 @@ const META = {
   '03': { id: 'sakura', zh: '樱纸', en: 'Sakura Paper', dzh: '单列大卡片首页、标题居中放大，极浅粉白配玫红', den: 'Single-column index home with centered titles — pale pink and rose' },
   '05': { id: 'mono', zh: '极简黑白', en: 'Mono', dzh: '单列纯文字索引表，纯白纯黑零圆角', den: 'Single-column index-style home — pure black and white, no rounded corners' },
   '07': { id: 'tree', zh: '青苔树状', en: 'Moss Tree', dzh: '文件树首页，竖线导轨 + 拐角连接符，绿灰纸感', den: 'File-tree home with guide rails and elbow connectors — mossy green-grey' },
+  '08': { id: 'bento', zh: '便当盒', en: 'Bento', dzh: '大小方块拼贴首页，第一块占主位，六色循环发色', den: 'Mosaic tile home — one hero tile plus a six-colour rotation' },
+  '09': { id: 'docs', zh: '文档站', en: 'Docs', dzh: '左侧固定目录栏 + 右侧笔记列表，文件夹多时最好用', den: 'Fixed left sidebar navigation with the note list on the right' },
+  '10': { id: 'neon', zh: '深色霓虹', en: 'Neon', dzh: '近黑底 + 青/品红描边，等宽字体，编号目录行', den: 'Near-black canvas, cyan and magenta outlines, monospace numbered rows' },
 }
 
 /** 从 CSS 里取几个颜色，画预设卡片的缩略色块 */
