@@ -18,10 +18,12 @@ const OUT = path.join(__dirname, 'theme-presets.mjs')
 
 /** 文件名的编号即顺序；中文名取破折号后的部分 */
 const META = {
-  '01': { id: 'study', zh: '墨绿书斋', en: 'Ink Study', dzh: '左目录 + 右正文的双栏书页，暖纸底全衬线，适合长文阅读', den: 'Two-column book page: contents on the left, text on the right — warm paper, full serif' },
-  '03': { id: 'sakura', zh: '樱纸', en: 'Sakura Paper', dzh: '目录横排到正文上方、首页单列大留白，极浅粉白配玫红', den: 'Horizontal contents above the text, single-column index home — pale pink and rose' },
-  '04': { id: 'terminal', zh: '终端', en: 'Terminal', dzh: '右侧 tagbar + 满宽正文，全等宽字体与命令行列表', den: 'Right-hand tagbar, full-width text, all-monospace with command-line lists' },
-  '05': { id: 'mono', zh: '极简黑白', en: 'Mono', dzh: '正文满宽居中，首页是纯文字索引表，纯白纯黑零圆角', den: 'Full-width centered text with an index-style home — pure black and white, no rounded corners' },
+  '01': { id: 'study', zh: '墨绿书斋', en: 'Ink Study', dzh: '三列纸卡首页，暖纸底全衬线，适合长文阅读', den: 'Three-column card home — warm paper, full serif' },
+  '03': { id: 'sakura', zh: '樱纸', en: 'Sakura Paper', dzh: '单列大卡片首页、标题居中放大，极浅粉白配玫红', den: 'Single-column index home with centered titles — pale pink and rose' },
+  '04': { id: 'terminal', zh: '终端', en: 'Terminal', dzh: '首页是 ls 式命令行输出，全等宽字体与 > 前缀列表', den: 'ls-style command-line home, all-monospace with > prefixed lists' },
+  '05': { id: 'mono', zh: '极简黑白', en: 'Mono', dzh: '单列纯文字索引表，纯白纯黑零圆角', den: 'Single-column index-style home — pure black and white, no rounded corners' },
+  '06': { id: 'duo', zh: '素笺双栏', en: 'Duo Column', dzh: '两列卡片首页、笔记也两列并排，灰蓝纸感', den: 'Two-column card home, notes side by side — grey-blue paper' },
+  '07': { id: 'tree', zh: '青苔树状', en: 'Moss Tree', dzh: '文件树首页，竖线导轨 + 拐角连接符，绿灰纸感', den: 'File-tree home with guide rails and elbow connectors — mossy green-grey' },
 }
 
 /** 从 CSS 里取几个颜色，画预设卡片的缩略色块 */

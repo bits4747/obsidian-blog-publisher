@@ -242,5 +242,51 @@ console.log('\n=== 13. 自定义外观（public/theme.css） ===')
   await api('/api/connection/switch', { id: idA })
 }
 
+console.log('\n=== 14. 界面约定：弹窗手动关闭 + 宽度/字号解耦 ===')
+// 这几条是用户明确要求的行为，靠人眼容易回归，静态扫描源码锁死：
+//  1) 弹窗（toast）不能自动消失，也不能有「小 ×」，必须点卡片任意位置才关；
+//  2) 字号缩放只改字号，不改版面：根字号不跟着变，内容宽度读 --content-w；
+//  3) 主题只负责颜色与「非正文界面」的排布，不许自己写 max-width 改宽度。
+{
+  const uiSrc = fs.readFileSync(path.join(process.cwd(), 'scripts', 'ui-template.mjs'), 'utf8')
+  const cssSrc = fs.readFileSync(path.join(process.cwd(), 'src', 'app', 'globals.css'), 'utf8')
+  const presetsSrc = fs.readFileSync(path.join(process.cwd(), 'scripts', 'theme-presets.mjs'), 'utf8')
+
+  // 1) 弹窗：没有任何 toast 的自动收起定时器
+  const autoDrop = [...uiSrc.matchAll(/setTimeout\([^)]*toastDrop/g)].map((m) => m[0])
+  ok(autoDrop.length === 0, 'toast 没有自动关闭定时器', JSON.stringify(autoDrop))
+
+  // 1b) 没有关闭小 × 的元素
+  ok(!/className = 'x'/.test(uiSrc) && !/className = 'th \.x'/.test(uiSrc), 'toast 没有小 × 按钮')
+  ok(!/\.toast \.th \.x\s*\{/.test(uiSrc), 'toast 的 .x 样式已移除')
+
+  // 1c) 点卡片关闭，且放行卡片内的折叠/外链
+  ok(/el\.addEventListener\('click'/.test(uiSrc), 'toast 绑定了点击关闭')
+  ok(/closest\('details, a, summary'\)/.test(uiSrc), 'toast 内的折叠与外链点击不关闭')
+
+  // 2) 字号：根字号必须是固定值，不随 --site-fs 变（否则控件与宽度会跟着缩）
+  ok(!/html\s*\{\s*font-size:\s*calc\([^}]*--site-fs/.test(cssSrc), '根字号不随 --site-fs 缩放')
+  ok(/--fsu:\s*calc\(1rem \* var\(--site-fs/.test(cssSrc), '正文用 --fsu 跟随字号')
+
+  // 3) 宽度：统一变量 --content-w，组件里不许再写死 rem 宽度
+  ok(/--content-w:\s*[\d.]+rem/.test(cssSrc), 'globals.css 定义了 --content-w')
+  const appSrc = fs.readFileSync(path.join(process.cwd(), 'src', 'components', 'blog', 'blog-app.tsx'), 'utf8')
+  const noteSrc = fs.readFileSync(path.join(process.cwd(), 'src', 'components', 'blog', 'note-view.tsx'), 'utf8')
+  const hardW = [...(appSrc + noteSrc).matchAll(/max-w-\[[\d.]+rem\]/g)].map((m) => m[0])
+  // 只约束「容器」：顶栏/正文/页脚/文章这四块必须读 --content-w。
+  // 搜索框那种小控件的固定宽度不算版面宽度，不在此列。
+  const containerHardW = (appSrc + noteSrc)
+    .split('\n')
+    .filter((l) => /data-region="(header|main|footer|note|article)"/.test(l))
+    .flatMap((l) => [...l.matchAll(/max-w-\[[\d.]+rem\]/g)].map((m) => m[0]))
+  ok(containerHardW.length === 0, '容器（顶栏/正文/页脚/文章）没有写死 rem 宽度', JSON.stringify(containerHardW))
+  ok(hardW.length <= 1, '写死 rem 宽度只剩搜索框这类小控件', JSON.stringify(hardW))
+  ok(/max-w-\[var\(--content-w\)\]/.test(appSrc), 'main/header/footer 读 --content-w')
+
+  // 3b) 主题里不许用 max-width 改宽度（注释里提到是允许的，只看真实声明）
+  const decls = [...presetsSrc.matchAll(/max-width:\s*[\d.]+rem/g)].map((m) => m[0])
+  ok(decls.length === 0, '六套主题预设都不写 max-width', JSON.stringify(decls))
+}
+
 console.log(`\n===== 结果：${pass} 通过 / ${fail} 失败 =====`)
 process.exit(fail ? 1 : 0)

@@ -157,14 +157,15 @@ export const UI = `<!DOCTYPE html>
      贴 top:14px 会把按钮盖住 —— 实测截图确认过，所以往下挪到顶栏之下。 ---- */
   .toasts { position: fixed; top: 76px; right: 14px; z-index: 90; display: flex; flex-direction: column;
             gap: 8px; width: min(370px, calc(100vw - 28px)); pointer-events: none; }
-  .toast { pointer-events: auto; background: var(--card); border: 1px solid var(--border); border-radius: 11px;
+  .toast { pointer-events: auto; cursor: pointer; background: var(--card); border: 1px solid var(--border); border-radius: 11px;
            padding: 10px 12px; box-shadow: 0 10px 30px var(--shadow); font-size: 14px;
            animation: tin .18s ease-out; }
   @keyframes tin { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
   .toast .th { display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: 14.5px; }
   .toast .th .tt { flex: 1; min-width: 0; }
-  .toast .th .x { cursor: pointer; color: var(--muted-2); font-weight: 400; padding: 0 2px; flex-shrink: 0; }
-  .toast .th .x:hover { color: var(--fg); }
+  /* 没有关闭小 ×：点卡片任意位置即关闭（见 toastOpen 里的 click 监听）。
+     只提示一下可点，不给按钮。 */
+  .toast:hover { border-color: var(--accent); }
   .toast .tb { margin-top: 5px; color: var(--muted); font-size: 13.5px; line-height: 1.55; word-break: break-word; }
   .toast .spin { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--accent);
                  border-top-color: transparent; animation: tspin .8s linear infinite; flex-shrink: 0; }
@@ -396,11 +397,11 @@ const DICT = {
     vaultSettings: '设置',
     themeBtn: '外观',
     themeTitle: '自定义外观',
-    themeIntro: '把你自己的 CSS 粘贴进来，就能改这个博客的颜色、字体、间距和版面位置。保存并发布后，网站 1~2 分钟内生效。',
-    themePresetIntro: '不想从零写？点一套现成的样式，它会填进下面的框里，你可以再改成自己的：',
+    themeIntro: '把你自己的 CSS 粘贴进来，就能改这个博客的颜色、字体、间距和首页排版。保存并发布后，网站 1~2 分钟内生效。<br><b>CSS 框里没有内容时，用的就是默认主题</b>（蓝白配色 + 三列卡片首页）；清空后保存并发布即可回到默认主题。',
+    themePresetIntro: '不想从零写？点一套现成的样式，它会填进下面的框里，你可以再改成自己的。六套的区别主要在首页排版（单列 / 两列 / 三列 / 树状）：',
     themePresetApplied: function (name) { return '已填入「' + name + '」，改完记得点保存' },
     themeTipVars: '改颜色最省事的办法是覆盖这几个变量：',
-    themeTipHook: '要调版面位置，可以对这几块写规则：',
+    themeTipHook: '首页和列表的排版（几列、卡片还是树状）用这几块定位：',
     themePlaceholder: '/* 例：把强调色换成墨绿，正文用宋体 */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="main"] {\\n  max-width: 54rem;\\n}',
     themeEmpty: '还没有自定义外观（用默认主题）',
     themeChars: function (n, max) { return n + ' / ' + max + ' 字符' },
@@ -620,11 +621,11 @@ const DICT = {
     vaultSettings: 'Settings',
     themeBtn: 'Appearance',
     themeTitle: 'Custom appearance',
-    themeIntro: 'Paste your own CSS to change this blog’s colors, fonts, spacing and layout. After “Save and publish”, the site updates within 1–2 minutes.',
-    themePresetIntro: 'No CSS of your own yet? Start from one of these, then tweak it:',
+    themeIntro: 'Paste your own CSS to change this blog’s colors, fonts, spacing and home-page layout. After “Save and publish”, the site updates within 1–2 minutes.<br><b>If the CSS box is empty, the default theme is used</b> (blue-on-white, three-column card home) — clear it and save &amp; publish to go back.',
+    themePresetIntro: 'No CSS of your own yet? Start from one of these, then tweak it. The six differ mainly in home-page layout (one / two / three columns / tree):',
     themePresetApplied: function (name) { return 'Filled in “' + name + '” — remember to save' },
     themeTipVars: 'The easiest way to recolor is to override these variables:',
-    themeTipHook: 'To move things around, target these regions:',
+    themeTipHook: 'To reshape the home page and lists (columns, cards, tree), target these regions:',
     themePlaceholder: '/* e.g. switch the accent to forest green and use a serif body font */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="main"] {\\n  max-width: 54rem;\\n}',
     themeEmpty: 'No custom appearance yet (using the default theme)',
     themeChars: function (n, max) { return n + ' / ' + max + ' characters' },
@@ -1130,17 +1131,23 @@ function toastOpen(title, body) {
   const id = ++toastSeq;
   const el = document.createElement('div');
   el.className = 'toast busy';
+  el.title = t('toastClose');
   const th = document.createElement('div'); th.className = 'th';
   const spin = document.createElement('span'); spin.className = 'spin';
   const ic = document.createElement('span'); ic.className = 'ic'; ic.style.display = 'none';
   const tt = document.createElement('span'); tt.className = 'tt'; tt.textContent = title;
-  const x = document.createElement('span'); x.className = 'x'; x.textContent = '×';
-  x.title = t('toastClose');
-  x.onclick = () => toastDrop(id);
-  th.appendChild(spin); th.appendChild(ic); th.appendChild(tt); th.appendChild(x);
+  th.appendChild(spin); th.appendChild(ic); th.appendChild(tt);
   const tb = document.createElement('div'); tb.className = 'tb';
   if (body) tb.textContent = body;
   el.appendChild(th); el.appendChild(tb);
+  // 关闭方式：点卡片任意位置（用户要求「不要小 x，点任何位置都可以删除」）。
+  // 但卡片里有可交互内容 —— 「查看详情」的折叠、线上地址外链 —— 点它们不该关掉卡片，
+  // 否则想看日志的人一点就没了。所以这些区域内的点击放行，其余位置一律关闭。
+  el.addEventListener('click', (ev) => {
+    const hit = ev.target;
+    if (hit && hit.closest && hit.closest('details, a, summary')) return;
+    toastDrop(id);
+  });
   box.appendChild(el);
   TOAST_LIVE.set(id, { el, tt, tb, spin, ic, timer: 0 });
   return id;
@@ -1187,7 +1194,7 @@ function toastSet(id, kind, title, body, detail, linkUrl) {
     }
     d.appendChild(sm); d.appendChild(pre); tb.appendChild(d);
   }
-  // 不自动消失：成功、失败、进行中都留着，必须用户点 × 才收起。
+  // 不自动消失：成功、失败、进行中都留着，必须用户点一下卡片才收起。
   // 自动收起会让人正好走开就错过结果，反而更分不清「推上去了没有」。
 }
 function toastDrop(id) {
@@ -1606,7 +1613,7 @@ function openTheme() {
   d.innerHTML =
     '<div class="panel wide">' +
       '<h2 data-i18n="themeTitle"></h2>' +
-      '<div class="hint" data-i18n="themeIntro"></div>' +
+      '<div class="hint" data-i18n-html="themeIntro"></div>' +
       '<div class="theme-tip" data-i18n="themePresetIntro"></div>' +
       '<div class="preset-row" id="presetRow"></div>' +
       '<div class="theme-tip">' +
@@ -1617,9 +1624,9 @@ function openTheme() {
       '</div>' +
       '<div class="theme-tip">' +
         '<span data-i18n="themeTipHook"></span> ' +
-        '<code>[data-region="header"]</code> <code>[data-region="main"]</code> ' +
-        '<code>[data-region="note"]</code> <code>[data-region="folders"]</code> ' +
-        '<code>[data-region="footer"]</code>' +
+        '<code>[data-region="folders"]</code> <code>[data-region="list"]</code> ' +
+        '<code>[data-region="tags"]</code> <code>[data-region="article"]</code> ' +
+        '<code>[data-region="header"]</code> <code>[data-region="footer"]</code>' +
       '</div>' +
       '<textarea class="theme-editor" id="themeCss" spellcheck="false" data-i18n-ph="themePlaceholder"></textarea>' +
       '<div class="theme-bar">' +
