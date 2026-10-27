@@ -946,7 +946,7 @@ function refreshDlgsAfterLang() {
     const tcss = td.querySelector('#themeCss') ? td.querySelector('#themeCss').value : '';
     td.remove();
     if (themeReopen) {
-      themeReopen();
+      themeReopen(true);
       const ni = document.getElementById('themeCss');
       if (ni && tcss) { ni.value = tcss; ni.dispatchEvent(new Event('input')); }
     }
@@ -1627,7 +1627,8 @@ let setupConn = null, setupPicked = '';
 let PRESETS = "__THEME_PRESETS__";
 if (typeof PRESETS === 'string') PRESETS = [];
 let themeReopen = null;
-function openTheme() {
+// keep=true：切语言后重开，编辑器里的未保存内容要保住，别被服务器的旧值盖掉
+function openTheme(keep) {
   themeReopen = openTheme;
   const old = document.getElementById('themeDlg');
   if (old) old.remove();
@@ -1798,11 +1799,18 @@ function openTheme() {
   });
   d.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menuEl.hidden) openMenu(false); });
 
-  // 载入当前值：读接口不 clone、不扫库，工作副本没准备好时返回空串
+  // 载入当前值：读接口不 clone、不扫库，工作副本没准备好时返回空串。
+  // keep=true 用于「切语言后重开」：此时编辑器里已经有用户没保存的内容，
+  // 不能拿服务器上的旧值把它盖掉，只补上 maxBytes 与预设列表。
   say('', t('themeLoading'));
   api('/api/theme').then((r) => {
-    ta.value = r.css || '';
     maxBytes = r.maxBytes || maxBytes;
+    if (keep) {
+      updateCount();
+      renderPresets();
+      return;
+    }
+    ta.value = r.css || '';
     updateCount();
     renderPresets();
     if (!r.css) say('', t('themeEmpty'));

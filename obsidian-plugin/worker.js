@@ -4471,7 +4471,7 @@ function refreshDlgsAfterLang() {
     const tcss = td.querySelector('#themeCss') ? td.querySelector('#themeCss').value : '';
     td.remove();
     if (themeReopen) {
-      themeReopen();
+      themeReopen(true);
       const ni = document.getElementById('themeCss');
       if (ni && tcss) { ni.value = tcss; ni.dispatchEvent(new Event('input')); }
     }
@@ -5152,7 +5152,8 @@ let setupConn = null, setupPicked = '';
 let PRESETS = "__THEME_PRESETS__";
 if (typeof PRESETS === 'string') PRESETS = [];
 let themeReopen = null;
-function openTheme() {
+// keep=true\uFF1A\u5207\u8BED\u8A00\u540E\u91CD\u5F00\uFF0C\u7F16\u8F91\u5668\u91CC\u7684\u672A\u4FDD\u5B58\u5185\u5BB9\u8981\u4FDD\u4F4F\uFF0C\u522B\u88AB\u670D\u52A1\u5668\u7684\u65E7\u503C\u76D6\u6389
+function openTheme(keep) {
   themeReopen = openTheme;
   const old = document.getElementById('themeDlg');
   if (old) old.remove();
@@ -5323,11 +5324,18 @@ function openTheme() {
   });
   d.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menuEl.hidden) openMenu(false); });
 
-  // \u8F7D\u5165\u5F53\u524D\u503C\uFF1A\u8BFB\u63A5\u53E3\u4E0D clone\u3001\u4E0D\u626B\u5E93\uFF0C\u5DE5\u4F5C\u526F\u672C\u6CA1\u51C6\u5907\u597D\u65F6\u8FD4\u56DE\u7A7A\u4E32
+  // \u8F7D\u5165\u5F53\u524D\u503C\uFF1A\u8BFB\u63A5\u53E3\u4E0D clone\u3001\u4E0D\u626B\u5E93\uFF0C\u5DE5\u4F5C\u526F\u672C\u6CA1\u51C6\u5907\u597D\u65F6\u8FD4\u56DE\u7A7A\u4E32\u3002
+  // keep=true \u7528\u4E8E\u300C\u5207\u8BED\u8A00\u540E\u91CD\u5F00\u300D\uFF1A\u6B64\u65F6\u7F16\u8F91\u5668\u91CC\u5DF2\u7ECF\u6709\u7528\u6237\u6CA1\u4FDD\u5B58\u7684\u5185\u5BB9\uFF0C
+  // \u4E0D\u80FD\u62FF\u670D\u52A1\u5668\u4E0A\u7684\u65E7\u503C\u628A\u5B83\u76D6\u6389\uFF0C\u53EA\u8865\u4E0A maxBytes \u4E0E\u9884\u8BBE\u5217\u8868\u3002
   say('', t('themeLoading'));
   api('/api/theme').then((r) => {
-    ta.value = r.css || '';
     maxBytes = r.maxBytes || maxBytes;
+    if (keep) {
+      updateCount();
+      renderPresets();
+      return;
+    }
+    ta.value = r.css || '';
     updateCount();
     renderPresets();
     if (!r.css) say('', t('themeEmpty'));
