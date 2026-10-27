@@ -18,13 +18,12 @@ const OUT = path.join(__dirname, 'theme-presets.mjs')
 
 /** 文件名的编号即顺序；中文名取破折号后的部分 */
 const META = {
-  '01': { id: 'study', zh: '墨绿书斋', en: 'Ink Study', dzh: '三列纸卡首页，暖纸底全衬线，适合长文阅读', den: 'Three-column card home — warm paper, full serif' },
-  '03': { id: 'sakura', zh: '樱纸', en: 'Sakura Paper', dzh: '单列大卡片首页、标题居中放大，极浅粉白配玫红', den: 'Single-column index home with centered titles — pale pink and rose' },
-  '05': { id: 'mono', zh: '极简黑白', en: 'Mono', dzh: '单列纯文字索引表，纯白纯黑零圆角', den: 'Single-column index-style home — pure black and white, no rounded corners' },
-  '07': { id: 'tree', zh: '青苔树状', en: 'Moss Tree', dzh: '文件树首页，竖线导轨 + 拐角连接符，绿灰纸感', den: 'File-tree home with guide rails and elbow connectors — mossy green-grey' },
-  '08': { id: 'bento', zh: '便当盒', en: 'Bento', dzh: '大小方块拼贴首页，第一块占主位，六色循环发色', den: 'Mosaic tile home — one hero tile plus a six-colour rotation' },
-  '09': { id: 'docs', zh: '文档站', en: 'Docs', dzh: '左侧固定目录栏 + 右侧笔记列表，文件夹多时最好用', den: 'Fixed left sidebar navigation with the note list on the right' },
-  '10': { id: 'neon', zh: '深色霓虹', en: 'Neon', dzh: '近黑底 + 青/品红描边，等宽字体，编号目录行', den: 'Near-black canvas, cyan and magenta outlines, monospace numbered rows' },
+  '01': { id: 'study', zh: '墨绿', en: 'Ink', dzh: '三列纸卡首页，暖纸底全衬线，适合长文阅读', den: 'Three-column card home — warm paper, full serif' },
+  '03': { id: 'sakura', zh: '樱粉', en: 'Blossom', dzh: '单列大卡片首页、标题居中放大，极浅粉白配玫红', den: 'Single-column index home with centered titles — pale pink and rose' },
+  '05': { id: 'mono', zh: '黑白', en: 'Mono', dzh: '单列纯文字索引表，纯白纯黑零圆角', den: 'Single-column index-style home — pure black and white, no rounded corners' },
+  '07': { id: 'tree', zh: '树形', en: 'Tree', dzh: '文件树首页，竖线导轨 + 拐角连接符，绿灰纸感', den: 'File-tree home with guide rails and elbow connectors — mossy green-grey' },
+  '08': { id: 'bento', zh: '方格', en: 'Grid', dzh: '大小方块拼贴首页，第一块占主位，六色循环发色', den: 'Mosaic tile home — one hero tile plus a six-colour rotation' },
+  '10': { id: 'neon', zh: '霓虹', en: 'Neon', dzh: '近黑底 + 青/品红描边，等宽字体，编号目录行', den: 'Near-black canvas, cyan and magenta outlines, monospace numbered rows' },
 }
 
 /** 从 CSS 里取几个颜色，画预设卡片的缩略色块 */
@@ -53,7 +52,11 @@ for (const f of files) {
   const num = f.slice(0, 2)
   const meta = META[num]
   if (!meta) throw new Error('未登记的预设编号: ' + f)
-  const css = fs.readFileSync(path.join(SRC, f), 'utf8').trim() + '\n'
+  // 统一成 LF：Windows 上 git 的 core.autocrlf 会把 _dev/themes/*.css 检出成 CRLF，
+  // 不归一化的话生成的 theme-presets.mjs 里每个换行都变成 \r\n，
+  // 一个主题从 6KB 涨到 6.3KB，而且 diff 里整块绿色（看着像改了整个文件）。
+  // 更关键的是编辑器里的内容与预设比对（matchPreset）会因行尾不同而不相等。
+  const css = fs.readFileSync(path.join(SRC, f), 'utf8').replace(/\r\n?/g, '\n').trim() + '\n'
   presets.push({
     id: meta.id,
     name: { zh: meta.zh, en: meta.en },

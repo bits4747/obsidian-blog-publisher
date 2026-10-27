@@ -314,7 +314,7 @@ console.log('\n=== 15. 外观面板：默认进列表 + 说明≤50字 + 预设�
 
   // 3) 预览图：每套内置预设 + 默认各有一张，id 必须对齐
   const presetIds = [...presetsSrc.matchAll(/"id":\s*"([\w-]+)"/g)].map((m) => m[1])
-  ok(presetIds.length === 7, '内置预设 7 套，实际 ' + presetIds.length)
+  ok(presetIds.length === 6, '内置预设 6 套，实际 ' + presetIds.length)
   const previewIds = [...previewsSrc.matchAll(/^\s{2}"([\w-]+)":/gm)].map((m) => m[1])
   const missing = ['default'].concat(presetIds).filter((id) => !previewIds.includes(id))
   ok(missing.length === 0, '每套预设都有预览图（含默认）', JSON.stringify(missing))

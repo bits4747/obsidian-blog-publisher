@@ -1940,7 +1940,9 @@ function openTheme(keep) {
   // 编辑器里的内容正好等于某套预设（或为空 = 默认）时，下拉框里把它点亮，
   // 用户能一眼看出「我现在是这套」。自己改过的内容则显示「自定义」。
   const matchPreset = (css) => {
-    const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
+    // 注意：这里是模板字面量，\s 必须写成 \\s，否则输出到浏览器就成了 /s+/（匹配字面量 s），
+    // 预设比对永远不等，下拉框会一直显示「自定义」。
+    const norm = (s) => String(s || '').replace(/\\s+/g, ' ').trim();
     const v = norm(css);
     if (!v) return 'default';
     const hit = PRESETS.find((p) => norm(p.css) === v);
@@ -1976,7 +1978,8 @@ function openTheme(keep) {
     ta.value = '';
     updateCount();
     clearMsg();
-    markPreset('');
+    // 清空 = 回到默认主题，下拉框要显示「默认」而不是「自定义」
+    markPreset('default');
     say('', t('themeCleared'));
     ta.focus();
   };
