@@ -12,6 +12,10 @@ out
 public/data
 public/assets
 
+# 主题预览图的临时工作目录：_dev/gen-theme-previews.mjs 用它装「假内容 + 构建产物」，
+# 截图完就没用了。产物是 _dev/_preview_shots/*.png → scripts/theme-previews.mjs。
+_dev_preview/
+
 # 个人数据：已全部迁到用户数据目录（Windows %APPDATA%\obsidian-blog，
 # macOS ~/Library/Application Support/obsidian-blog，Linux ~/.config/obsidian-blog），
 # 源目录只放代码、可以直接开源。下面几项是历史遗留位置的安全网，

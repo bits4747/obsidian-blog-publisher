@@ -21,6 +21,7 @@ import http from 'node:http'
 import matter from 'gray-matter'
 import { UI } from './ui-template.mjs'
 import { THEME_PRESETS } from './theme-presets.mjs'
+import { THEME_PREVIEWS, THEME_PREVIEW_VERSION } from './theme-previews.mjs'
 
 /**
  * @param {object} opts
@@ -1962,7 +1963,33 @@ export function createManager(opts) {
         // 所以留了 __THEME_PRESETS__ 占位，在这里换成真实数据。
         // 用 JSON.parse 前的 JSON.stringify 包一层再替换，避免内容里的 $& 之类
         // 被 String.replace 当成替换模式吃掉。
-        res.end(UI.replace('"__THEME_PRESETS__"', () => JSON.stringify(THEME_PRESETS)))
+        res.end(
+          UI.replace('"__THEME_PRESETS__"', () => JSON.stringify(THEME_PRESETS))
+            .replace('"__THEME_PREVIEW_IDS__"', () => JSON.stringify(Object.keys(THEME_PREVIEWS)))
+            .replace('"__THEME_PREVIEW_VER__"', () => JSON.stringify(THEME_PREVIEW_VERSION))
+        )
+        return
+      }
+      // 主题预览图：内嵌的 base64 PNG 直接吐出去。
+      // 为什么不放 public/：管理器是打包进插件 worker.js 运行的，装到
+      // .obsidian/plugins 之后磁盘上没有「静态资源目录」可言，内嵌最省事。
+      // 图是通用示例内容（站名「示例博客」），不含任何真实个人信息。
+      const mPv = /^\/preset-preview\/([\w-]+)\.png$/.exec(url)
+      if (req.method === 'GET' && mPv) {
+        const b64 = THEME_PREVIEWS[mPv[1]]
+        if (!b64) {
+          res.writeHead(404)
+          res.end()
+          return
+        }
+        const buf = Buffer.from(b64, 'base64')
+        res.writeHead(200, {
+          'content-type': 'image/png',
+          'content-length': buf.length,
+          // 预览图跟着插件版本走，一个版本内不会变，可以放心让浏览器缓存
+          'cache-control': 'public, max-age=86400',
+        })
+        res.end(buf)
         return
       }
       const { connections, conn, vaultPath, workdir, local } = activeConfig()

@@ -288,5 +288,50 @@ console.log('\n=== 14. 界面约定：弹窗手动关闭 + 宽度/字号解耦 =
   ok(decls.length === 0, '六套主题预设都不写 max-width', JSON.stringify(decls))
 }
 
+console.log('\n=== 15. 外观面板：默认进列表 + 说明≤50字 + 预设预览图 ===')
+// 用户明确要求的三条，靠人眼容易回归，这里静态 + 接口双重锁死：
+//  1)「默认」也要出现在预设下拉里（它等价于空 CSS，用户要能明确选中它）；
+//  2) 面板上的说明文字不得超过 50 字，写 CSS 的教程只能放在「写作指南」弹窗里；
+//  3) 每套内置预设都要有预览图，自定义没有（用户写什么就是什么，预渲染不了）。
+{
+  const uiSrc = fs.readFileSync(path.join(process.cwd(), 'scripts', 'ui-template.mjs'), 'utf8')
+  const presetsSrc = fs.readFileSync(path.join(process.cwd(), 'scripts', 'theme-presets.mjs'), 'utf8')
+  const previewsSrc = fs.readFileSync(path.join(process.cwd(), 'scripts', 'theme-previews.mjs'), 'utf8')
+
+  // 1) 默认作为一套可选外观
+  ok(/id:\s*'default'/.test(uiSrc), '「默认」是可选预设（id=default）')
+  ok(/DEFAULT_PRESET\].concat\(PRESETS\)|\[DEFAULT_PRESET\]/.test(uiSrc), '预设列表 = 默认 + 内置预设')
+
+  // 2) 面板文案 ≤50 字：themeIntro 是唯一常驻说明，逐语言量长度
+  const introZh = /themeIntro:\s*'([^']*)'/.exec(uiSrc)
+  const introEn = [...uiSrc.matchAll(/themeIntro:\s*'([^']*)'/g)].map((m) => m[1])
+  ok(!!introZh, '面板说明 themeIntro 存在')
+  ok(introZh[1].length <= 50, '中文说明 ≤50 字，实际 ' + introZh[1].length + ' 字')
+  const badEn = introEn.filter((s) => s.length > 60)
+  ok(badEn.length === 0, '英文说明也够短（≤60 字符），实际 ' + JSON.stringify(introEn))
+  // 教程必须住在按钮后面，不能摊在面板上
+  ok(/id="themeGuide"/.test(uiSrc) && /openThemeGuide/.test(uiSrc), '写 CSS 的教程在「写作指南」按钮里')
+
+  // 3) 预览图：六套预设 + 默认各有一张，id 必须对齐
+  const presetIds = [...presetsSrc.matchAll(/"id":\s*"([\w-]+)"/g)].map((m) => m[1])
+  ok(presetIds.length === 6, '内置预设 6 套，实际 ' + presetIds.length)
+  const previewIds = [...previewsSrc.matchAll(/^\s{2}"([\w-]+)":/gm)].map((m) => m[1])
+  const missing = ['default'].concat(presetIds).filter((id) => !previewIds.includes(id))
+  ok(missing.length === 0, '每套预设都有预览图（含默认）', JSON.stringify(missing))
+  ok(/THEME_PREVIEW_VERSION/.test(previewsSrc), '预览图带内容哈希（改图后缓存会失效）')
+
+  // 图片真的能取到，且是 PNG
+  const r = await fetch(BASE + '/preset-preview/default.png')
+  ok(r.status === 200, '预览图接口可访问，实际 ' + r.status)
+  ok((r.headers.get('content-type') || '').includes('image/png'), '返回 image/png')
+  const buf = Buffer.from(await r.arrayBuffer())
+  ok(buf.length > 2000 && buf.slice(0, 4).toString('hex') === '89504e47', '返回的是有效 PNG（' + buf.length + ' 字节）')
+  const bad = await fetch(BASE + '/preset-preview/not-a-preset.png')
+  ok(bad.status === 404, '未知预设返回 404，实际 ' + bad.status)
+
+  // 自定义没有预览图：面板里要有「自定义」占位说明
+  ok(/presetPreviewEmpty/.test(uiSrc) && /themePresetCustom/.test(uiSrc), '自定义外观不显示预览图，只给一行说明')
+}
+
 console.log(`\n===== 结果：${pass} 通过 / ${fail} 失败 =====`)
 process.exit(fail ? 1 : 0)

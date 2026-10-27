@@ -206,7 +206,8 @@ export const UI = `<!DOCTYPE html>
   .dialog { position: fixed; inset: 0; z-index: 50; background: rgba(17,24,39,.45);
             display: flex; align-items: center; justify-content: center; padding: 20px; }
   .dialog .panel { background: var(--card); border-radius: 14px; width: 100%; max-width: 520px;
-                   padding: 20px 22px; box-shadow: 0 20px 50px var(--shadow); }
+                   padding: 20px 22px; box-shadow: 0 20px 50px var(--shadow);
+                   max-height: calc(100vh - 40px); overflow-y: auto; }
   .dialog h2 { margin: 0 0 4px; font-size: 18.5px; }
   .dialog .hint { font-size: 14.5px; color: var(--muted); margin-bottom: 16px; }
   .field { margin-bottom: 14px; }
@@ -292,6 +293,34 @@ export const UI = `<!DOCTYPE html>
     display: flex; align-items: center; gap: 6px; background: var(--bg);
   }
   .preset-desc b { color: var(--fg); font-weight: 600; flex: 0 0 auto; }
+  /* ---- 主题预览图 ----
+     选中某套预设时显示它长什么样。图是通用示例内容（站名「示例博客」），
+     不含任何真实个人信息。用户自己写的 CSS 没有图可显示，那时换成一行说明。 */
+  .preset-preview {
+    margin: -6px 0 12px; border: 1px solid var(--border); border-radius: 9px;
+    overflow: hidden; background: var(--bg); line-height: 0;
+  }
+  .preset-preview[hidden] { display: none; }
+  .preset-preview img { width: 100%; height: auto; display: block; }
+  .preset-preview-empty {
+    margin: -6px 0 12px; padding: 8px 11px; border: 1px dashed var(--border);
+    border-radius: 9px; font-size: 12.5px; color: var(--muted-2);
+  }
+  .preset-preview-empty[hidden] { display: none; }
+  /* ---- 写作指南弹窗 ---- */
+  .guide-panel { max-width: 720px; }
+  .guide-sec { margin-bottom: 12px; }
+  .guide-sec .gt { font-size: 13px; color: var(--muted); margin-bottom: 5px; }
+  .guide-code {
+    margin: 0; font-family: ui-monospace, Consolas, "Cascadia Mono", monospace;
+    font-size: 12px; line-height: 1.6; padding: 10px 12px; border-radius: 9px;
+    background: var(--field); color: var(--fg); border: 1px solid var(--border-soft);
+    overflow-x: auto; white-space: pre; tab-size: 2;
+  }
+  .guide-note {
+    font-size: 12.5px; color: var(--muted-2); line-height: 1.6;
+    padding: 8px 11px; border-radius: 8px; background: var(--chip);
+  }
   /* 插件用 iframe 嵌入（?embed=1）：Obsidian 左侧已经是文件树，
      这里的「搜索 + 文件夹网格」重复且挤，整块隐藏，只留连接 / 变更 / 流水 / 发布。 */
   body.embed-mode #mainCard { display: none; }
@@ -417,13 +446,20 @@ const DICT = {
     vaultSettings: '设置',
     themeBtn: '外观',
     themeTitle: '自定义外观',
-    themeIntro: '把你自己的 CSS 粘贴进来，就能改这个博客的颜色、字体、间距和首页排版。保存并发布后，网站 1~2 分钟内生效。<br><b>CSS 框里没有内容时，用的就是默认主题</b>（蓝白配色 + 三列卡片首页）；清空后保存并发布即可回到默认主题。',
-    themePresetIntro: '不想从零写？从下拉框里选一套现成的样式，它会填进下面的框里，你可以再改成自己的。六套的区别主要在首页排版（单列 / 两列 / 三列 / 树状），鼠标停在名字上看简介：',
+    // 面板里的说明文字总量必须 ≤50 字（用户要求），细节全放进「写作指南」弹窗
+    themeIntro: '粘贴 CSS 改颜色和首页排版，留空即默认。',
+    themeDefault: '默认',
+    themeDefaultDesc: '站点自带：蓝白配色 + 三列卡片首页',
+    themePresetCustom: '自定义',
     themePresetApplied: function (name) { return '已填入「' + name + '」，改完记得点保存' },
-    themePresetHover: '鼠标停在一套样式上可以看它的简介；点一下整套填进下面的框里',
-    themePresetNone: '选择一套现成样式…',
-    themeTipVars: '改颜色最省事的办法是覆盖这几个变量：',
-    themeTipHook: '首页和列表的排版（几列、卡片还是树状）用这几块定位：',
+    themeGuideBtn: '写作指南',
+    themeGuideTitle: '怎么写自定义外观',
+    themeGuideIntro: '下面是可以覆盖的变量和可以定位的区域，复制过去改数字就行。',
+    themeGuideVars: '颜色与圆角：覆盖 :root 里的变量，深色模式写在 html.dark 下。',
+    themeGuideHook: '版面：这些区域都带 data-region，可改排布、间距、颜色。',
+    themeGuideNote: '全站宽度由站点统一控制（--content-w），主题里不要写 max-width；大纲是悬浮组件，不要去动它的位置。',
+    themeGuideFont: '字号要跟着右上角的字号滑块走，就用 var(--fsu)。',
+    themeGuideInsert: '插入到编辑器',
     themePlaceholder: '/* 例：把强调色换成墨绿，正文用宋体 */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="article"] {\\n  font-family: "Songti SC", serif;\\n}',
     themeEmpty: '还没有自定义外观（用默认主题）',
     themeChars: function (n, max) { return n + ' / ' + max + ' 字符' },
@@ -437,7 +473,6 @@ const DICT = {
     themeCleared: '已清空自定义外观（恢复默认主题）',
     themeLoading: '正在读取…',
     themeLoadFail: '读取失败：',
-    themeGuide: '查看可用的变量和选择器',
     themeClear: '清空',
 
     searchPh: '搜索笔记标题 / 路径…',
@@ -643,13 +678,20 @@ const DICT = {
     vaultSettings: 'Settings',
     themeBtn: 'Appearance',
     themeTitle: 'Custom appearance',
-    themeIntro: 'Paste your own CSS to change this blog’s colors, fonts, spacing and home-page layout. After “Save and publish”, the site updates within 1–2 minutes.<br><b>If the CSS box is empty, the default theme is used</b> (blue-on-white, three-column card home) — clear it and save &amp; publish to go back.',
-    themePresetIntro: 'No CSS of your own yet? Pick one from the dropdown, then tweak it. The six differ mainly in home-page layout (one / two / three columns / tree); hover a name to see its description:',
+    // ≤50 characters in total for the panel copy; details live in the guide dialog
+    themeIntro: 'Paste CSS: colors & layout; empty = default.',
+    themeDefault: 'Default',
+    themeDefaultDesc: 'Built-in: blue on white, three-column card home',
+    themePresetCustom: 'Custom',
     themePresetApplied: function (name) { return 'Filled in “' + name + '” — remember to save' },
-    themePresetHover: 'Hover a style to preview its description; click to fill it into the box below',
-    themePresetNone: 'Pick a ready-made style…',
-    themeTipVars: 'The easiest way to recolor is to override these variables:',
-    themeTipHook: 'To reshape the home page and lists (columns, cards, tree), target these regions:',
+    themeGuideBtn: 'How to write',
+    themeGuideTitle: 'How to write a custom theme',
+    themeGuideIntro: 'These are the variables you can override and the regions you can target — copy, then change the numbers.',
+    themeGuideVars: 'Colors and radius: override the variables under :root; dark mode goes under html.dark.',
+    themeGuideHook: 'Layout: these regions all carry data-region — reshape columns, spacing, colors.',
+    themeGuideNote: 'Site width is controlled centrally (--content-w) — do not set max-width in a theme; the outline panel is a floating widget, leave its position alone.',
+    themeGuideFont: 'To follow the font-size slider, size text with var(--fsu).',
+    themeGuideInsert: 'Insert into editor',
     themePlaceholder: '/* e.g. switch the accent to forest green and use a serif body font */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="article"] {\\n  font-family: Georgia, serif;\\n}',
     themeEmpty: 'No custom appearance yet (using the default theme)',
     themeChars: function (n, max) { return n + ' / ' + max + ' characters' },
@@ -663,7 +705,6 @@ const DICT = {
     themeCleared: 'Custom appearance cleared (back to the default theme)',
     themeLoading: 'Loading…',
     themeLoadFail: 'Load failed: ',
-    themeGuide: 'Show available variables and selectors',
     themeClear: 'Clear',
     searchPh: 'Search note title / path…',
     expandAll: 'Expand all',
@@ -951,6 +992,10 @@ function refreshDlgsAfterLang() {
       if (ni && tcss) { ni.value = tcss; ni.dispatchEvent(new Event('input')); }
     }
   }
+  // 写作指南是只读的说明弹窗，切语言时直接关掉即可 —— 用户再点一次按钮
+  // 就是新语言的内容，没必要费劲保住它的滚动位置。
+  const gd = document.getElementById('themeGuideDlg');
+  if (gd) gd.remove();
 }
 
 // ---- 明暗主题 ----
@@ -1626,6 +1671,93 @@ let setupConn = null, setupPicked = '';
 // （本文件整体是模板字面量，不能直接插值；预设在 scripts/theme-presets.mjs 里）。
 let PRESETS = "__THEME_PRESETS__";
 if (typeof PRESETS === 'string') PRESETS = [];
+// 预览图的 id 集合。这里只需要知道「有没有图」，图片本身走
+// /preset-preview/<id>.png 现取（内嵌 base64，不依赖磁盘上的图片目录）。
+let PREVIEW_IDS = "__THEME_PREVIEW_IDS__";
+if (!Array.isArray(PREVIEW_IDS)) PREVIEW_IDS = [];
+// 图片内容哈希。服务器给预览图设了 86400 秒缓存，换了图但 URL 不变的话
+// 用户会一直看到旧图 —— 拼个 ?v= 上去，图一改 URL 就变。
+let PREVIEW_VER = "__THEME_PREVIEW_VER__";
+// 没被服务端替换时（占位符原样留着）就当没有版本号，别把 __THEME_PREVIEW_VER__
+// 拼进 URL 里发一个必然 404 的请求。
+if (typeof PREVIEW_VER !== 'string' || PREVIEW_VER.indexOf('__') >= 0) PREVIEW_VER = '';
+
+// 写作指南弹窗：面板里塞不下也不该塞（用户要求面板文字 ≤50 字），
+// 所以「怎么写」全部放这里，点了按钮才出现，看完可以一键插进编辑器。
+function openThemeGuide(onInsert) {
+  const old = document.getElementById('themeGuideDlg');
+  if (old) old.remove();
+  const d = document.createElement('div');
+  d.className = 'dialog'; d.id = 'themeGuideDlg';
+  d.innerHTML =
+    '<div class="panel wide guide-panel">' +
+      '<h2 data-i18n="themeGuideTitle"></h2>' +
+      '<div class="hint" data-i18n="themeGuideIntro"></div>' +
+      '<div class="guide-sec">' +
+        '<div class="gt" data-i18n="themeGuideVars"></div>' +
+        '<pre class="guide-code">' +
+          ':root {\\n' +
+          '  --background: oklch(0.99 0.004 250);      /* 页面底色 */\\n' +
+          '  --foreground: oklch(0.19 0.021 257);      /* 正文颜色 */\\n' +
+          '  --card: oklch(1 0 0);                     /* 卡片底色 */\\n' +
+          '  --primary: oklch(0.55 0.16 256);          /* 强调色：链接、按钮 */\\n' +
+          '  --muted-foreground: oklch(0.53 0.019 255);/* 次要文字 */\\n' +
+          '  --border: oklch(0.916 0.008 253);         /* 描边 */\\n' +
+          '  --radius: 0.625rem;                       /* 圆角 */\\n' +
+          '}\\n' +
+          'html.dark {\\n' +
+          '  --background: oklch(0.17 0.022 256);\\n' +
+          '  --primary: oklch(0.72 0.155 252);\\n' +
+          '}' +
+        '</pre>' +
+      '</div>' +
+      '<div class="guide-sec">' +
+        '<div class="gt" data-i18n="themeGuideHook"></div>' +
+        '<pre class="guide-code">' +
+          '[data-region="header"]  { /* 顶栏 */ }\\n' +
+          '[data-region="folders"] { /* 首页文件夹区：几列 / 卡片还是列表 */ }\\n' +
+          '[data-region="list"]    { /* 笔记列表 */ }\\n' +
+          '[data-region="tags"]    { /* 标签栏 */ }\\n' +
+          '[data-region="article"] { /* 正文 */ }\\n' +
+          '[data-region="footer"]  { /* 页脚 */ }' +
+        '</pre>' +
+      '</div>' +
+      '<div class="guide-sec">' +
+        '<div class="gt" data-i18n="themeGuideFont"></div>' +
+        '<pre class="guide-code">' +
+          'body { font-family: "Songti SC", serif; }\\n' +
+          '[data-region="article"] { font-size: calc(1.05 * var(--fsu)); }' +
+        '</pre>' +
+      '</div>' +
+      '<div class="guide-note" data-i18n="themeGuideNote"></div>' +
+      '<div class="actions">' +
+        '<button class="ghost" id="guideClose" data-i18n="cancel"></button>' +
+        '<button id="guideInsert" data-i18n="themeGuideInsert"></button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(d);
+  applyLang();
+  const close = () => d.remove();
+  d.querySelector('#guideClose').onclick = close;
+  d.onclick = (e) => { if (e.target === d) close(); };
+  d.querySelector('#guideInsert').onclick = () => {
+    // 只插入「颜色」这一块：它是大多数人真正要改的东西。
+    // 版面选择器块插进去是空规则，插了反而要用户自己删。
+    const code = [
+      '/* 颜色 / 圆角：覆盖 :root 里的变量即可，深色模式写在 html.dark 下 */',
+      ':root {',
+      '  --background: oklch(0.99 0.004 250);',
+      '  --foreground: oklch(0.19 0.021 257);',
+      '  --primary: oklch(0.55 0.16 256);',
+      '  --border: oklch(0.916 0.008 253);',
+      '  --radius: 0.625rem;',
+      '}',
+    ].join('\\n');
+    close();
+    if (onInsert) onInsert(code);
+  };
+}
+
 let themeReopen = null;
 // keep=true：切语言后重开，编辑器里的未保存内容要保住，别被服务器的旧值盖掉
 function openTheme(keep) {
@@ -1638,8 +1770,7 @@ function openTheme(keep) {
   d.innerHTML =
     '<div class="panel wide">' +
       '<h2 data-i18n="themeTitle"></h2>' +
-      '<div class="hint" data-i18n-html="themeIntro"></div>' +
-      '<div class="theme-tip" data-i18n="themePresetIntro"></div>' +
+      '<div class="hint" data-i18n="themeIntro"></div>' +
       '<div class="preset-box" id="presetBox">' +
         '<button type="button" class="preset-current" id="presetCurrent" aria-haspopup="listbox" aria-expanded="false">' +
           '<span class="nm" id="presetCurrentName"></span>' +
@@ -1650,21 +1781,15 @@ function openTheme(keep) {
           '<div class="preset-desc" id="presetDesc"></div>' +
         '</div>' +
       '</div>' +
-      '<div class="theme-tip">' +
-        '<span data-i18n="themeTipVars"></span> ' +
-        '<code>--background</code> <code>--foreground</code> <code>--card</code> ' +
-        '<code>--primary</code> <code>--muted-foreground</code> <code>--border</code> ' +
-        '<code>--radius</code>' +
+      // 预览：选中的那套到底长什么样。自定义 CSS 没法预渲染（用户写什么就是什么），
+      // 所以「自定义」时不显示图，只留一行说明 —— 用户明确要求「自定义不用预览」。
+      '<div class="preset-preview" id="presetPreview">' +
+        '<img id="presetPreviewImg" alt="">' +
       '</div>' +
-      '<div class="theme-tip">' +
-        '<span data-i18n="themeTipHook"></span> ' +
-        '<code>[data-region="folders"]</code> <code>[data-region="list"]</code> ' +
-        '<code>[data-region="tags"]</code> <code>[data-region="article"]</code> ' +
-        '<code>[data-region="header"]</code> <code>[data-region="footer"]</code>' +
-      '</div>' +
+      '<div class="preset-preview-empty" id="presetPreviewEmpty" data-i18n="themePresetCustom"></div>' +
       '<textarea class="theme-editor" id="themeCss" spellcheck="false" data-i18n-ph="themePlaceholder"></textarea>' +
       '<div class="theme-bar">' +
-        '<button class="mini" id="themeGuide" data-i18n="themeGuide"></button>' +
+        '<button class="mini" id="themeGuide" data-i18n="themeGuideBtn"></button>' +
         '<button class="mini" id="themeClear" data-i18n="themeClear"></button>' +
         '<span class="cnt" id="themeCnt"></span>' +
       '</div>' +
@@ -1713,15 +1838,41 @@ function openTheme(keep) {
   const menuEl = $('presetMenu');
   const curEl = $('presetCurrent');
   const curNameEl = $('presetCurrentName');
+  const pvBox = $('presetPreview');
+  const pvImg = $('presetPreviewImg');
+  const pvEmpty = $('presetPreviewEmpty');
+  // 「默认」也当成一套可选的外观：它的 CSS 就是空串（清空 = 回到站点自带主题）。
+  // 单独放进列表而不是靠「没匹配到」来表示，用户才能在框里明确选中它、看到它的预览。
+  const DEFAULT_PRESET = {
+    id: 'default',
+    name: { zh: '默认', en: 'Default' },
+    desc: { zh: '站点自带：蓝白配色 + 三列卡片首页', en: 'Built-in: blue on white, three-column card home' },
+    css: '',
+  };
+  const allPresets = () => [DEFAULT_PRESET].concat(PRESETS);
   const descOf = (p) => (p.desc && (p.desc[LANG] || p.desc.zh)) || '';
   const nameOf = (p) => (p.name && (p.name[LANG] || p.name.zh)) || p.id;
-  const presetById = (id) => PRESETS.find((p) => p.id === id) || null;
+  const presetById = (id) => allPresets().find((p) => p.id === id) || null;
+  // 预览图：有截图就显示，没有（用户自己写的 CSS）就只留一行「自定义」说明。
+  // 用户明确要求「自定义不用预览」—— 他写什么就是什么，没法预渲染。
+  const updatePreview = (id) => {
+    if (!pvBox) return;
+    const has = !!id && PREVIEW_IDS.indexOf(id) >= 0;
+    pvBox.hidden = !has;
+    pvEmpty.hidden = has;
+    if (has) {
+      pvImg.src = '/preset-preview/' + id + '.png' + (PREVIEW_VER ? '?v=' + PREVIEW_VER : '');
+      pvImg.alt = nameOf(presetById(id) || DEFAULT_PRESET);
+    } else {
+      pvImg.removeAttribute('src');
+    }
+  };
   const showDesc = (p) => {
     if (!descEl) return;
     descEl.innerHTML = '';
     if (!p) {
       const s = document.createElement('span');
-      s.textContent = t('themePresetHover');
+      s.textContent = t('themePresetCustom');
       descEl.appendChild(s);
       return;
     }
@@ -1732,11 +1883,11 @@ function openTheme(keep) {
     descEl.appendChild(b);
     descEl.appendChild(s);
   };
-  // 收起时按钮上显示什么：选中了某套就显示它，否则显示「不用预设」的提示
+  // 收起时按钮上显示什么：选中了某套就显示它，否则说明这是用户自己改过的
   const setCurrentName = (id) => {
     if (!curNameEl) return;
     const p = presetById(id);
-    curNameEl.textContent = p ? nameOf(p) : t('themePresetNone');
+    curNameEl.textContent = p ? nameOf(p) : t('themePresetCustom');
   };
   const openMenu = (on) => {
     if (!menuEl || !curEl || !boxEl) return;
@@ -1746,13 +1897,14 @@ function openTheme(keep) {
     if (on) {
       const p = presetById(matchPreset(ta.value));
       showDesc(p);
+      if (p) updatePreview(p.id);
     }
   };
   const renderPresets = () => {
     if (!row) return;
     if (!PRESETS.length) { if (boxEl) boxEl.style.display = 'none'; return; }
     row.innerHTML = '';
-    PRESETS.forEach((p) => {
+    allPresets().forEach((p) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'preset';
@@ -1761,14 +1913,14 @@ function openTheme(keep) {
       b.textContent = nameOf(p);
       // title 留一份，方便用键盘/读屏的人也能拿到简介
       b.title = descOf(p) ? nameOf(p) + '：' + descOf(p) : nameOf(p);
-      b.onmouseenter = () => showDesc(p);
-      b.onfocus = () => showDesc(p);
+      b.onmouseenter = () => { showDesc(p); updatePreview(p.id); };
+      b.onfocus = () => { showDesc(p); updatePreview(p.id); };
       b.onclick = () => {
         ta.value = p.css;
         updateCount();
         clearMsg();
         markPreset(p.id);
-        say('ok', tf('themePresetApplied', nameOf(p)));
+        say('ok', p.id === 'default' ? t('themeCleared') : tf('themePresetApplied', nameOf(p)));
         openMenu(false);
         ta.focus();
       };
@@ -1782,12 +1934,14 @@ function openTheme(keep) {
     setCurrentName(id);
     const p = presetById(id);
     showDesc(p);
+    updatePreview(id);
   };
-  // 编辑器里的内容正好等于某个预设时，下拉框里把它点亮（用户能看出「我现在是这套」）
+  // 编辑器里的内容正好等于某套预设（或为空 = 默认）时，下拉框里把它点亮，
+  // 用户能一眼看出「我现在是这套」。自己改过的内容则显示「自定义」。
   const matchPreset = (css) => {
     const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
     const v = norm(css);
-    if (!v) return '';
+    if (!v) return 'default';
     const hit = PRESETS.find((p) => norm(p.css) === v);
     return hit ? hit.id : '';
   };
@@ -1826,44 +1980,15 @@ function openTheme(keep) {
     ta.focus();
   };
 
-  // 指引：把可改的东西列出来，用户不用去翻源码
-  $('themeGuide').onclick = () => {
-    const guide = [
-      '/* ---- 颜色 / 圆角：覆盖 :root 里的变量即可，深色模式在 .dark 下 ---- */',
-      ':root {',
-      '  --background: oklch(0.99 0.004 250);   /* 页面底色 */',
-      '  --foreground: oklch(0.19 0.021 257);   /* 正文颜色 */',
-      '  --card: oklch(1 0 0);                  /* 卡片底色 */',
-      '  --primary: oklch(0.55 0.16 256);       /* 强调色（链接、按钮） */',
-      '  --muted-foreground: oklch(0.53 0.019 255); /* 次要文字 */',
-      '  --border: oklch(0.916 0.008 253);      /* 描边 */',
-      '  --radius: 0.625rem;                    /* 圆角 */',
-      '}',
-      '.dark {',
-      '  --background: oklch(0.17 0.022 256);',
-      '  --primary: oklch(0.72 0.155 252);',
-      '}',
-      '',
-      '/* ---- 版面：这几块都有 data-region，可改排布、间距、颜色 ---- */',
-      '[data-region="header"]   { /* 顶栏 */ }',
-      '[data-region="folders"]  { /* 首页文件夹区（几列 / 卡片还是列表） */ }',
-      '[data-region="list"]     { /* 笔记列表 */ }',
-      '[data-region="tags"]     { /* 标签栏 */ }',
-      '[data-region="article"]  { /* 正文 */ }',
-      '[data-region="footer"]   { /* 页脚 */ }',
-      '',
-      '/* 注意：全站宽度由站点统一控制，不要在这里写 max-width（会跟其它主题打架） */',
-      '',
-      '/* ---- 字体 ---- */',
-      'body { font-family: "Songti SC", serif; }',
-      '/* 想让主题里的字号跟着右上角的字号滑块走，用 var(--fsu)： */',
-      '[data-region="article"] { font-size: calc(1.05 * var(--fsu)); }',
-    ].join('\\n');
-    // 追加而不是覆盖：用户可能已经写了一半
-    ta.value = ta.value.trim() ? ta.value.replace(/\\s*$/, '\\n\\n') + guide : guide;
+  // 写作指南：面板里只留一行说明（用户要求面板文字 ≤50 字），
+  // 具体怎么写放进这个按钮，点了才展开，不占面板地方。
+  $('themeGuide').onclick = () => openThemeGuide((code) => {
+    ta.value = ta.value.trim() ? ta.value.replace(/\\s*$/, '\\n\\n') + code : code;
     updateCount();
+    clearMsg();
+    markPreset(matchPreset(ta.value));
     ta.focus();
-  };
+  });
 
   const save = async (alsoPublish) => {
     const css = ta.value;
