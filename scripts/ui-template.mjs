@@ -250,28 +250,48 @@ export const UI = `<!DOCTYPE html>
   .theme-msg { font-size: 13.5px; margin-top: 8px; min-height: 16px; }
   .theme-msg.ok { color: var(--accent); }
   .theme-msg.bad { color: var(--bad); }
-  /* ---- 预设外观：一排可点的缩略卡片 ---- */
-  .preset-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 4px 0 14px; }
-  .preset {
-    flex: 1 1 132px; min-width: 132px; max-width: 190px; text-align: left; cursor: pointer;
-    border: 1px solid var(--border); border-radius: 10px; padding: 0; overflow: hidden;
-    background: var(--card); color: var(--fg); font: inherit;
-    transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+  /* ---- 预设外观：一个下拉框 ----
+     用户要求「一个框，点击可以滑动选择，鼠标悬浮有主题简介」：
+     收起时只是一个显示当前样式的框；点开是一个可滚动的名字列表，
+     鼠标停在某个名字上，框底那行简介跟着变。 */
+  .preset-box { position: relative; margin: 4px 0 14px; }
+  .preset-current {
+    width: 100%; display: flex; align-items: center; gap: 8px; text-align: left;
+    border: 1px solid var(--border); border-radius: 9px; padding: 7px 11px;
+    background: var(--card); color: var(--fg); font: inherit; font-size: 13px; cursor: pointer;
+    transition: border-color .15s ease;
   }
-  .preset:hover { border-color: var(--accent); transform: translateY(-1px);
-                  box-shadow: 0 6px 16px -8px var(--shadow); }
-  .preset.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft-hover); }
-  /* 缩略图：用预设自己的四个颜色画一张小样，比文字名字更快认出来 */
-  .preset .sw { height: 54px; display: block; position: relative; }
-  .preset .sw i { position: absolute; display: block; border-radius: 3px; }
-  .preset .sw .bar { left: 8px; right: 8px; top: 7px; height: 6px; opacity: .85; }
-  .preset .sw .box { left: 8px; top: 20px; width: 44%; height: 24px; opacity: .55; }
-  .preset .sw .box2 { right: 8px; top: 20px; width: 34%; height: 24px; opacity: .35; }
-  .preset .sw .dot { left: 8px; top: 48px; width: 22px; height: 3px; opacity: .8; }
-  .preset .meta { padding: 7px 9px 9px; }
-  .preset .nm { font-size: 13px; font-weight: 600; display: block; }
-  .preset .ds { font-size: 11.5px; color: var(--muted-2); line-height: 1.35;
-                display: block; margin-top: 2px; }
+  .preset-current:hover, .preset-box.open .preset-current { border-color: var(--accent); }
+  .preset-current .nm { flex: 1 1 auto; font-weight: 600; }
+  .preset-current .caret {
+    flex: 0 0 auto; color: var(--muted-2); font-size: 10px;
+    transition: transform .15s ease;
+  }
+  .preset-box.open .preset-current .caret { transform: rotate(180deg); }
+  .preset-menu {
+    position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 30;
+    border: 1px solid var(--border); border-radius: 9px; background: var(--card);
+    box-shadow: 0 12px 28px -12px var(--shadow); overflow: hidden;
+  }
+  .preset-menu[hidden] { display: none; }
+  .preset-list { max-height: 186px; overflow-y: auto; padding: 4px; scrollbar-width: thin; }
+  .preset-list::-webkit-scrollbar { width: 7px; }
+  .preset-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .preset {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    border: 0; border-radius: 6px; padding: 5px 8px; margin: 1px 0;
+    background: transparent; color: var(--fg); font: inherit; font-size: 12.5px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .preset:hover { background: var(--accent-soft-hover); color: var(--accent); }
+  .preset.on { color: var(--accent); font-weight: 600; }
+  .preset.on::after { content: '✓'; margin-left: 6px; }
+  .preset-desc {
+    border-top: 1px solid var(--border); padding: 6px 10px; font-size: 11.5px;
+    color: var(--muted-2); line-height: 1.45; min-height: 30px;
+    display: flex; align-items: center; gap: 6px; background: var(--bg);
+  }
+  .preset-desc b { color: var(--fg); font-weight: 600; flex: 0 0 auto; }
   /* 插件用 iframe 嵌入（?embed=1）：Obsidian 左侧已经是文件树，
      这里的「搜索 + 文件夹网格」重复且挤，整块隐藏，只留连接 / 变更 / 流水 / 发布。 */
   body.embed-mode #mainCard { display: none; }
@@ -398,11 +418,13 @@ const DICT = {
     themeBtn: '外观',
     themeTitle: '自定义外观',
     themeIntro: '把你自己的 CSS 粘贴进来，就能改这个博客的颜色、字体、间距和首页排版。保存并发布后，网站 1~2 分钟内生效。<br><b>CSS 框里没有内容时，用的就是默认主题</b>（蓝白配色 + 三列卡片首页）；清空后保存并发布即可回到默认主题。',
-    themePresetIntro: '不想从零写？点一套现成的样式，它会填进下面的框里，你可以再改成自己的。六套的区别主要在首页排版（单列 / 两列 / 三列 / 树状）：',
+    themePresetIntro: '不想从零写？从下拉框里选一套现成的样式，它会填进下面的框里，你可以再改成自己的。六套的区别主要在首页排版（单列 / 两列 / 三列 / 树状），鼠标停在名字上看简介：',
     themePresetApplied: function (name) { return '已填入「' + name + '」，改完记得点保存' },
+    themePresetHover: '鼠标停在一套样式上可以看它的简介；点一下整套填进下面的框里',
+    themePresetNone: '选择一套现成样式…',
     themeTipVars: '改颜色最省事的办法是覆盖这几个变量：',
     themeTipHook: '首页和列表的排版（几列、卡片还是树状）用这几块定位：',
-    themePlaceholder: '/* 例：把强调色换成墨绿，正文用宋体 */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="main"] {\\n  max-width: 54rem;\\n}',
+    themePlaceholder: '/* 例：把强调色换成墨绿，正文用宋体 */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="article"] {\\n  font-family: "Songti SC", serif;\\n}',
     themeEmpty: '还没有自定义外观（用默认主题）',
     themeChars: function (n, max) { return n + ' / ' + max + ' 字符' },
     themeSave: '保存',
@@ -622,11 +644,13 @@ const DICT = {
     themeBtn: 'Appearance',
     themeTitle: 'Custom appearance',
     themeIntro: 'Paste your own CSS to change this blog’s colors, fonts, spacing and home-page layout. After “Save and publish”, the site updates within 1–2 minutes.<br><b>If the CSS box is empty, the default theme is used</b> (blue-on-white, three-column card home) — clear it and save &amp; publish to go back.',
-    themePresetIntro: 'No CSS of your own yet? Start from one of these, then tweak it. The six differ mainly in home-page layout (one / two / three columns / tree):',
+    themePresetIntro: 'No CSS of your own yet? Pick one from the dropdown, then tweak it. The six differ mainly in home-page layout (one / two / three columns / tree); hover a name to see its description:',
     themePresetApplied: function (name) { return 'Filled in “' + name + '” — remember to save' },
+    themePresetHover: 'Hover a style to preview its description; click to fill it into the box below',
+    themePresetNone: 'Pick a ready-made style…',
     themeTipVars: 'The easiest way to recolor is to override these variables:',
     themeTipHook: 'To reshape the home page and lists (columns, cards, tree), target these regions:',
-    themePlaceholder: '/* e.g. switch the accent to forest green and use a serif body font */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="main"] {\\n  max-width: 54rem;\\n}',
+    themePlaceholder: '/* e.g. switch the accent to forest green and use a serif body font */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="article"] {\\n  font-family: Georgia, serif;\\n}',
     themeEmpty: 'No custom appearance yet (using the default theme)',
     themeChars: function (n, max) { return n + ' / ' + max + ' characters' },
     themeSave: 'Save',
@@ -1615,7 +1639,16 @@ function openTheme() {
       '<h2 data-i18n="themeTitle"></h2>' +
       '<div class="hint" data-i18n-html="themeIntro"></div>' +
       '<div class="theme-tip" data-i18n="themePresetIntro"></div>' +
-      '<div class="preset-row" id="presetRow"></div>' +
+      '<div class="preset-box" id="presetBox">' +
+        '<button type="button" class="preset-current" id="presetCurrent" aria-haspopup="listbox" aria-expanded="false">' +
+          '<span class="nm" id="presetCurrentName"></span>' +
+          '<span class="caret">▼</span>' +
+        '</button>' +
+        '<div class="preset-menu" id="presetMenu" hidden>' +
+          '<div class="preset-list" id="presetRow" role="listbox"></div>' +
+          '<div class="preset-desc" id="presetDesc"></div>' +
+        '</div>' +
+      '</div>' +
       '<div class="theme-tip">' +
         '<span data-i18n="themeTipVars"></span> ' +
         '<code>--background</code> <code>--foreground</code> <code>--card</code> ' +
@@ -1670,37 +1703,72 @@ function openTheme() {
   $('themeClose').onclick = () => d.remove();
   d.onclick = (e) => { if (e.target === d) d.remove(); };
 
-  // 预设卡片：点一下把整套 CSS 填进编辑器（不直接保存 —— 让用户先看一眼、
-  // 改两笔再保存，避免误点就把线上皮肤换掉）
+  // 预设：一个下拉框。收起时只显示当前这套的名字；点开是可滚动的名字列表，
+  // 鼠标停在某个名字上，框底那行简介跟着变。选中后把整套 CSS 填进编辑器
+  // （不直接保存 —— 让用户先看一眼、改两笔再保存，避免误点就把线上皮肤换掉）。
   const row = $('presetRow');
+  const descEl = $('presetDesc');
+  const boxEl = $('presetBox');
+  const menuEl = $('presetMenu');
+  const curEl = $('presetCurrent');
+  const curNameEl = $('presetCurrentName');
+  const descOf = (p) => (p.desc && (p.desc[LANG] || p.desc.zh)) || '';
+  const nameOf = (p) => (p.name && (p.name[LANG] || p.name.zh)) || p.id;
+  const presetById = (id) => PRESETS.find((p) => p.id === id) || null;
+  const showDesc = (p) => {
+    if (!descEl) return;
+    descEl.innerHTML = '';
+    if (!p) {
+      const s = document.createElement('span');
+      s.textContent = t('themePresetHover');
+      descEl.appendChild(s);
+      return;
+    }
+    const b = document.createElement('b');
+    b.textContent = nameOf(p);
+    const s = document.createElement('span');
+    s.textContent = descOf(p);
+    descEl.appendChild(b);
+    descEl.appendChild(s);
+  };
+  // 收起时按钮上显示什么：选中了某套就显示它，否则显示「不用预设」的提示
+  const setCurrentName = (id) => {
+    if (!curNameEl) return;
+    const p = presetById(id);
+    curNameEl.textContent = p ? nameOf(p) : t('themePresetNone');
+  };
+  const openMenu = (on) => {
+    if (!menuEl || !curEl || !boxEl) return;
+    menuEl.hidden = !on;
+    boxEl.classList.toggle('open', on);
+    curEl.setAttribute('aria-expanded', on ? 'true' : 'false');
+    if (on) {
+      const p = presetById(matchPreset(ta.value));
+      showDesc(p);
+    }
+  };
   const renderPresets = () => {
     if (!row) return;
-    if (!PRESETS.length) { row.style.display = 'none'; return; }
+    if (!PRESETS.length) { if (boxEl) boxEl.style.display = 'none'; return; }
     row.innerHTML = '';
     PRESETS.forEach((p) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'preset';
       b.dataset.id = p.id;
-      const sw = p.swatch || {};
-      const nm = (p.name && (p.name[LANG] || p.name.zh)) || p.id;
-      const ds = (p.desc && (p.desc[LANG] || p.desc.zh)) || '';
-      b.innerHTML =
-        '<span class="sw" style="background:' + (sw.bg || '#fff') + '">' +
-          '<i class="bar" style="background:' + (sw.fg || '#333') + '"></i>' +
-          '<i class="box" style="background:' + (sw.card || '#eee') + ';border:1px solid ' + (sw.accent || '#999') + '"></i>' +
-          '<i class="box2" style="background:' + (sw.card || '#eee') + ';border:1px solid ' + (sw.accent || '#999') + '"></i>' +
-          '<i class="dot" style="background:' + (sw.accent || '#999') + '"></i>' +
-        '</span>' +
-        '<span class="meta"><span class="nm"></span><span class="ds"></span></span>';
-      b.querySelector('.nm').textContent = nm;
-      b.querySelector('.ds').textContent = ds;
+      b.setAttribute('role', 'option');
+      b.textContent = nameOf(p);
+      // title 留一份，方便用键盘/读屏的人也能拿到简介
+      b.title = descOf(p) ? nameOf(p) + '：' + descOf(p) : nameOf(p);
+      b.onmouseenter = () => showDesc(p);
+      b.onfocus = () => showDesc(p);
       b.onclick = () => {
         ta.value = p.css;
         updateCount();
         clearMsg();
         markPreset(p.id);
-        say('ok', tf('themePresetApplied', nm));
+        say('ok', tf('themePresetApplied', nameOf(p)));
+        openMenu(false);
         ta.focus();
       };
       row.appendChild(b);
@@ -1710,8 +1778,11 @@ function openTheme() {
   const markPreset = (id) => {
     if (!row) return;
     [...row.children].forEach((el) => el.classList.toggle('on', !!id && el.dataset.id === id));
+    setCurrentName(id);
+    const p = presetById(id);
+    showDesc(p);
   };
-  // 编辑器里的内容正好等于某个预设时，把那张卡片点亮（用户能看出「我现在是这套」）
+  // 编辑器里的内容正好等于某个预设时，下拉框里把它点亮（用户能看出「我现在是这套」）
   const matchPreset = (css) => {
     const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
     const v = norm(css);
@@ -1719,6 +1790,13 @@ function openTheme() {
     const hit = PRESETS.find((p) => norm(p.css) === v);
     return hit ? hit.id : '';
   };
+
+  // 下拉框的开合：点按钮切换；点别处、按 Esc 收起
+  if (curEl) curEl.onclick = (e) => { e.stopPropagation(); openMenu(menuEl.hidden); };
+  d.addEventListener('click', (e) => {
+    if (boxEl && !boxEl.contains(e.target) && !menuEl.hidden) openMenu(false);
+  });
+  d.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menuEl.hidden) openMenu(false); });
 
   // 载入当前值：读接口不 clone、不扫库，工作副本没准备好时返回空串
   say('', t('themeLoading'));
@@ -1758,15 +1836,20 @@ function openTheme() {
       '  --primary: oklch(0.72 0.155 252);',
       '}',
       '',
-      '/* ---- 版面位置：这几块都有 data-region，可直接改宽高与排布 ---- */',
-      '[data-region="header"] { /* 顶栏 */ }',
-      '[data-region="main"]   { max-width: 54rem; }  /* 内容区宽度 */',
-      '[data-region="note"]   { }                    /* 单篇笔记 */',
-      '[data-region="folders"] { }                   /* 首页文件夹网格 */',
-      '[data-region="footer"] { }                    /* 页脚 */',
+      '/* ---- 版面：这几块都有 data-region，可改排布、间距、颜色 ---- */',
+      '[data-region="header"]   { /* 顶栏 */ }',
+      '[data-region="folders"]  { /* 首页文件夹区（几列 / 卡片还是列表） */ }',
+      '[data-region="list"]     { /* 笔记列表 */ }',
+      '[data-region="tags"]     { /* 标签栏 */ }',
+      '[data-region="article"]  { /* 正文 */ }',
+      '[data-region="footer"]   { /* 页脚 */ }',
+      '',
+      '/* 注意：全站宽度由站点统一控制，不要在这里写 max-width（会跟其它主题打架） */',
       '',
       '/* ---- 字体 ---- */',
       'body { font-family: "Songti SC", serif; }',
+      '/* 想让主题里的字号跟着右上角的字号滑块走，用 var(--fsu)： */',
+      '[data-region="article"] { font-size: calc(1.05 * var(--fsu)); }',
     ].join('\\n');
     // 追加而不是覆盖：用户可能已经写了一半
     ta.value = ta.value.trim() ? ta.value.replace(/\\s*$/, '\\n\\n') + guide : guide;

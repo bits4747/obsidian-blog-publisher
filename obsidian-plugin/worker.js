@@ -3775,28 +3775,48 @@ var UI = `<!DOCTYPE html>
   .theme-msg { font-size: 13.5px; margin-top: 8px; min-height: 16px; }
   .theme-msg.ok { color: var(--accent); }
   .theme-msg.bad { color: var(--bad); }
-  /* ---- \u9884\u8BBE\u5916\u89C2\uFF1A\u4E00\u6392\u53EF\u70B9\u7684\u7F29\u7565\u5361\u7247 ---- */
-  .preset-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 4px 0 14px; }
-  .preset {
-    flex: 1 1 132px; min-width: 132px; max-width: 190px; text-align: left; cursor: pointer;
-    border: 1px solid var(--border); border-radius: 10px; padding: 0; overflow: hidden;
-    background: var(--card); color: var(--fg); font: inherit;
-    transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+  /* ---- \u9884\u8BBE\u5916\u89C2\uFF1A\u4E00\u4E2A\u4E0B\u62C9\u6846 ----
+     \u7528\u6237\u8981\u6C42\u300C\u4E00\u4E2A\u6846\uFF0C\u70B9\u51FB\u53EF\u4EE5\u6ED1\u52A8\u9009\u62E9\uFF0C\u9F20\u6807\u60AC\u6D6E\u6709\u4E3B\u9898\u7B80\u4ECB\u300D\uFF1A
+     \u6536\u8D77\u65F6\u53EA\u662F\u4E00\u4E2A\u663E\u793A\u5F53\u524D\u6837\u5F0F\u7684\u6846\uFF1B\u70B9\u5F00\u662F\u4E00\u4E2A\u53EF\u6EDA\u52A8\u7684\u540D\u5B57\u5217\u8868\uFF0C
+     \u9F20\u6807\u505C\u5728\u67D0\u4E2A\u540D\u5B57\u4E0A\uFF0C\u6846\u5E95\u90A3\u884C\u7B80\u4ECB\u8DDF\u7740\u53D8\u3002 */
+  .preset-box { position: relative; margin: 4px 0 14px; }
+  .preset-current {
+    width: 100%; display: flex; align-items: center; gap: 8px; text-align: left;
+    border: 1px solid var(--border); border-radius: 9px; padding: 7px 11px;
+    background: var(--card); color: var(--fg); font: inherit; font-size: 13px; cursor: pointer;
+    transition: border-color .15s ease;
   }
-  .preset:hover { border-color: var(--accent); transform: translateY(-1px);
-                  box-shadow: 0 6px 16px -8px var(--shadow); }
-  .preset.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft-hover); }
-  /* \u7F29\u7565\u56FE\uFF1A\u7528\u9884\u8BBE\u81EA\u5DF1\u7684\u56DB\u4E2A\u989C\u8272\u753B\u4E00\u5F20\u5C0F\u6837\uFF0C\u6BD4\u6587\u5B57\u540D\u5B57\u66F4\u5FEB\u8BA4\u51FA\u6765 */
-  .preset .sw { height: 54px; display: block; position: relative; }
-  .preset .sw i { position: absolute; display: block; border-radius: 3px; }
-  .preset .sw .bar { left: 8px; right: 8px; top: 7px; height: 6px; opacity: .85; }
-  .preset .sw .box { left: 8px; top: 20px; width: 44%; height: 24px; opacity: .55; }
-  .preset .sw .box2 { right: 8px; top: 20px; width: 34%; height: 24px; opacity: .35; }
-  .preset .sw .dot { left: 8px; top: 48px; width: 22px; height: 3px; opacity: .8; }
-  .preset .meta { padding: 7px 9px 9px; }
-  .preset .nm { font-size: 13px; font-weight: 600; display: block; }
-  .preset .ds { font-size: 11.5px; color: var(--muted-2); line-height: 1.35;
-                display: block; margin-top: 2px; }
+  .preset-current:hover, .preset-box.open .preset-current { border-color: var(--accent); }
+  .preset-current .nm { flex: 1 1 auto; font-weight: 600; }
+  .preset-current .caret {
+    flex: 0 0 auto; color: var(--muted-2); font-size: 10px;
+    transition: transform .15s ease;
+  }
+  .preset-box.open .preset-current .caret { transform: rotate(180deg); }
+  .preset-menu {
+    position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 30;
+    border: 1px solid var(--border); border-radius: 9px; background: var(--card);
+    box-shadow: 0 12px 28px -12px var(--shadow); overflow: hidden;
+  }
+  .preset-menu[hidden] { display: none; }
+  .preset-list { max-height: 186px; overflow-y: auto; padding: 4px; scrollbar-width: thin; }
+  .preset-list::-webkit-scrollbar { width: 7px; }
+  .preset-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .preset {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    border: 0; border-radius: 6px; padding: 5px 8px; margin: 1px 0;
+    background: transparent; color: var(--fg); font: inherit; font-size: 12.5px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .preset:hover { background: var(--accent-soft-hover); color: var(--accent); }
+  .preset.on { color: var(--accent); font-weight: 600; }
+  .preset.on::after { content: '\u2713'; margin-left: 6px; }
+  .preset-desc {
+    border-top: 1px solid var(--border); padding: 6px 10px; font-size: 11.5px;
+    color: var(--muted-2); line-height: 1.45; min-height: 30px;
+    display: flex; align-items: center; gap: 6px; background: var(--bg);
+  }
+  .preset-desc b { color: var(--fg); font-weight: 600; flex: 0 0 auto; }
   /* \u63D2\u4EF6\u7528 iframe \u5D4C\u5165\uFF08?embed=1\uFF09\uFF1AObsidian \u5DE6\u4FA7\u5DF2\u7ECF\u662F\u6587\u4EF6\u6811\uFF0C
      \u8FD9\u91CC\u7684\u300C\u641C\u7D22 + \u6587\u4EF6\u5939\u7F51\u683C\u300D\u91CD\u590D\u4E14\u6324\uFF0C\u6574\u5757\u9690\u85CF\uFF0C\u53EA\u7559\u8FDE\u63A5 / \u53D8\u66F4 / \u6D41\u6C34 / \u53D1\u5E03\u3002 */
   body.embed-mode #mainCard { display: none; }
@@ -3923,11 +3943,13 @@ const DICT = {
     themeBtn: '\u5916\u89C2',
     themeTitle: '\u81EA\u5B9A\u4E49\u5916\u89C2',
     themeIntro: '\u628A\u4F60\u81EA\u5DF1\u7684 CSS \u7C98\u8D34\u8FDB\u6765\uFF0C\u5C31\u80FD\u6539\u8FD9\u4E2A\u535A\u5BA2\u7684\u989C\u8272\u3001\u5B57\u4F53\u3001\u95F4\u8DDD\u548C\u9996\u9875\u6392\u7248\u3002\u4FDD\u5B58\u5E76\u53D1\u5E03\u540E\uFF0C\u7F51\u7AD9 1~2 \u5206\u949F\u5185\u751F\u6548\u3002<br><b>CSS \u6846\u91CC\u6CA1\u6709\u5185\u5BB9\u65F6\uFF0C\u7528\u7684\u5C31\u662F\u9ED8\u8BA4\u4E3B\u9898</b>\uFF08\u84DD\u767D\u914D\u8272 + \u4E09\u5217\u5361\u7247\u9996\u9875\uFF09\uFF1B\u6E05\u7A7A\u540E\u4FDD\u5B58\u5E76\u53D1\u5E03\u5373\u53EF\u56DE\u5230\u9ED8\u8BA4\u4E3B\u9898\u3002',
-    themePresetIntro: '\u4E0D\u60F3\u4ECE\u96F6\u5199\uFF1F\u70B9\u4E00\u5957\u73B0\u6210\u7684\u6837\u5F0F\uFF0C\u5B83\u4F1A\u586B\u8FDB\u4E0B\u9762\u7684\u6846\u91CC\uFF0C\u4F60\u53EF\u4EE5\u518D\u6539\u6210\u81EA\u5DF1\u7684\u3002\u516D\u5957\u7684\u533A\u522B\u4E3B\u8981\u5728\u9996\u9875\u6392\u7248\uFF08\u5355\u5217 / \u4E24\u5217 / \u4E09\u5217 / \u6811\u72B6\uFF09\uFF1A',
+    themePresetIntro: '\u4E0D\u60F3\u4ECE\u96F6\u5199\uFF1F\u4ECE\u4E0B\u62C9\u6846\u91CC\u9009\u4E00\u5957\u73B0\u6210\u7684\u6837\u5F0F\uFF0C\u5B83\u4F1A\u586B\u8FDB\u4E0B\u9762\u7684\u6846\u91CC\uFF0C\u4F60\u53EF\u4EE5\u518D\u6539\u6210\u81EA\u5DF1\u7684\u3002\u516D\u5957\u7684\u533A\u522B\u4E3B\u8981\u5728\u9996\u9875\u6392\u7248\uFF08\u5355\u5217 / \u4E24\u5217 / \u4E09\u5217 / \u6811\u72B6\uFF09\uFF0C\u9F20\u6807\u505C\u5728\u540D\u5B57\u4E0A\u770B\u7B80\u4ECB\uFF1A',
     themePresetApplied: function (name) { return '\u5DF2\u586B\u5165\u300C' + name + '\u300D\uFF0C\u6539\u5B8C\u8BB0\u5F97\u70B9\u4FDD\u5B58' },
+    themePresetHover: '\u9F20\u6807\u505C\u5728\u4E00\u5957\u6837\u5F0F\u4E0A\u53EF\u4EE5\u770B\u5B83\u7684\u7B80\u4ECB\uFF1B\u70B9\u4E00\u4E0B\u6574\u5957\u586B\u8FDB\u4E0B\u9762\u7684\u6846\u91CC',
+    themePresetNone: '\u9009\u62E9\u4E00\u5957\u73B0\u6210\u6837\u5F0F\u2026',
     themeTipVars: '\u6539\u989C\u8272\u6700\u7701\u4E8B\u7684\u529E\u6CD5\u662F\u8986\u76D6\u8FD9\u51E0\u4E2A\u53D8\u91CF\uFF1A',
     themeTipHook: '\u9996\u9875\u548C\u5217\u8868\u7684\u6392\u7248\uFF08\u51E0\u5217\u3001\u5361\u7247\u8FD8\u662F\u6811\u72B6\uFF09\u7528\u8FD9\u51E0\u5757\u5B9A\u4F4D\uFF1A',
-    themePlaceholder: '/* \u4F8B\uFF1A\u628A\u5F3A\u8C03\u8272\u6362\u6210\u58A8\u7EFF\uFF0C\u6B63\u6587\u7528\u5B8B\u4F53 */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="main"] {\\n  max-width: 54rem;\\n}',
+    themePlaceholder: '/* \u4F8B\uFF1A\u628A\u5F3A\u8C03\u8272\u6362\u6210\u58A8\u7EFF\uFF0C\u6B63\u6587\u7528\u5B8B\u4F53 */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="article"] {\\n  font-family: "Songti SC", serif;\\n}',
     themeEmpty: '\u8FD8\u6CA1\u6709\u81EA\u5B9A\u4E49\u5916\u89C2\uFF08\u7528\u9ED8\u8BA4\u4E3B\u9898\uFF09',
     themeChars: function (n, max) { return n + ' / ' + max + ' \u5B57\u7B26' },
     themeSave: '\u4FDD\u5B58',
@@ -4147,11 +4169,13 @@ const DICT = {
     themeBtn: 'Appearance',
     themeTitle: 'Custom appearance',
     themeIntro: 'Paste your own CSS to change this blog\u2019s colors, fonts, spacing and home-page layout. After \u201CSave and publish\u201D, the site updates within 1\u20132 minutes.<br><b>If the CSS box is empty, the default theme is used</b> (blue-on-white, three-column card home) \u2014 clear it and save &amp; publish to go back.',
-    themePresetIntro: 'No CSS of your own yet? Start from one of these, then tweak it. The six differ mainly in home-page layout (one / two / three columns / tree):',
+    themePresetIntro: 'No CSS of your own yet? Pick one from the dropdown, then tweak it. The six differ mainly in home-page layout (one / two / three columns / tree); hover a name to see its description:',
     themePresetApplied: function (name) { return 'Filled in \u201C' + name + '\u201D \u2014 remember to save' },
+    themePresetHover: 'Hover a style to preview its description; click to fill it into the box below',
+    themePresetNone: 'Pick a ready-made style\u2026',
     themeTipVars: 'The easiest way to recolor is to override these variables:',
     themeTipHook: 'To reshape the home page and lists (columns, cards, tree), target these regions:',
-    themePlaceholder: '/* e.g. switch the accent to forest green and use a serif body font */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="main"] {\\n  max-width: 54rem;\\n}',
+    themePlaceholder: '/* e.g. switch the accent to forest green and use a serif body font */\\n:root {\\n  --primary: oklch(0.48 0.11 155);\\n}\\n\\n[data-region="article"] {\\n  font-family: Georgia, serif;\\n}',
     themeEmpty: 'No custom appearance yet (using the default theme)',
     themeChars: function (n, max) { return n + ' / ' + max + ' characters' },
     themeSave: 'Save',
@@ -5140,7 +5164,16 @@ function openTheme() {
       '<h2 data-i18n="themeTitle"></h2>' +
       '<div class="hint" data-i18n-html="themeIntro"></div>' +
       '<div class="theme-tip" data-i18n="themePresetIntro"></div>' +
-      '<div class="preset-row" id="presetRow"></div>' +
+      '<div class="preset-box" id="presetBox">' +
+        '<button type="button" class="preset-current" id="presetCurrent" aria-haspopup="listbox" aria-expanded="false">' +
+          '<span class="nm" id="presetCurrentName"></span>' +
+          '<span class="caret">\u25BC</span>' +
+        '</button>' +
+        '<div class="preset-menu" id="presetMenu" hidden>' +
+          '<div class="preset-list" id="presetRow" role="listbox"></div>' +
+          '<div class="preset-desc" id="presetDesc"></div>' +
+        '</div>' +
+      '</div>' +
       '<div class="theme-tip">' +
         '<span data-i18n="themeTipVars"></span> ' +
         '<code>--background</code> <code>--foreground</code> <code>--card</code> ' +
@@ -5195,37 +5228,72 @@ function openTheme() {
   $('themeClose').onclick = () => d.remove();
   d.onclick = (e) => { if (e.target === d) d.remove(); };
 
-  // \u9884\u8BBE\u5361\u7247\uFF1A\u70B9\u4E00\u4E0B\u628A\u6574\u5957 CSS \u586B\u8FDB\u7F16\u8F91\u5668\uFF08\u4E0D\u76F4\u63A5\u4FDD\u5B58 \u2014\u2014 \u8BA9\u7528\u6237\u5148\u770B\u4E00\u773C\u3001
-  // \u6539\u4E24\u7B14\u518D\u4FDD\u5B58\uFF0C\u907F\u514D\u8BEF\u70B9\u5C31\u628A\u7EBF\u4E0A\u76AE\u80A4\u6362\u6389\uFF09
+  // \u9884\u8BBE\uFF1A\u4E00\u4E2A\u4E0B\u62C9\u6846\u3002\u6536\u8D77\u65F6\u53EA\u663E\u793A\u5F53\u524D\u8FD9\u5957\u7684\u540D\u5B57\uFF1B\u70B9\u5F00\u662F\u53EF\u6EDA\u52A8\u7684\u540D\u5B57\u5217\u8868\uFF0C
+  // \u9F20\u6807\u505C\u5728\u67D0\u4E2A\u540D\u5B57\u4E0A\uFF0C\u6846\u5E95\u90A3\u884C\u7B80\u4ECB\u8DDF\u7740\u53D8\u3002\u9009\u4E2D\u540E\u628A\u6574\u5957 CSS \u586B\u8FDB\u7F16\u8F91\u5668
+  // \uFF08\u4E0D\u76F4\u63A5\u4FDD\u5B58 \u2014\u2014 \u8BA9\u7528\u6237\u5148\u770B\u4E00\u773C\u3001\u6539\u4E24\u7B14\u518D\u4FDD\u5B58\uFF0C\u907F\u514D\u8BEF\u70B9\u5C31\u628A\u7EBF\u4E0A\u76AE\u80A4\u6362\u6389\uFF09\u3002
   const row = $('presetRow');
+  const descEl = $('presetDesc');
+  const boxEl = $('presetBox');
+  const menuEl = $('presetMenu');
+  const curEl = $('presetCurrent');
+  const curNameEl = $('presetCurrentName');
+  const descOf = (p) => (p.desc && (p.desc[LANG] || p.desc.zh)) || '';
+  const nameOf = (p) => (p.name && (p.name[LANG] || p.name.zh)) || p.id;
+  const presetById = (id) => PRESETS.find((p) => p.id === id) || null;
+  const showDesc = (p) => {
+    if (!descEl) return;
+    descEl.innerHTML = '';
+    if (!p) {
+      const s = document.createElement('span');
+      s.textContent = t('themePresetHover');
+      descEl.appendChild(s);
+      return;
+    }
+    const b = document.createElement('b');
+    b.textContent = nameOf(p);
+    const s = document.createElement('span');
+    s.textContent = descOf(p);
+    descEl.appendChild(b);
+    descEl.appendChild(s);
+  };
+  // \u6536\u8D77\u65F6\u6309\u94AE\u4E0A\u663E\u793A\u4EC0\u4E48\uFF1A\u9009\u4E2D\u4E86\u67D0\u5957\u5C31\u663E\u793A\u5B83\uFF0C\u5426\u5219\u663E\u793A\u300C\u4E0D\u7528\u9884\u8BBE\u300D\u7684\u63D0\u793A
+  const setCurrentName = (id) => {
+    if (!curNameEl) return;
+    const p = presetById(id);
+    curNameEl.textContent = p ? nameOf(p) : t('themePresetNone');
+  };
+  const openMenu = (on) => {
+    if (!menuEl || !curEl || !boxEl) return;
+    menuEl.hidden = !on;
+    boxEl.classList.toggle('open', on);
+    curEl.setAttribute('aria-expanded', on ? 'true' : 'false');
+    if (on) {
+      const p = presetById(matchPreset(ta.value));
+      showDesc(p);
+    }
+  };
   const renderPresets = () => {
     if (!row) return;
-    if (!PRESETS.length) { row.style.display = 'none'; return; }
+    if (!PRESETS.length) { if (boxEl) boxEl.style.display = 'none'; return; }
     row.innerHTML = '';
     PRESETS.forEach((p) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'preset';
       b.dataset.id = p.id;
-      const sw = p.swatch || {};
-      const nm = (p.name && (p.name[LANG] || p.name.zh)) || p.id;
-      const ds = (p.desc && (p.desc[LANG] || p.desc.zh)) || '';
-      b.innerHTML =
-        '<span class="sw" style="background:' + (sw.bg || '#fff') + '">' +
-          '<i class="bar" style="background:' + (sw.fg || '#333') + '"></i>' +
-          '<i class="box" style="background:' + (sw.card || '#eee') + ';border:1px solid ' + (sw.accent || '#999') + '"></i>' +
-          '<i class="box2" style="background:' + (sw.card || '#eee') + ';border:1px solid ' + (sw.accent || '#999') + '"></i>' +
-          '<i class="dot" style="background:' + (sw.accent || '#999') + '"></i>' +
-        '</span>' +
-        '<span class="meta"><span class="nm"></span><span class="ds"></span></span>';
-      b.querySelector('.nm').textContent = nm;
-      b.querySelector('.ds').textContent = ds;
+      b.setAttribute('role', 'option');
+      b.textContent = nameOf(p);
+      // title \u7559\u4E00\u4EFD\uFF0C\u65B9\u4FBF\u7528\u952E\u76D8/\u8BFB\u5C4F\u7684\u4EBA\u4E5F\u80FD\u62FF\u5230\u7B80\u4ECB
+      b.title = descOf(p) ? nameOf(p) + '\uFF1A' + descOf(p) : nameOf(p);
+      b.onmouseenter = () => showDesc(p);
+      b.onfocus = () => showDesc(p);
       b.onclick = () => {
         ta.value = p.css;
         updateCount();
         clearMsg();
         markPreset(p.id);
-        say('ok', tf('themePresetApplied', nm));
+        say('ok', tf('themePresetApplied', nameOf(p)));
+        openMenu(false);
         ta.focus();
       };
       row.appendChild(b);
@@ -5235,8 +5303,11 @@ function openTheme() {
   const markPreset = (id) => {
     if (!row) return;
     [...row.children].forEach((el) => el.classList.toggle('on', !!id && el.dataset.id === id));
+    setCurrentName(id);
+    const p = presetById(id);
+    showDesc(p);
   };
-  // \u7F16\u8F91\u5668\u91CC\u7684\u5185\u5BB9\u6B63\u597D\u7B49\u4E8E\u67D0\u4E2A\u9884\u8BBE\u65F6\uFF0C\u628A\u90A3\u5F20\u5361\u7247\u70B9\u4EAE\uFF08\u7528\u6237\u80FD\u770B\u51FA\u300C\u6211\u73B0\u5728\u662F\u8FD9\u5957\u300D\uFF09
+  // \u7F16\u8F91\u5668\u91CC\u7684\u5185\u5BB9\u6B63\u597D\u7B49\u4E8E\u67D0\u4E2A\u9884\u8BBE\u65F6\uFF0C\u4E0B\u62C9\u6846\u91CC\u628A\u5B83\u70B9\u4EAE\uFF08\u7528\u6237\u80FD\u770B\u51FA\u300C\u6211\u73B0\u5728\u662F\u8FD9\u5957\u300D\uFF09
   const matchPreset = (css) => {
     const norm = (s) => String(s || '').replace(/s+/g, ' ').trim();
     const v = norm(css);
@@ -5244,6 +5315,13 @@ function openTheme() {
     const hit = PRESETS.find((p) => norm(p.css) === v);
     return hit ? hit.id : '';
   };
+
+  // \u4E0B\u62C9\u6846\u7684\u5F00\u5408\uFF1A\u70B9\u6309\u94AE\u5207\u6362\uFF1B\u70B9\u522B\u5904\u3001\u6309 Esc \u6536\u8D77
+  if (curEl) curEl.onclick = (e) => { e.stopPropagation(); openMenu(menuEl.hidden); };
+  d.addEventListener('click', (e) => {
+    if (boxEl && !boxEl.contains(e.target) && !menuEl.hidden) openMenu(false);
+  });
+  d.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menuEl.hidden) openMenu(false); });
 
   // \u8F7D\u5165\u5F53\u524D\u503C\uFF1A\u8BFB\u63A5\u53E3\u4E0D clone\u3001\u4E0D\u626B\u5E93\uFF0C\u5DE5\u4F5C\u526F\u672C\u6CA1\u51C6\u5907\u597D\u65F6\u8FD4\u56DE\u7A7A\u4E32
   say('', t('themeLoading'));
@@ -5283,15 +5361,20 @@ function openTheme() {
       '  --primary: oklch(0.72 0.155 252);',
       '}',
       '',
-      '/* ---- \u7248\u9762\u4F4D\u7F6E\uFF1A\u8FD9\u51E0\u5757\u90FD\u6709 data-region\uFF0C\u53EF\u76F4\u63A5\u6539\u5BBD\u9AD8\u4E0E\u6392\u5E03 ---- */',
-      '[data-region="header"] { /* \u9876\u680F */ }',
-      '[data-region="main"]   { max-width: 54rem; }  /* \u5185\u5BB9\u533A\u5BBD\u5EA6 */',
-      '[data-region="note"]   { }                    /* \u5355\u7BC7\u7B14\u8BB0 */',
-      '[data-region="folders"] { }                   /* \u9996\u9875\u6587\u4EF6\u5939\u7F51\u683C */',
-      '[data-region="footer"] { }                    /* \u9875\u811A */',
+      '/* ---- \u7248\u9762\uFF1A\u8FD9\u51E0\u5757\u90FD\u6709 data-region\uFF0C\u53EF\u6539\u6392\u5E03\u3001\u95F4\u8DDD\u3001\u989C\u8272 ---- */',
+      '[data-region="header"]   { /* \u9876\u680F */ }',
+      '[data-region="folders"]  { /* \u9996\u9875\u6587\u4EF6\u5939\u533A\uFF08\u51E0\u5217 / \u5361\u7247\u8FD8\u662F\u5217\u8868\uFF09 */ }',
+      '[data-region="list"]     { /* \u7B14\u8BB0\u5217\u8868 */ }',
+      '[data-region="tags"]     { /* \u6807\u7B7E\u680F */ }',
+      '[data-region="article"]  { /* \u6B63\u6587 */ }',
+      '[data-region="footer"]   { /* \u9875\u811A */ }',
+      '',
+      '/* \u6CE8\u610F\uFF1A\u5168\u7AD9\u5BBD\u5EA6\u7531\u7AD9\u70B9\u7EDF\u4E00\u63A7\u5236\uFF0C\u4E0D\u8981\u5728\u8FD9\u91CC\u5199 max-width\uFF08\u4F1A\u8DDF\u5176\u5B83\u4E3B\u9898\u6253\u67B6\uFF09 */',
       '',
       '/* ---- \u5B57\u4F53 ---- */',
       'body { font-family: "Songti SC", serif; }',
+      '/* \u60F3\u8BA9\u4E3B\u9898\u91CC\u7684\u5B57\u53F7\u8DDF\u7740\u53F3\u4E0A\u89D2\u7684\u5B57\u53F7\u6ED1\u5757\u8D70\uFF0C\u7528 var(--fsu)\uFF1A */',
+      '[data-region="article"] { font-size: calc(1.05 * var(--fsu)); }',
     ].join('\\n');
     // \u8FFD\u52A0\u800C\u4E0D\u662F\u8986\u76D6\uFF1A\u7528\u6237\u53EF\u80FD\u5DF2\u7ECF\u5199\u4E86\u4E00\u534A
     ta.value = ta.value.trim() ? ta.value.replace(/\\s*$/, '\\n\\n') + guide : guide;
