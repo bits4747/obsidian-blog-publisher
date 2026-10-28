@@ -440,6 +440,11 @@ const DICT = {
     toastNothingToPush: '没有新的改动可推送（线上已是最新）',
     toastDone: '完成',
     toastFailed: '失败',
+    toastAutoTitle: '自动同步',
+    toastAutoFailed: '自动同步推送失败，改动还没上线',
+    toastAutoBuildFailed: '推上去了，但 GitHub 构建失败，线上还是旧版',
+    toastAutoTimeout: '推上去了，但等了 10 分钟还没上线，可能构建卡住了',
+    toastAutoLive: function (c) { return c ? '已自动同步并上线（' + c + '）' : '已自动同步并上线' },
     toastPublishOk: '发布成功',
     toastSourceOk: '源码已更新',
     toastThemeOk: '外观已保存并推送',
@@ -672,6 +677,11 @@ const DICT = {
     toastNothingToPush: 'Nothing new to push (the site is already up to date)',
     toastDone: 'Done',
     toastFailed: 'Failed',
+    toastAutoTitle: 'Auto sync',
+    toastAutoFailed: 'Auto sync failed to push — the change is not online yet',
+    toastAutoBuildFailed: 'Pushed, but the GitHub build failed — the site is still the old version',
+    toastAutoTimeout: 'Pushed, but it is still not live after 10 minutes — the build may be stuck',
+    toastAutoLive: function (c) { return c ? 'Auto-synced and live (' + c + ')' : 'Auto-synced and live' },
     toastPublishOk: 'Published',
     toastSourceOk: 'Source updated',
     toastThemeOk: 'Appearance saved and pushed',
@@ -1557,6 +1567,64 @@ function renderAutoLog() {
     box.appendChild(row);
   }
   if (keepTop) box.scrollTop = keepTop;
+  notifyAutoLog(log);
+}
+
+// 自动同步是后台自己跑完的：没有弹窗的话，用户只有主动去看流水才知道成没成。
+// 用户明确要求「更新完成必须要有弹窗提示，不然都不知道是没推送成功还是正在更新」。
+// 做法：把「已经提示到哪一条」记在 localStorage（按连接分开），只对更新的结论弹一次。
+// 用 localStorage 而不是内存变量，是因为同步常常在界面关着的时候跑完 ——
+// 下次打开界面应该补上那条结果，而不是当历史静音掉。
+const AUTO_SEEN_KEY = 'autolog-seen-';
+let _autoToastSeenAt = 0;
+let _autoToastKey = '';
+function notifyAutoLog(log) {
+  if (!Array.isArray(log) || !log.length) return;
+  const key = AUTO_SEEN_KEY + (S.active || '');
+  if (key !== _autoToastKey) {
+    _autoToastKey = key;
+    let v = 0;
+    try { v = Number(localStorage.getItem(key) || 0) || 0; } catch (e) { v = 0; }
+    if (!v) {
+      // 这个连接第一次见：把现有历史整体当已读，免得一进界面连弹一堆旧记录
+      const newest = log.reduce((a, e) => (Number(e.at) > Number(a.at) ? e : a), log[0]);
+      v = Number(newest.at) || 0;
+      try { localStorage.setItem(key, String(v)); } catch (e) { /* 存不了就每次重来 */ }
+    }
+    _autoToastSeenAt = v;
+  }
+  // 只看结论已定的条目：还在 pushing 的不弹，等它出结果（下一轮轮询会再进来）。
+  const done = log.filter((e) => {
+    const at = Number(e.at) || 0;
+    if (at <= _autoToastSeenAt) return false;
+    return !!(e.failed || e.buildFailed || e.liveTimeout || e.live || e.pushed === false);
+  });
+  if (!done.length) return;
+  const e = done.reduce((a, x) => (Number(x.at) > Number(a.at) ? x : a), done[0]);
+  _autoToastSeenAt = Number(e.at) || 0;
+  try { localStorage.setItem(key, String(_autoToastSeenAt)); } catch (err) { /* 同上 */ }
+  const c = e.counts || {};
+  const counts = [c.added ? '+' + c.added : '', c.modified ? '~' + c.modified : '', c.deleted ? '-' + c.deleted : '']
+    .filter(Boolean).join(' ');
+  const files = e.files || {};
+  const detail = []
+    .concat((files.added || []).map((p) => '+ ' + p))
+    .concat((files.modified || []).map((p) => '~ ' + p))
+    .concat((files.deleted || []).map((p) => '- ' + p))
+    .join('\\n');
+  const tid = toastOpen(t('toastAutoTitle'), '');
+  if (e.failed) {
+    toastSet(tid, 'bad', t('toastFailed'), t('toastAutoFailed'), detail || String(e.error || ''));
+  } else if (e.buildFailed) {
+    toastSet(tid, 'bad', t('toastFailed'), t('toastAutoBuildFailed'), detail || String(e.buildConclusion || ''));
+  } else if (e.liveTimeout) {
+    toastSet(tid, 'bad', t('toastFailed'), t('toastAutoTimeout'), detail);
+  } else if (e.live) {
+    toastSet(tid, 'ok', t('toastDone'), tf('toastAutoLive', counts), detail);
+  } else {
+    // pushed === false：这次没有东西可推（新建仓库首次跑的情况），不算失败
+    toastSet(tid, 'ok', t('toastDone'), t('toastNothingToPush'), detail);
+  }
 }
 
 // 「需要你处理的」改动：自动同步开关关着的那几类。

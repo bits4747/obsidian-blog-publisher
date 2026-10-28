@@ -393,5 +393,71 @@ console.log('\n=== 16. 插件嵌入模式不显示「切换库」下拉，改按
   }
 }
 
+console.log('\n=== 17. 跨进程发布互斥 + 「推送被拒但远端已有」不算失败 ===')
+// 用户报的：「把公开文章变私密后日志显示推送失败，同时没有弹窗提示」。
+// 根因之一：命令行版管理器与 Obsidian 插件里的管理器共用同一个数据目录与同一批
+// git 工作副本，各自只有进程内的 PUBLISHING 变量，挡不住对方。转私密时两边几乎
+// 同时推送，先跑的推上去了，后跑的报「推送失败」—— 其实内容已经上线。
+{
+  const uiSrc = fs.readFileSync(path.join(process.cwd(), 'scripts', 'ui-template.mjs'), 'utf8')
+  const coreSrc = fs.readFileSync(path.join(process.cwd(), 'scripts', 'manager-core.mjs'), 'utf8')
+
+  // 1) 锁的实现：原子独占创建 + 死锁回收 + 只删自己的锁
+  ok(/openSync\(file, 'wx'\)/.test(coreSrc), '发布锁用 wx 原子创建')
+  ok(/LOCK_STALE_MS/.test(coreSrc) && /pidAlive/.test(coreSrc), '死锁按 pid/超时回收')
+  ok(/cur\.pid === process\.pid/.test(coreSrc), '释放时只删自己那把锁')
+  // 2) 三条推送路径都要拿锁
+  ok((coreSrc.match(/acquireLock\('publish-' \+ conn\.id\)/g) || []).length >= 3,
+    '发布 / 更新源码 / 发布外观 都走同一把跨进程锁')
+  ok(/if \(!lk\.ok\) \{\s*requeueAutoSync/.test(coreSrc), '自动同步抢不到锁就等下一轮，不硬推')
+  // 3) 「推送被拒但远端已有这个提交」要判成功，不能报失败
+  ok(/remoteHasHead/.test(coreSrc) && /logPushedAlready/.test(coreSrc), '推送被拒时先问远端是否已有该提交')
+  ok(/failingPush|remoteHasHead\(conn, workdir\)/.test(coreSrc), '远端已有 → 记成功')
+
+  // 4) 真接口：锁被占着时发布必须 409，且不能动工作副本
+  const locksDir = path.join(DATA_DIR, 'locks')
+  fs.mkdirSync(locksDir, { recursive: true })
+  const lockFile = path.join(locksDir, 'publish-' + idA + '.lock')
+  fs.writeFileSync(lockFile, JSON.stringify({ pid: process.pid, at: Date.now() }), 'utf8')
+  const busy = await fetch(BASE + '/api/publish', {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
+  })
+  const busyJson = await busy.json().catch(() => ({}))
+  ok(busy.status === 409, '另一个进程持锁时发布返回 409，实际 ' + busy.status)
+  ok(/另一个发布管理器/.test(String(busyJson.error || '')), '提示说明了是另一个管理器在推送')
+  fs.rmSync(lockFile, { force: true })
+  const after = await api('/api/publish', {})
+  ok(after.failed !== true, '锁释放后可以正常发布')
+
+  // 5) 自动同步的结果必须有弹窗，且只对新结论弹一次（首屏不弹历史）
+  ok(/function notifyAutoLog/.test(uiSrc), '自动同步结果会弹提示')
+  ok(/AUTO_SEEN_KEY/.test(uiSrc) && /localStorage/.test(uiSrc),
+    '提示进度记在 localStorage：界面关着时跑完的同步，下次打开会补上结果')
+  ok(/toastAutoFailed/.test(uiSrc) && /toastAutoLive/.test(uiSrc), '成功与失败各有对应文案')
+}
+
+console.log('\n=== 18. 行内标签识别：题目编号 / 颜色值 / 链接文字里都不算标签 ===')
+// 用户报的：「哈希那篇 #2427. 「POI2010」珍珠项链 Beads 的题目链接被识别成了标签，
+// 标题链接渲染有误」。根因两条：
+//   a) 正文 `#2427` 纯数字被判成标签 → 渲染成 <a href="obsidian-tag:2427">；
+//   b) 标签解析被应用在 **链接文字内部**，产出 <a><a></a></a> —— HTML 不允许 a 套 a，
+//      浏览器会把内层拆出去，于是链接被截断、后半截变成普通文字。
+// 这条规则必须与 obsidian.ts 的 extractTags 完全一致，否则会出现「正文是标签、
+// 标签页里却没有」的自相矛盾。
+{
+  const libSrc = fs.readFileSync(path.join(process.cwd(), 'src', 'lib', 'remark-obsidian.ts'), 'utf8')
+  ok(/function isValidTag\(/.test(libSrc), '行内标签有统一的合法性判定')
+  ok(/isValidTag\(tag\.slice\(1\)\)/.test(libSrc), 'plainNodes 用 isValidTag 过滤，不再见 # 就成标签')
+  ok(/if \(p\.type === 'link'\) \{\s*return\s*\}/.test(libSrc),
+    '链接文字里不再解析标签（避免 <a> 套 <a> 把链接拆坏）')
+  // 判定规则本身：纯数字、3~8 位十六进制都不算标签
+  ok(/\^\\d\+\$/.test(libSrc), '纯数字（如 #2427 题目编号）不算标签')
+  ok(/\^\[0-9a-fA-F\]\{3,8\}\$/.test(libSrc), '十六进制颜色值（如 #ff0000）不算标签')
+  // 与 build-content.mjs 的标签提取口径对齐（同一份排除规则，两处都得有）
+  const buildSrc = fs.readFileSync(path.join(process.cwd(), 'scripts', 'build-content.mjs'), 'utf8')
+  ok(/!\/\^\\d\+\$\/\.test\(t\)/.test(buildSrc), '构建端 extractTags 也排除纯数字')
+  ok(/!\/\^\[0-9a-fA-F\]\{3,8\}\$\/\.test\(t\)/.test(buildSrc), '构建端 extractTags 也排除颜色值')
+}
+
 console.log(`\n===== 结果：${pass} 通过 / ${fail} 失败 =====`)
 process.exit(fail ? 1 : 0)

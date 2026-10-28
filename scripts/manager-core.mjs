@@ -192,6 +192,107 @@ export function createManager(opts) {
     saveLocal(local)
   }
 
+  // ---------- 跨进程发布互斥 ----------
+  /**
+   * 为什么需要这一层：同一个数据目录可能被**两个管理器进程**同时使用 ——
+   *   ① 命令行版 scripts/manager.mjs（默认 3457 端口）；
+   *   ② Obsidian 插件里的后台服务（worker.js，随机端口）。
+   * 两者共用 DATA_DIR，也就共用同一批 git 工作副本。而 PUBLISHING / autoBusy
+   * 只是各自进程内存里的变量，跨进程完全无效。
+   *
+   * 后果（用户实测踩到）：转私密时两边几乎同时收到文件变化，同时往同一个工作副本
+   * add/commit/push。先跑的那个提交 330864e 推上去了；后跑的那个在「提交已完成、
+   * 推送被拒」之间失败，界面上记一条「推送失败」—— 可内容其实已经上线了。
+   * 用户看到的就是「日志显示推送失败，但网页上确实没了」，完全无法判断到底成没成。
+   *
+   * 做法：数据目录里一个锁文件，openSync(file,'wx') 原子创建。锁里写 pid 与时刻，
+   * 进程崩溃留下的死锁按「pid 已不存在」或「超过 10 分钟」自动回收。
+   */
+  const LOCK_DIR = path.join(DATA_DIR, 'locks')
+  const LOCK_STALE_MS = 10 * 60 * 1000
+  function lockFileOf(key) {
+    return path.join(LOCK_DIR, String(key || 'publish').replace(/[^\w.-]/g, '_') + '.lock')
+  }
+  function readLockFile(file) {
+    try {
+      const j = JSON.parse(fsSync.readFileSync(file, 'utf8'))
+      return j && typeof j === 'object' ? j : null
+    } catch {
+      return null
+    }
+  }
+  /** pid 还活着吗：EPERM 说明进程在、只是不归我们管，也算活着。 */
+  function pidAlive(pid) {
+    if (!Number.isFinite(pid) || pid <= 0) return false
+    try {
+      process.kill(pid, 0)
+      return true
+    } catch (e) {
+      return !!e && e.code === 'EPERM'
+    }
+  }
+  /**
+   * 抢锁。成功返回 { ok:true, release() }；被别人占着返回 { ok:false, holder }。
+   * 锁目录建不出来（权限/只读盘）时返回 ok:true 且 degraded —— 不能因为拿不到锁
+   * 就让人彻底无法发布，此时退回进程内互斥（PUBLISHING / autoBusy 仍在生效）。
+   */
+  function acquireLock(key) {
+    const file = lockFileOf(key)
+    try {
+      fsSync.mkdirSync(LOCK_DIR, { recursive: true })
+    } catch {
+      return { ok: true, release() {}, degraded: true }
+    }
+    const me = { pid: process.pid, at: Date.now(), host: os.hostname() }
+    for (let i = 0; i < 3; i++) {
+      try {
+        const fd = fsSync.openSync(file, 'wx')
+        try {
+          fsSync.writeFileSync(fd, JSON.stringify(me))
+        } finally {
+          fsSync.closeSync(fd)
+        }
+        let released = false
+        return {
+          ok: true,
+          release() {
+            if (released) return
+            released = true
+            try {
+              const cur = readLockFile(file)
+              // 只删自己那把：万一被判过期后别人抢到了，不能把别人的锁删掉。
+              if (!cur || cur.pid === process.pid) fsSync.rmSync(file, { force: true })
+            } catch {
+              /* 删不掉就等它过期 */
+            }
+          },
+        }
+      } catch (e) {
+        if (!e || e.code !== 'EEXIST') return { ok: true, release() {}, degraded: true }
+        const cur = readLockFile(file)
+        const stale = !cur || !pidAlive(cur.pid) || Date.now() - (Number(cur.at) || 0) > LOCK_STALE_MS
+        if (!stale) return { ok: false, holder: cur }
+        // 死锁（进程已被杀/卡了 10 分钟以上）：回收后重试
+        try {
+          fsSync.rmSync(file, { force: true })
+        } catch {
+          /* 别人先删了，下一轮再试 */
+        }
+      }
+    }
+    return { ok: false, holder: readLockFile(file) }
+  }
+  /** 拿到锁才执行 fn；拿不到返回 { busy:true, holder }（调用方决定是报错还是排队）。 */
+  async function withPublishLock(key, fn) {
+    const lk = acquireLock(key)
+    if (!lk.ok) return { busy: true, holder: lk.holder }
+    try {
+      return await fn()
+    } finally {
+      lk.release()
+    }
+  }
+
   // 「新增 / 修改 / 删除」三栏是**日志**：自动同步发布只是把内容推上去，
   // 清单里那几条要留着让人看见；只有手动点「发布到 GitHub」才清空（算旧的改动）。
   // 之前是「库 vs content/ 现算差集」，任何一次发布都会让清单瞬间归零，
@@ -670,6 +771,36 @@ export function createManager(opts) {
       throw new Error(((r.stderr || '') + (r.stdout || '')).trim().slice(0, 300) || ('git ' + args.join(' ') + ' failed'))
     }
     return (r.stdout || '').trim()
+  }
+
+  /**
+   * 远端分支上是否已经包含本地 HEAD 这个提交。
+   *
+   * 只用来回答一个问题：「推送报错了，但内容是不是其实已经上去了？」
+   * 场景：另一个管理器进程（命令行版 / Obsidian 插件后台）或另一台电脑刚刚推过，
+   * 本机再推就会被拒（non-fast-forward / stale info），可线上已经是这一版。
+   * 这时候继续报「推送失败」纯属误导 —— 用户会以为没生效而反复重试。
+   *
+   * 任何一步拿不到结果都返回 false（宁可报失败，也不要谎报成功）。
+   */
+  async function remoteHasHead(conn, workdir) {
+    try {
+      const head = git(['rev-parse', 'HEAD'], workdir).trim()
+      if (!head) return false
+      let branch = ''
+      try {
+        branch = git(['rev-parse', '--abbrev-ref', 'HEAD'], workdir).trim()
+      } catch {
+        return false
+      }
+      if (!branch || branch === 'HEAD') return false
+      // ls-remote 走网络，失败就作罢（返回值交给调用方当「没推上去」处理）
+      const out = git(['ls-remote', 'origin', 'refs/heads/' + branch], workdir)
+      const remoteSha = (out.split(/\s+/)[0] || '').trim()
+      return !!remoteSha && remoteSha === head
+    } catch {
+      return false
+    }
   }
 
   /**
@@ -1526,41 +1657,64 @@ export function createManager(opts) {
         }
         // 多电脑/网页端改动：推送前先并入库远端最新，避免 ! [rejected] fetch first
         const branch = conn.branch || 'main'
-        try {
-          git(['pull', '--rebase', '--autostash', '--allow-unrelated-histories', 'origin', branch], workdir)
-        } catch (pullErr) {
+        // 另一个进程（命令行版 / 插件后台）可能刚刚把**同一个提交**推上去，
+        // 此时本机再 pull/push 都会被搅（index.lock 冲突、stale info）。
+        // 先问一次远端：它已经有我们 HEAD 了，就等于「已经推上去了」，不用再动。
+        let alreadyPushed = false
+        if (await remoteHasHead(conn, workdir)) {
+          alreadyPushed = true
+          pushed = true
+          log.push(msg('logPushedAlready'))
+        }
+        if (!alreadyPushed) {
           try {
-            git(['rebase', '--abort'], workdir)
-          } catch {
-            /* 没有进行中的 rebase */
-          }
-          // 以前这里吞掉错误继续 push：rebase 半途而废时本地历史可能不完整，
-          // 推上去会覆盖远端。现在只有「远端分支本来就不存在」才继续（空仓库首次推送），
-          // 其余情况一律中止，把原文报给用户。
-          let remoteHas = ''
-          try {
-            remoteHas = git(['ls-remote', '--heads', 'origin', branch], workdir)
-          } catch {
-            remoteHas = 'unknown'
-          }
-          if (remoteHas.trim()) {
-            const le = new Error(localizeRaw(lang, String((pullErr && pullErr.message) || pullErr).slice(0, 300)))
-            le.localized = true
-            throw le
+            git(['pull', '--rebase', '--autostash', '--allow-unrelated-histories', 'origin', branch], workdir)
+          } catch (pullErr) {
+            try {
+              git(['rebase', '--abort'], workdir)
+            } catch {
+              /* 没有进行中的 rebase */
+            }
+            // 以前这里吞掉错误继续 push：rebase 半途而废时本地历史可能不完整，
+            // 推上去会覆盖远端。现在只有「远端分支本来就不存在」才继续（空仓库首次推送），
+            // 其余情况一律中止，把原文报给用户。
+            let remoteHas = ''
+            try {
+              remoteHas = git(['ls-remote', '--heads', 'origin', branch], workdir)
+            } catch {
+              remoteHas = 'unknown'
+            }
+            if (remoteHas.trim()) {
+              const le = new Error(localizeRaw(lang, String((pullErr && pullErr.message) || pullErr).slice(0, 300)))
+              le.localized = true
+              throw le
+            }
           }
         }
         // push 单独包一层：失败时把原因归类，网络类问题给出可操作的提示
-        try {
-          git(['push', 'origin', 'HEAD'], workdir)
-        } catch (e) {
-          const text = String((e && e.message) || e)
-          if (/Could not connect|Failed to connect|unable to access|Connection was reset|timed out|SSL/i.test(text)) {
-            failKind = 'network'
+        if (!alreadyPushed) {
+          try {
+            git(['push', 'origin', 'HEAD'], workdir)
+            pushed = true
+            log.push(msg('logPushed'))
+          } catch (e) {
+            const text = String((e && e.message) || e)
+            if (/Could not connect|Failed to connect|unable to access|Connection was reset|timed out|SSL/i.test(text)) {
+              failKind = 'network'
+            }
+            // 推送被拒但远端已经有这个提交 = 内容其实已经在线上（典型场景：另一个
+            // 管理器进程/另一台电脑刚把同一个提交推上去，或者上一次推送其实成功了、
+            // 只是本机没拿到结果）。这时候报「推送失败」是假的 —— 用户会以为没上线，
+            // 反复重试。先问一次远端：它已经有这个 SHA 就算成功。
+            if (await remoteHasHead(conn, workdir)) {
+              pushed = true
+              failKind = null
+              log.push(msg('logPushedAlready'))
+            } else {
+              throw e
+            }
           }
-          throw e
         }
-        pushed = true
-        log.push(msg('logPushed'))
       }
       // 6) 确保仓库启用了 Pages。
       // 新建的仓库默认没有 Pages，而部署工作流第一步 actions/configure-pages 就要读
@@ -1747,10 +1901,12 @@ export function createManager(opts) {
       errPathEscaped: '路径越界',
       errForbidden: '拒绝访问：只接受本机页面的请求',
       errPublishing: '正在发布中，请等这次结束再试',
+      errPublishingOther: '另一个发布管理器（Obsidian 插件里的那个，或命令行版）正在推送，请等它结束再试',
       logPublic: (n, c, r) => `公开笔记 ${n} 篇：新增/更新 ${c}，移除过期 ${r}`,
       logSiteName: (prev, want) => `已更新网页标题的站名：${prev ? '「' + prev + '」→ ' : ''}「${want}」`,
       logFresh: '线上已是最新，无需推送',
       logPushed: '已推送 GitHub，Actions 构建中（1~2 分钟后网站自动更新）',
+      logPushedAlready: '远端已有这个提交（可能是另一个管理器或上一次推送已经成功），内容已经在线上了',
       logGitFail: 'git 操作失败：',
       logVarOk: (name) => `已把站名「${name}」写入仓库变量 SITE_NAME（下次构建生效）`,
       logVarNoToken: '站名同步跳过：需要 GitHub 授权才能改仓库变量。可设环境变量 GITHUB_TOKEN 后重试，或用 gh 登录。',
@@ -1817,10 +1973,12 @@ export function createManager(opts) {
       errPathEscaped: 'Path escapes the vault',
       errForbidden: 'Forbidden: only local pages may send requests',
       errPublishing: 'A publish is already running. Please wait for it to finish.',
+      errPublishingOther: 'Another publish manager (the Obsidian plugin one, or the CLI one) is pushing right now. Wait for it to finish.',
       logPublic: (n, c, r) => `${n} public ${n === 1 ? 'note' : 'notes'}: ${c} added/updated, ${r} stale removed`,
       logSiteName: (prev, want) => `Site title updated: ${prev ? '"' + prev + '" → ' : ''}"${want}"`,
       logFresh: 'Already up to date — nothing to push',
       logPushed: 'Pushed to GitHub — Actions is building (the site updates in 1~2 minutes)',
+      logPushedAlready: 'The remote already has this commit (another manager, or an earlier push that did go through) — the content is already online',
       logGitFail: 'git failed: ',
       logVarOk: (name) => `Set the site title "${name}" as the repo variable SITE_NAME (applies on next build)`,
       logVarNoToken: 'Site title sync skipped: changing repo variables needs GitHub authorization. Set GITHUB_TOKEN and retry, or log in with gh.',
@@ -2226,6 +2384,13 @@ export function createManager(opts) {
         if (PUBLISHING) {
           return json(res, 409, { error: sm(langOf(req), 'errPublishing'), busy: true })
         }
+        // 跨进程互斥：另一个管理器进程（命令行版 / Obsidian 插件后台）可能正在
+        // 同一个工作副本上推送。以前这里只挡进程内的连点，挡不住另一个进程，
+        // 结果两边同时提交 —— 一个成功、一个「推送失败」，界面上完全误导。
+        const lk = acquireLock('publish-' + conn.id)
+        if (!lk.ok) {
+          return json(res, 409, { error: sm(langOf(req), 'errPublishingOther'), busy: true })
+        }
         PUBLISHING = true
         try {
           const wd = ensureWorkdir(conn)
@@ -2278,6 +2443,7 @@ export function createManager(opts) {
           })
         } finally {
           PUBLISHING = false
+          lk.release()
         }
         return
       }
@@ -2312,7 +2478,18 @@ export function createManager(opts) {
             needAuth: wd.errKey === 'errRepoUnreachable',
           })
         }
-        const r = await updateSource(conn, wd.workdir, langOf(req))
+        // 更新源码同样要跨进程互斥：它也是「全量覆盖 + git add -A + commit + push」，
+        // 和自动同步撞上就会互相踩（一个推上去、另一个报失败）。
+        const lkSrc = acquireLock('publish-' + conn.id)
+        if (!lkSrc.ok) {
+          return json(res, 409, { error: sm(langOf(req), 'errPublishingOther'), busy: true })
+        }
+        let r
+        try {
+          r = await updateSource(conn, wd.workdir, langOf(req))
+        } finally {
+          lkSrc.release()
+        }
         json(res, 200, { log: r.log, failed: r.failed, pushed: r.pushed, failKind: r.failKind || null, commit: r.commit || '' })
         return
       }
@@ -2381,7 +2558,17 @@ export function createManager(opts) {
         // 只推 theme.css：这里不该顺带把笔记也发出去（用户可能还没准备好公开某些笔记）。
         // 但 git add -A 会把工作副本里已有的其它改动一起带上，所以先确认
         // 「除了 theme.css 之外没有别的改动」，有就让用户走「发布」或「更新源码」。
-        const r = await publishThemeOnly(conn, wd.workdir, langOf(req), w.bytes)
+        const lkT = acquireLock('publish-' + conn.id)
+        if (!lkT.ok) {
+          // 文件已经写进工作副本了（下次保存/发布自然带上），只是这次没推出去
+          return json(res, 409, { error: sm(langOf(req), 'errPublishingOther'), busy: true, bytes: w.bytes })
+        }
+        let r
+        try {
+          r = await publishThemeOnly(conn, wd.workdir, langOf(req), w.bytes)
+        } finally {
+          lkT.release()
+        }
         json(res, 200, {
           ok: !r.failed,
           bytes: w.bytes,
@@ -2638,6 +2825,14 @@ export function createManager(opts) {
       // 不再往流水里写「有改动，但开关没开」（用户明确说不需要这种记录）。
       return
     }
+    // 跨进程互斥：另一个管理器进程（命令行版 / Obsidian 插件）可能正在同一个
+    // 工作副本上推送。抢不到就等下一轮 —— 绝不能两个进程同时 add/commit/push，
+    // 那会一个成功一个「推送失败」，界面上看着像失败、其实已经上线了。
+    const lk = acquireLock('publish-' + conn.id)
+    if (!lk.ok) {
+      requeueAutoSync(touched)
+      return
+    }
     autoBusy = true
     // 先落一条「开始推送」，再真的去推：git push + GitHub Actions 加起来要几十秒到几分钟，
     // 只在推完之后写一条的话，这段时间界面上一片空白，看着像没反应。
@@ -2691,6 +2886,7 @@ export function createManager(opts) {
         files: entry.files,
       })
       autoBusy = false
+      lk.release()
       // publish 自己也会写文件（content/、.blog-meta.json），别让这些写入再触发一轮
       autoSuppressUntil = Date.now() + 5000
       bumpRev()

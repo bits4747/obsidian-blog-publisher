@@ -3965,6 +3965,11 @@ const DICT = {
     toastNothingToPush: '\u6CA1\u6709\u65B0\u7684\u6539\u52A8\u53EF\u63A8\u9001\uFF08\u7EBF\u4E0A\u5DF2\u662F\u6700\u65B0\uFF09',
     toastDone: '\u5B8C\u6210',
     toastFailed: '\u5931\u8D25',
+    toastAutoTitle: '\u81EA\u52A8\u540C\u6B65',
+    toastAutoFailed: '\u81EA\u52A8\u540C\u6B65\u63A8\u9001\u5931\u8D25\uFF0C\u6539\u52A8\u8FD8\u6CA1\u4E0A\u7EBF',
+    toastAutoBuildFailed: '\u63A8\u4E0A\u53BB\u4E86\uFF0C\u4F46 GitHub \u6784\u5EFA\u5931\u8D25\uFF0C\u7EBF\u4E0A\u8FD8\u662F\u65E7\u7248',
+    toastAutoTimeout: '\u63A8\u4E0A\u53BB\u4E86\uFF0C\u4F46\u7B49\u4E86 10 \u5206\u949F\u8FD8\u6CA1\u4E0A\u7EBF\uFF0C\u53EF\u80FD\u6784\u5EFA\u5361\u4F4F\u4E86',
+    toastAutoLive: function (c) { return c ? '\u5DF2\u81EA\u52A8\u540C\u6B65\u5E76\u4E0A\u7EBF\uFF08' + c + '\uFF09' : '\u5DF2\u81EA\u52A8\u540C\u6B65\u5E76\u4E0A\u7EBF' },
     toastPublishOk: '\u53D1\u5E03\u6210\u529F',
     toastSourceOk: '\u6E90\u7801\u5DF2\u66F4\u65B0',
     toastThemeOk: '\u5916\u89C2\u5DF2\u4FDD\u5B58\u5E76\u63A8\u9001',
@@ -4197,6 +4202,11 @@ const DICT = {
     toastNothingToPush: 'Nothing new to push (the site is already up to date)',
     toastDone: 'Done',
     toastFailed: 'Failed',
+    toastAutoTitle: 'Auto sync',
+    toastAutoFailed: 'Auto sync failed to push \u2014 the change is not online yet',
+    toastAutoBuildFailed: 'Pushed, but the GitHub build failed \u2014 the site is still the old version',
+    toastAutoTimeout: 'Pushed, but it is still not live after 10 minutes \u2014 the build may be stuck',
+    toastAutoLive: function (c) { return c ? 'Auto-synced and live (' + c + ')' : 'Auto-synced and live' },
     toastPublishOk: 'Published',
     toastSourceOk: 'Source updated',
     toastThemeOk: 'Appearance saved and pushed',
@@ -5082,6 +5092,64 @@ function renderAutoLog() {
     box.appendChild(row);
   }
   if (keepTop) box.scrollTop = keepTop;
+  notifyAutoLog(log);
+}
+
+// \u81EA\u52A8\u540C\u6B65\u662F\u540E\u53F0\u81EA\u5DF1\u8DD1\u5B8C\u7684\uFF1A\u6CA1\u6709\u5F39\u7A97\u7684\u8BDD\uFF0C\u7528\u6237\u53EA\u6709\u4E3B\u52A8\u53BB\u770B\u6D41\u6C34\u624D\u77E5\u9053\u6210\u6CA1\u6210\u3002
+// \u7528\u6237\u660E\u786E\u8981\u6C42\u300C\u66F4\u65B0\u5B8C\u6210\u5FC5\u987B\u8981\u6709\u5F39\u7A97\u63D0\u793A\uFF0C\u4E0D\u7136\u90FD\u4E0D\u77E5\u9053\u662F\u6CA1\u63A8\u9001\u6210\u529F\u8FD8\u662F\u6B63\u5728\u66F4\u65B0\u300D\u3002
+// \u505A\u6CD5\uFF1A\u628A\u300C\u5DF2\u7ECF\u63D0\u793A\u5230\u54EA\u4E00\u6761\u300D\u8BB0\u5728 localStorage\uFF08\u6309\u8FDE\u63A5\u5206\u5F00\uFF09\uFF0C\u53EA\u5BF9\u66F4\u65B0\u7684\u7ED3\u8BBA\u5F39\u4E00\u6B21\u3002
+// \u7528 localStorage \u800C\u4E0D\u662F\u5185\u5B58\u53D8\u91CF\uFF0C\u662F\u56E0\u4E3A\u540C\u6B65\u5E38\u5E38\u5728\u754C\u9762\u5173\u7740\u7684\u65F6\u5019\u8DD1\u5B8C \u2014\u2014
+// \u4E0B\u6B21\u6253\u5F00\u754C\u9762\u5E94\u8BE5\u8865\u4E0A\u90A3\u6761\u7ED3\u679C\uFF0C\u800C\u4E0D\u662F\u5F53\u5386\u53F2\u9759\u97F3\u6389\u3002
+const AUTO_SEEN_KEY = 'autolog-seen-';
+let _autoToastSeenAt = 0;
+let _autoToastKey = '';
+function notifyAutoLog(log) {
+  if (!Array.isArray(log) || !log.length) return;
+  const key = AUTO_SEEN_KEY + (S.active || '');
+  if (key !== _autoToastKey) {
+    _autoToastKey = key;
+    let v = 0;
+    try { v = Number(localStorage.getItem(key) || 0) || 0; } catch (e) { v = 0; }
+    if (!v) {
+      // \u8FD9\u4E2A\u8FDE\u63A5\u7B2C\u4E00\u6B21\u89C1\uFF1A\u628A\u73B0\u6709\u5386\u53F2\u6574\u4F53\u5F53\u5DF2\u8BFB\uFF0C\u514D\u5F97\u4E00\u8FDB\u754C\u9762\u8FDE\u5F39\u4E00\u5806\u65E7\u8BB0\u5F55
+      const newest = log.reduce((a, e) => (Number(e.at) > Number(a.at) ? e : a), log[0]);
+      v = Number(newest.at) || 0;
+      try { localStorage.setItem(key, String(v)); } catch (e) { /* \u5B58\u4E0D\u4E86\u5C31\u6BCF\u6B21\u91CD\u6765 */ }
+    }
+    _autoToastSeenAt = v;
+  }
+  // \u53EA\u770B\u7ED3\u8BBA\u5DF2\u5B9A\u7684\u6761\u76EE\uFF1A\u8FD8\u5728 pushing \u7684\u4E0D\u5F39\uFF0C\u7B49\u5B83\u51FA\u7ED3\u679C\uFF08\u4E0B\u4E00\u8F6E\u8F6E\u8BE2\u4F1A\u518D\u8FDB\u6765\uFF09\u3002
+  const done = log.filter((e) => {
+    const at = Number(e.at) || 0;
+    if (at <= _autoToastSeenAt) return false;
+    return !!(e.failed || e.buildFailed || e.liveTimeout || e.live || e.pushed === false);
+  });
+  if (!done.length) return;
+  const e = done.reduce((a, x) => (Number(x.at) > Number(a.at) ? x : a), done[0]);
+  _autoToastSeenAt = Number(e.at) || 0;
+  try { localStorage.setItem(key, String(_autoToastSeenAt)); } catch (err) { /* \u540C\u4E0A */ }
+  const c = e.counts || {};
+  const counts = [c.added ? '+' + c.added : '', c.modified ? '~' + c.modified : '', c.deleted ? '-' + c.deleted : '']
+    .filter(Boolean).join(' ');
+  const files = e.files || {};
+  const detail = []
+    .concat((files.added || []).map((p) => '+ ' + p))
+    .concat((files.modified || []).map((p) => '~ ' + p))
+    .concat((files.deleted || []).map((p) => '- ' + p))
+    .join('\\n');
+  const tid = toastOpen(t('toastAutoTitle'), '');
+  if (e.failed) {
+    toastSet(tid, 'bad', t('toastFailed'), t('toastAutoFailed'), detail || String(e.error || ''));
+  } else if (e.buildFailed) {
+    toastSet(tid, 'bad', t('toastFailed'), t('toastAutoBuildFailed'), detail || String(e.buildConclusion || ''));
+  } else if (e.liveTimeout) {
+    toastSet(tid, 'bad', t('toastFailed'), t('toastAutoTimeout'), detail);
+  } else if (e.live) {
+    toastSet(tid, 'ok', t('toastDone'), tf('toastAutoLive', counts), detail);
+  } else {
+    // pushed === false\uFF1A\u8FD9\u6B21\u6CA1\u6709\u4E1C\u897F\u53EF\u63A8\uFF08\u65B0\u5EFA\u4ED3\u5E93\u9996\u6B21\u8DD1\u7684\u60C5\u51B5\uFF09\uFF0C\u4E0D\u7B97\u5931\u8D25
+    toastSet(tid, 'ok', t('toastDone'), t('toastNothingToPush'), detail);
+  }
 }
 
 // \u300C\u9700\u8981\u4F60\u5904\u7406\u7684\u300D\u6539\u52A8\uFF1A\u81EA\u52A8\u540C\u6B65\u5F00\u5173\u5173\u7740\u7684\u90A3\u51E0\u7C7B\u3002
@@ -6475,6 +6543,81 @@ function createManager(opts) {
     local.publishMarks[connId] = mark;
     saveLocal(local);
   }
+  const LOCK_DIR = import_node_path.default.join(DATA_DIR, "locks");
+  const LOCK_STALE_MS = 10 * 60 * 1e3;
+  function lockFileOf(key) {
+    return import_node_path.default.join(LOCK_DIR, String(key || "publish").replace(/[^\w.-]/g, "_") + ".lock");
+  }
+  function readLockFile(file) {
+    try {
+      const j = JSON.parse(import_node_fs.default.readFileSync(file, "utf8"));
+      return j && typeof j === "object" ? j : null;
+    } catch {
+      return null;
+    }
+  }
+  function pidAlive(pid) {
+    if (!Number.isFinite(pid) || pid <= 0) return false;
+    try {
+      process.kill(pid, 0);
+      return true;
+    } catch (e) {
+      return !!e && e.code === "EPERM";
+    }
+  }
+  function acquireLock(key) {
+    const file = lockFileOf(key);
+    try {
+      import_node_fs.default.mkdirSync(LOCK_DIR, { recursive: true });
+    } catch {
+      return { ok: true, release() {
+      }, degraded: true };
+    }
+    const me = { pid: process.pid, at: Date.now(), host: import_node_os.default.hostname() };
+    for (let i = 0; i < 3; i++) {
+      try {
+        const fd = import_node_fs.default.openSync(file, "wx");
+        try {
+          import_node_fs.default.writeFileSync(fd, JSON.stringify(me));
+        } finally {
+          import_node_fs.default.closeSync(fd);
+        }
+        let released = false;
+        return {
+          ok: true,
+          release() {
+            if (released) return;
+            released = true;
+            try {
+              const cur = readLockFile(file);
+              if (!cur || cur.pid === process.pid) import_node_fs.default.rmSync(file, { force: true });
+            } catch {
+            }
+          }
+        };
+      } catch (e) {
+        if (!e || e.code !== "EEXIST") return { ok: true, release() {
+        }, degraded: true };
+        const cur = readLockFile(file);
+        const stale = !cur || !pidAlive(cur.pid) || Date.now() - (Number(cur.at) || 0) > LOCK_STALE_MS;
+        if (!stale) return { ok: false, holder: cur };
+        try {
+          import_node_fs.default.rmSync(file, { force: true });
+        } catch {
+        }
+      }
+    }
+    return { ok: false, holder: readLockFile(file) };
+  }
+  async function withPublishLock(key, fn) {
+    const lk = acquireLock(key);
+    if (!lk.ok) return { busy: true, holder: lk.holder };
+    try {
+      return await fn();
+    } finally {
+      lk.release();
+    }
+  }
   const CHANGE_KEYS = ["added", "modified", "deleted"];
   function emptyChanges() {
     return { added: [], modified: [], deleted: [] };
@@ -6813,6 +6956,24 @@ function createManager(opts) {
       throw new Error(((r.stderr || "") + (r.stdout || "")).trim().slice(0, 300) || "git " + args.join(" ") + " failed");
     }
     return (r.stdout || "").trim();
+  }
+  async function remoteHasHead(conn, workdir) {
+    try {
+      const head = git(["rev-parse", "HEAD"], workdir).trim();
+      if (!head) return false;
+      let branch = "";
+      try {
+        branch = git(["rev-parse", "--abbrev-ref", "HEAD"], workdir).trim();
+      } catch {
+        return false;
+      }
+      if (!branch || branch === "HEAD") return false;
+      const out = git(["ls-remote", "origin", "refs/heads/" + branch], workdir);
+      const remoteSha = (out.split(/\s+/)[0] || "").trim();
+      return !!remoteSha && remoteSha === head;
+    } catch {
+      return false;
+    }
   }
   function siteUrlOf(repo) {
     const s = String(repo || "").trim();
@@ -7428,36 +7589,52 @@ function createManager(opts) {
           throw le;
         }
         const branch = conn.branch || "main";
-        try {
-          git(["pull", "--rebase", "--autostash", "--allow-unrelated-histories", "origin", branch], workdir);
-        } catch (pullErr) {
+        let alreadyPushed = false;
+        if (await remoteHasHead(conn, workdir)) {
+          alreadyPushed = true;
+          pushed = true;
+          log2.push(msg2("logPushedAlready"));
+        }
+        if (!alreadyPushed) {
           try {
-            git(["rebase", "--abort"], workdir);
-          } catch {
-          }
-          let remoteHas = "";
-          try {
-            remoteHas = git(["ls-remote", "--heads", "origin", branch], workdir);
-          } catch {
-            remoteHas = "unknown";
-          }
-          if (remoteHas.trim()) {
-            const le = new Error(localizeRaw(lang, String(pullErr && pullErr.message || pullErr).slice(0, 300)));
-            le.localized = true;
-            throw le;
+            git(["pull", "--rebase", "--autostash", "--allow-unrelated-histories", "origin", branch], workdir);
+          } catch (pullErr) {
+            try {
+              git(["rebase", "--abort"], workdir);
+            } catch {
+            }
+            let remoteHas = "";
+            try {
+              remoteHas = git(["ls-remote", "--heads", "origin", branch], workdir);
+            } catch {
+              remoteHas = "unknown";
+            }
+            if (remoteHas.trim()) {
+              const le = new Error(localizeRaw(lang, String(pullErr && pullErr.message || pullErr).slice(0, 300)));
+              le.localized = true;
+              throw le;
+            }
           }
         }
-        try {
-          git(["push", "origin", "HEAD"], workdir);
-        } catch (e) {
-          const text = String(e && e.message || e);
-          if (/Could not connect|Failed to connect|unable to access|Connection was reset|timed out|SSL/i.test(text)) {
-            failKind = "network";
+        if (!alreadyPushed) {
+          try {
+            git(["push", "origin", "HEAD"], workdir);
+            pushed = true;
+            log2.push(msg2("logPushed"));
+          } catch (e) {
+            const text = String(e && e.message || e);
+            if (/Could not connect|Failed to connect|unable to access|Connection was reset|timed out|SSL/i.test(text)) {
+              failKind = "network";
+            }
+            if (await remoteHasHead(conn, workdir)) {
+              pushed = true;
+              failKind = null;
+              log2.push(msg2("logPushedAlready"));
+            } else {
+              throw e;
+            }
           }
-          throw e;
         }
-        pushed = true;
-        log2.push(msg2("logPushed"));
       }
       if (pushed) {
         const pg = await ensurePages(conn.repo);
@@ -7597,10 +7774,12 @@ function createManager(opts) {
       errPathEscaped: "\u8DEF\u5F84\u8D8A\u754C",
       errForbidden: "\u62D2\u7EDD\u8BBF\u95EE\uFF1A\u53EA\u63A5\u53D7\u672C\u673A\u9875\u9762\u7684\u8BF7\u6C42",
       errPublishing: "\u6B63\u5728\u53D1\u5E03\u4E2D\uFF0C\u8BF7\u7B49\u8FD9\u6B21\u7ED3\u675F\u518D\u8BD5",
+      errPublishingOther: "\u53E6\u4E00\u4E2A\u53D1\u5E03\u7BA1\u7406\u5668\uFF08Obsidian \u63D2\u4EF6\u91CC\u7684\u90A3\u4E2A\uFF0C\u6216\u547D\u4EE4\u884C\u7248\uFF09\u6B63\u5728\u63A8\u9001\uFF0C\u8BF7\u7B49\u5B83\u7ED3\u675F\u518D\u8BD5",
       logPublic: (n, c, r) => `\u516C\u5F00\u7B14\u8BB0 ${n} \u7BC7\uFF1A\u65B0\u589E/\u66F4\u65B0 ${c}\uFF0C\u79FB\u9664\u8FC7\u671F ${r}`,
       logSiteName: (prev, want) => `\u5DF2\u66F4\u65B0\u7F51\u9875\u6807\u9898\u7684\u7AD9\u540D\uFF1A${prev ? "\u300C" + prev + "\u300D\u2192 " : ""}\u300C${want}\u300D`,
       logFresh: "\u7EBF\u4E0A\u5DF2\u662F\u6700\u65B0\uFF0C\u65E0\u9700\u63A8\u9001",
       logPushed: "\u5DF2\u63A8\u9001 GitHub\uFF0CActions \u6784\u5EFA\u4E2D\uFF081~2 \u5206\u949F\u540E\u7F51\u7AD9\u81EA\u52A8\u66F4\u65B0\uFF09",
+      logPushedAlready: "\u8FDC\u7AEF\u5DF2\u6709\u8FD9\u4E2A\u63D0\u4EA4\uFF08\u53EF\u80FD\u662F\u53E6\u4E00\u4E2A\u7BA1\u7406\u5668\u6216\u4E0A\u4E00\u6B21\u63A8\u9001\u5DF2\u7ECF\u6210\u529F\uFF09\uFF0C\u5185\u5BB9\u5DF2\u7ECF\u5728\u7EBF\u4E0A\u4E86",
       logGitFail: "git \u64CD\u4F5C\u5931\u8D25\uFF1A",
       logVarOk: (name) => `\u5DF2\u628A\u7AD9\u540D\u300C${name}\u300D\u5199\u5165\u4ED3\u5E93\u53D8\u91CF SITE_NAME\uFF08\u4E0B\u6B21\u6784\u5EFA\u751F\u6548\uFF09`,
       logVarNoToken: "\u7AD9\u540D\u540C\u6B65\u8DF3\u8FC7\uFF1A\u9700\u8981 GitHub \u6388\u6743\u624D\u80FD\u6539\u4ED3\u5E93\u53D8\u91CF\u3002\u53EF\u8BBE\u73AF\u5883\u53D8\u91CF GITHUB_TOKEN \u540E\u91CD\u8BD5\uFF0C\u6216\u7528 gh \u767B\u5F55\u3002",
@@ -7667,10 +7846,12 @@ function createManager(opts) {
       errPathEscaped: "Path escapes the vault",
       errForbidden: "Forbidden: only local pages may send requests",
       errPublishing: "A publish is already running. Please wait for it to finish.",
+      errPublishingOther: "Another publish manager (the Obsidian plugin one, or the CLI one) is pushing right now. Wait for it to finish.",
       logPublic: (n, c, r) => `${n} public ${n === 1 ? "note" : "notes"}: ${c} added/updated, ${r} stale removed`,
       logSiteName: (prev, want) => `Site title updated: ${prev ? '"' + prev + '" \u2192 ' : ""}"${want}"`,
       logFresh: "Already up to date \u2014 nothing to push",
       logPushed: "Pushed to GitHub \u2014 Actions is building (the site updates in 1~2 minutes)",
+      logPushedAlready: "The remote already has this commit (another manager, or an earlier push that did go through) \u2014 the content is already online",
       logGitFail: "git failed: ",
       logVarOk: (name) => `Set the site title "${name}" as the repo variable SITE_NAME (applies on next build)`,
       logVarNoToken: "Site title sync skipped: changing repo variables needs GitHub authorization. Set GITHUB_TOKEN and retry, or log in with gh.",
@@ -7991,6 +8172,10 @@ function createManager(opts) {
         if (PUBLISHING) {
           return json(res, 409, { error: sm(langOf(req), "errPublishing"), busy: true });
         }
+        const lk = acquireLock("publish-" + conn.id);
+        if (!lk.ok) {
+          return json(res, 409, { error: sm(langOf(req), "errPublishingOther"), busy: true });
+        }
         PUBLISHING = true;
         try {
           const wd = ensureWorkdir(conn);
@@ -8037,6 +8222,7 @@ function createManager(opts) {
           });
         } finally {
           PUBLISHING = false;
+          lk.release();
         }
         return;
       }
@@ -8061,7 +8247,16 @@ function createManager(opts) {
             needAuth: wd.errKey === "errRepoUnreachable"
           });
         }
-        const r = await updateSource(conn, wd.workdir, langOf(req));
+        const lkSrc = acquireLock("publish-" + conn.id);
+        if (!lkSrc.ok) {
+          return json(res, 409, { error: sm(langOf(req), "errPublishingOther"), busy: true });
+        }
+        let r;
+        try {
+          r = await updateSource(conn, wd.workdir, langOf(req));
+        } finally {
+          lkSrc.release();
+        }
         json(res, 200, { log: r.log, failed: r.failed, pushed: r.pushed, failKind: r.failKind || null, commit: r.commit || "" });
         return;
       }
@@ -8118,7 +8313,16 @@ function createManager(opts) {
         }
         const w = writeThemeCss(wd.workdir, css);
         bumpRev();
-        const r = await publishThemeOnly(conn, wd.workdir, langOf(req), w.bytes);
+        const lkT = acquireLock("publish-" + conn.id);
+        if (!lkT.ok) {
+          return json(res, 409, { error: sm(langOf(req), "errPublishingOther"), busy: true, bytes: w.bytes });
+        }
+        let r;
+        try {
+          r = await publishThemeOnly(conn, wd.workdir, langOf(req), w.bytes);
+        } finally {
+          lkT.release();
+        }
         json(res, 200, {
           ok: !r.failed,
           bytes: w.bytes,
@@ -8322,6 +8526,11 @@ function createManager(opts) {
     if (!wantAdd && !wantMod && !wantDel) {
       return;
     }
+    const lk = acquireLock("publish-" + conn.id);
+    if (!lk.ok) {
+      requeueAutoSync(touched);
+      return;
+    }
     autoBusy = true;
     const entry = { at: startedAt, kind: "run", counts, files: filesOf(handled), stage: "pushing" };
     pushAutoLog(conn.id, entry);
@@ -8366,6 +8575,7 @@ function createManager(opts) {
         files: entry.files
       });
       autoBusy = false;
+      lk.release();
       autoSuppressUntil = Date.now() + 5e3;
       bumpRev();
     }
