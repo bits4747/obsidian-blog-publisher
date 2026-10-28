@@ -1,5 +1,5 @@
 /**
- * 发布管理器的全部实现：数据层 + 发布/自动同步逻辑 + HTTP 服务 + 界面。
+ * 博客发布器的全部实现：数据层 + 发布/自动同步逻辑 + HTTP 服务 + 界面。
  *
  * 这里是一个工厂函数，而不是一个「跑起来就监听端口」的脚本 —— 因为同一套功能
  * 有两个宿主：
@@ -195,7 +195,7 @@ export function createManager(opts) {
   // ---------- 跨进程发布互斥 ----------
   /**
    * 为什么需要这一层：同一个数据目录可能被**两个管理器进程**同时使用 ——
-   *   ① 命令行版 scripts/manager.mjs（默认 3457 端口）；
+   *   ① 本地调试入口 scripts/manager.mjs（默认 3457 端口）；
    *   ② Obsidian 插件里的后台服务（worker.js，随机端口）。
    * 两者共用 DATA_DIR，也就共用同一批 git 工作副本。而 PUBLISHING / autoBusy
    * 只是各自进程内存里的变量，跨进程完全无效。
@@ -777,7 +777,7 @@ export function createManager(opts) {
    * 远端分支上是否已经包含本地 HEAD 这个提交。
    *
    * 只用来回答一个问题：「推送报错了，但内容是不是其实已经上去了？」
-   * 场景：另一个管理器进程（命令行版 / Obsidian 插件后台）或另一台电脑刚刚推过，
+   * 场景：另一个发布进程（插件后台 / 本地调试入口）或另一台电脑刚刚推过，
    * 本机再推就会被拒（non-fast-forward / stale info），可线上已经是这一版。
    * 这时候继续报「推送失败」纯属误导 —— 用户会以为没生效而反复重试。
    *
@@ -1657,7 +1657,7 @@ export function createManager(opts) {
         }
         // 多电脑/网页端改动：推送前先并入库远端最新，避免 ! [rejected] fetch first
         const branch = conn.branch || 'main'
-        // 另一个进程（命令行版 / 插件后台）可能刚刚把**同一个提交**推上去，
+        // 另一个进程（本地调试入口 / 插件后台）可能刚刚把**同一个提交**推上去，
         // 此时本机再 pull/push 都会被搅（index.lock 冲突、stale info）。
         // 先问一次远端：它已经有我们 HEAD 了，就等于「已经推上去了」，不用再动。
         let alreadyPushed = false
@@ -1901,7 +1901,7 @@ export function createManager(opts) {
       errPathEscaped: '路径越界',
       errForbidden: '拒绝访问：只接受本机页面的请求',
       errPublishing: '正在发布中，请等这次结束再试',
-      errPublishingOther: '另一个发布管理器（Obsidian 插件里的那个，或命令行版）正在推送，请等它结束再试',
+      errPublishingOther: '另一个发布进程（另一窗口的发布器，或本地调试入口）正在推送，请等它结束再试',
       logPublic: (n, c, r) => `公开笔记 ${n} 篇：新增/更新 ${c}，移除过期 ${r}`,
       logSiteName: (prev, want) => `已更新网页标题的站名：${prev ? '「' + prev + '」→ ' : ''}「${want}」`,
       logFresh: '线上已是最新，无需推送',
@@ -1926,7 +1926,7 @@ export function createManager(opts) {
       logThemePushed: (bytes) => `自定义外观已推送（${Math.round(bytes / 1024) || 1}KB），GitHub Actions 构建中（1~2 分钟后网站自动更新）`,
       logThemeOtherDirty: (n) => `注意：工作副本里还有 ${n} 处其它改动没有提交，本次只推送了外观。要一并上线请点「发布」或「更新源码」。`,
       commitThemeMsg: '更新自定义外观 ',
-      gitUserName: '发布管理器',
+      gitUserName: '博客发布器',
       pickDesc: '选择你的 Obsidian 库文件夹（里面应有 .obsidian 目录）',
       // ---- 原始错误的本地化分类（git / 网络 / GitHub 响应本身都是英文的）----
       rawNetwork: '连不上 GitHub（多半是加速器没开或掉了，或本机网络不通）',
@@ -1973,7 +1973,7 @@ export function createManager(opts) {
       errPathEscaped: 'Path escapes the vault',
       errForbidden: 'Forbidden: only local pages may send requests',
       errPublishing: 'A publish is already running. Please wait for it to finish.',
-      errPublishingOther: 'Another publish manager (the Obsidian plugin one, or the CLI one) is pushing right now. Wait for it to finish.',
+      errPublishingOther: 'Another publisher (another window, or the local dev server) is pushing right now. Wait for it to finish.',
       logPublic: (n, c, r) => `${n} public ${n === 1 ? 'note' : 'notes'}: ${c} added/updated, ${r} stale removed`,
       logSiteName: (prev, want) => `Site title updated: ${prev ? '"' + prev + '" → ' : ''}"${want}"`,
       logFresh: 'Already up to date — nothing to push',
@@ -2384,7 +2384,7 @@ export function createManager(opts) {
         if (PUBLISHING) {
           return json(res, 409, { error: sm(langOf(req), 'errPublishing'), busy: true })
         }
-        // 跨进程互斥：另一个管理器进程（命令行版 / Obsidian 插件后台）可能正在
+        // 跨进程互斥：另一个发布进程（本地调试入口 / 插件后台）可能正在
         // 同一个工作副本上推送。以前这里只挡进程内的连点，挡不住另一个进程，
         // 结果两边同时提交 —— 一个成功、一个「推送失败」，界面上完全误导。
         const lk = acquireLock('publish-' + conn.id)
@@ -2825,7 +2825,7 @@ export function createManager(opts) {
       // 不再往流水里写「有改动，但开关没开」（用户明确说不需要这种记录）。
       return
     }
-    // 跨进程互斥：另一个管理器进程（命令行版 / Obsidian 插件）可能正在同一个
+    // 跨进程互斥：另一个发布进程（本地调试入口 / 插件）可能正在同一个
     // 工作副本上推送。抢不到就等下一轮 —— 绝不能两个进程同时 add/commit/push，
     // 那会一个成功一个「推送失败」，界面上看着像失败、其实已经上线了。
     const lk = acquireLock('publish-' + conn.id)
@@ -2992,7 +2992,7 @@ export function createManager(opts) {
           // port 传 0 时由系统分配，此时 PORT 仍是 0，日志与返回值都要用实际端口
           const actualPort = server.address() ? server.address().port : PORT
           const { conn, vaultPath } = activeConfig()
-          log(`[manager] Publish manager: http://localhost:${actualPort}`)
+          log(`[manager] Dev server: http://localhost:${actualPort}`)
           log(`[manager] Active connection: ${conn ? conn.name : '(none)'}; vault path: ${vaultPath || '(not set)'}`)
           log(`[manager] Source directory: ${TOOL_ROOT}`)
           log(`[manager] Data directory:   ${DATA_DIR}`)

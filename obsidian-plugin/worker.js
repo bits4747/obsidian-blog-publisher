@@ -3724,7 +3724,7 @@ var UI = `<!DOCTYPE html>
                  background: var(--accent-soft); font-weight: 500; }
   .vbar .vlink:hover { background: var(--accent-soft-hover); text-decoration: underline; }
   .vbar .vlink.hidden { display: none; }
-  /* \u591A\u8FDE\u63A5\u65F6\uFF08\u53EA\u6709\u547D\u4EE4\u884C\u7248\u4F1A\u9047\u5230\uFF09\u7684\u7D27\u51D1\u4E0B\u62C9 */
+  /* \u591A\u8FDE\u63A5\u65F6\u7684\u7D27\u51D1\u4E0B\u62C9\uFF08\u672C\u5730\u8C03\u8BD5\u5165\u53E3\u624D\u4F1A\u9047\u5230\uFF09 */
   .vbar select { padding: 2px 6px; font-size: 13px; border-radius: 6px; }
 
   /* ---- \u65B0\u5EFA\u8FDE\u63A5\uFF1A\u4E00\u6B65\u4E00\u4E2A\u5E93 + \u4E00\u4E2A\u4ED3\u5E93 ---- */
@@ -3853,7 +3853,7 @@ var UI = `<!DOCTYPE html>
 </style></head><body>
 
 <div class="statusbar"><div class="inner">
-  <span class="title" data-i18n="appTitle">\u53D1\u5E03\u7BA1\u7406\u5668</span>
+  <span class="title" data-i18n="appTitle">\u535A\u5BA2\u53D1\u5E03\u5668</span>
   <span class="spacer"></span>
   <button class="mini" id="authBtn" onclick="openAuthDialog()" data-i18n="authBtn">GitHub \u6388\u6743</button>
   <button class="mini" id="srcBtn" onclick="doUpdateSource()" data-i18n="srcBtn">\u2B06 \u66F4\u65B0\u6E90\u7801</button>
@@ -3940,7 +3940,7 @@ let S = { connections: [], active: null, vaultPath: '', vaultOk: false, notes: [
 // \u6CE8\u610F\uFF1A\u8FD9\u4E00\u6BB5\u5728\u670D\u52A1\u7AEF UI \u6A21\u677F\u5B57\u9762\u91CF\u91CC\uFF0C\u6240\u4EE5\u5168\u7A0B\u53EA\u7528\u5355\u5F15\u53F7\u62FC\u63A5\uFF0C\u4E0D\u80FD\u51FA\u73B0\u53CD\u5F15\u53F7\u4E0E\u7F8E\u5143\u82B1\u62EC\u53F7\u3002
 const DICT = {
   zh: {
-    appTitle: '\u53D1\u5E03\u7BA1\u7406\u5668',
+    appTitle: '\u535A\u5BA2\u53D1\u5E03\u5668',
     publishBtn: '\u27F3 \u53D1\u5E03\u5230 GitHub',
     srcBtn: '\u2B06 \u66F4\u65B0\u6E90\u7801',
     updatingSrc: '\u6B63\u5728\u66F4\u65B0\u6E90\u7801\u2026',
@@ -4179,7 +4179,7 @@ const DICT = {
     ok: '\u5B8C\u6210',
   },
   en: {
-    appTitle: 'Publish Manager',
+    appTitle: 'Blog Publisher',
     publishBtn: '\u27F3 Publish to GitHub',
     srcBtn: '\u2B06 Update source',
     updatingSrc: 'Updating source\u2026',
@@ -4422,7 +4422,7 @@ function guessLang() {
  *
  * \u63D2\u4EF6\u91CC\uFF08?embed=1\uFF09\u7531 Obsidian \u51B3\u5B9A\uFF1A\u5BBF\u4E3B\u628A\u8BED\u8A00\u5F53\u67E5\u8BE2\u53C2\u6570\u4F20\u8FDB\u6765\uFF0C
  * \u4E4B\u540E\u4E3B\u9898/\u8BED\u8A00\u4E00\u53D8\u8FD8\u4F1A postMessage \u901A\u77E5\uFF0C\u6240\u4EE5**\u4E0D\u518D\u6709\u8BED\u8A00\u5207\u6362\u6309\u94AE**\u3002
- * \u547D\u4EE4\u884C\u7248\uFF08\u76F4\u63A5\u7528\u6D4F\u89C8\u5668\u5F00 127.0.0.1:3457\uFF09\u6CA1\u6709\u5BBF\u4E3B\uFF0C\u53EA\u80FD\u6309\u6D4F\u89C8\u5668\u8BED\u8A00\u731C\u4E00\u6B21\u3002
+ * \u76F4\u63A5\u7528\u6D4F\u89C8\u5668\u5F00 127.0.0.1:3457 \u65F6\u6CA1\u6709\u5BBF\u4E3B\uFF0C\u53EA\u80FD\u6309\u6D4F\u89C8\u5668\u8BED\u8A00\u731C\u4E00\u6B21\u3002
  *
  * \u7528\u6237\u7684\u8981\u6C42\uFF1A\u53EA\u6709\u4E2D\u82F1\u4E24\u79CD\u3002Obsidian \u662F\u7B80\u4F53/\u7E41\u4F53\u4E2D\u6587 \u2192 \u7BA1\u7406\u5668\u7528\u4E2D\u6587\uFF0C
  * \u5176\u5B83\u8BED\u8A00\u4E00\u5F8B\u7528\u82F1\u6587\u3002
@@ -4536,7 +4536,7 @@ function refreshDlgsAfterLang() {
 
 // ---- \u660E\u6697\u4E3B\u9898 ----
 // \u63D2\u4EF6\u91CC\u7531 Obsidian \u51B3\u5B9A\uFF08\u5BBF\u4E3B postMessage \u9001 dark/light\uFF09\uFF0C\u6CA1\u6709\u5207\u6362\u6309\u94AE\u3002
-// \u547D\u4EE4\u884C\u7248\u6CA1\u6709\u5BBF\u4E3B\uFF0C\u9000\u56DE\u8DDF\u968F\u7CFB\u7EDF\uFF08prefers-color-scheme\uFF09\u3002
+// \u6CA1\u6709\u5BBF\u4E3B\u65F6\u9000\u56DE\u8DDF\u968F\u7CFB\u7EDF\uFF08prefers-color-scheme\uFF09\u3002
 // data-theme \u5FC5\u987B\u5728\u9996\u5E27\u524D\u8BBE\u597D\uFF0C\u5426\u5219\u4F1A\u4EAE\u2192\u6697\u95EA\u4E00\u4E0B\u3002
 function applyTheme(mode) {
   const root = document.documentElement;
@@ -5217,7 +5217,7 @@ async function setAutoSync(type, value) {
 // ---- \u5355\u5E93\u4FE1\u606F\u6761 ----
 // \u53EA\u663E\u793A\u5F53\u524D\u8FD9\u4E00\u4E2A\u5E93\uFF1A\u5E93\u540D \xB7 \u4ED3\u5E93 \xB7 \u7BC7\u6570 \xB7 \u6253\u5F00\u7F51\u9875 \xB7 \u8BBE\u7F6E\u3002
 // \u4E0D\u94FA\u5361\u7247\u3001\u4E0D\u5360\u4E00\u6574\u5F20\u5361\u7684\u9AD8\u5EA6 \u2014\u2014 \u8FD9\u4E9B\u4FE1\u606F\u4E00\u773C\u5C31\u80FD\u770B\u5B8C\uFF0C\u5360\u4E00\u5927\u5757\u5730\u65B9\u7EAF\u5C5E\u6D6A\u8D39\u9996\u5C4F\u3002
-// \uFF08\u547D\u4EE4\u884C\u7248\u5982\u679C\u914D\u7F6E\u8FC7\u591A\u4E2A\u8FDE\u63A5\uFF0C\u8FD9\u91CC\u7ED9\u4E00\u4E2A\u6781\u7A84\u7684\u4E0B\u62C9\u505A\u5207\u6362\u3002\uFF09
+// \uFF08\u672C\u5730\u8C03\u8BD5\u5165\u53E3\u914D\u7F6E\u8FC7\u591A\u4E2A\u8FDE\u63A5\u65F6\uFF0C\u8FD9\u91CC\u7ED9\u4E00\u4E2A\u6781\u7A84\u7684\u4E0B\u62C9\u505A\u5207\u6362\u3002\uFF09
 function renderVaults() {
   const bar = document.getElementById('vbar');
   if (!bar) return;
@@ -7774,7 +7774,7 @@ function createManager(opts) {
       errPathEscaped: "\u8DEF\u5F84\u8D8A\u754C",
       errForbidden: "\u62D2\u7EDD\u8BBF\u95EE\uFF1A\u53EA\u63A5\u53D7\u672C\u673A\u9875\u9762\u7684\u8BF7\u6C42",
       errPublishing: "\u6B63\u5728\u53D1\u5E03\u4E2D\uFF0C\u8BF7\u7B49\u8FD9\u6B21\u7ED3\u675F\u518D\u8BD5",
-      errPublishingOther: "\u53E6\u4E00\u4E2A\u53D1\u5E03\u7BA1\u7406\u5668\uFF08Obsidian \u63D2\u4EF6\u91CC\u7684\u90A3\u4E2A\uFF0C\u6216\u547D\u4EE4\u884C\u7248\uFF09\u6B63\u5728\u63A8\u9001\uFF0C\u8BF7\u7B49\u5B83\u7ED3\u675F\u518D\u8BD5",
+      errPublishingOther: "\u53E6\u4E00\u4E2A\u53D1\u5E03\u8FDB\u7A0B\uFF08\u53E6\u4E00\u7A97\u53E3\u7684\u53D1\u5E03\u5668\uFF0C\u6216\u672C\u5730\u8C03\u8BD5\u5165\u53E3\uFF09\u6B63\u5728\u63A8\u9001\uFF0C\u8BF7\u7B49\u5B83\u7ED3\u675F\u518D\u8BD5",
       logPublic: (n, c, r) => `\u516C\u5F00\u7B14\u8BB0 ${n} \u7BC7\uFF1A\u65B0\u589E/\u66F4\u65B0 ${c}\uFF0C\u79FB\u9664\u8FC7\u671F ${r}`,
       logSiteName: (prev, want) => `\u5DF2\u66F4\u65B0\u7F51\u9875\u6807\u9898\u7684\u7AD9\u540D\uFF1A${prev ? "\u300C" + prev + "\u300D\u2192 " : ""}\u300C${want}\u300D`,
       logFresh: "\u7EBF\u4E0A\u5DF2\u662F\u6700\u65B0\uFF0C\u65E0\u9700\u63A8\u9001",
@@ -7799,7 +7799,7 @@ function createManager(opts) {
       logThemePushed: (bytes) => `\u81EA\u5B9A\u4E49\u5916\u89C2\u5DF2\u63A8\u9001\uFF08${Math.round(bytes / 1024) || 1}KB\uFF09\uFF0CGitHub Actions \u6784\u5EFA\u4E2D\uFF081~2 \u5206\u949F\u540E\u7F51\u7AD9\u81EA\u52A8\u66F4\u65B0\uFF09`,
       logThemeOtherDirty: (n) => `\u6CE8\u610F\uFF1A\u5DE5\u4F5C\u526F\u672C\u91CC\u8FD8\u6709 ${n} \u5904\u5176\u5B83\u6539\u52A8\u6CA1\u6709\u63D0\u4EA4\uFF0C\u672C\u6B21\u53EA\u63A8\u9001\u4E86\u5916\u89C2\u3002\u8981\u4E00\u5E76\u4E0A\u7EBF\u8BF7\u70B9\u300C\u53D1\u5E03\u300D\u6216\u300C\u66F4\u65B0\u6E90\u7801\u300D\u3002`,
       commitThemeMsg: "\u66F4\u65B0\u81EA\u5B9A\u4E49\u5916\u89C2 ",
-      gitUserName: "\u53D1\u5E03\u7BA1\u7406\u5668",
+      gitUserName: "\u535A\u5BA2\u53D1\u5E03\u5668",
       pickDesc: "\u9009\u62E9\u4F60\u7684 Obsidian \u5E93\u6587\u4EF6\u5939\uFF08\u91CC\u9762\u5E94\u6709 .obsidian \u76EE\u5F55\uFF09",
       // ---- 原始错误的本地化分类（git / 网络 / GitHub 响应本身都是英文的）----
       rawNetwork: "\u8FDE\u4E0D\u4E0A GitHub\uFF08\u591A\u534A\u662F\u52A0\u901F\u5668\u6CA1\u5F00\u6216\u6389\u4E86\uFF0C\u6216\u672C\u673A\u7F51\u7EDC\u4E0D\u901A\uFF09",
@@ -7846,7 +7846,7 @@ function createManager(opts) {
       errPathEscaped: "Path escapes the vault",
       errForbidden: "Forbidden: only local pages may send requests",
       errPublishing: "A publish is already running. Please wait for it to finish.",
-      errPublishingOther: "Another publish manager (the Obsidian plugin one, or the CLI one) is pushing right now. Wait for it to finish.",
+      errPublishingOther: "Another publisher (another window, or the local dev server) is pushing right now. Wait for it to finish.",
       logPublic: (n, c, r) => `${n} public ${n === 1 ? "note" : "notes"}: ${c} added/updated, ${r} stale removed`,
       logSiteName: (prev, want) => `Site title updated: ${prev ? '"' + prev + '" \u2192 ' : ""}"${want}"`,
       logFresh: "Already up to date \u2014 nothing to push",
@@ -8651,7 +8651,7 @@ function createManager(opts) {
         server.removeListener("error", onError);
         const actualPort = server.address() ? server.address().port : PORT;
         const { conn, vaultPath } = activeConfig();
-        log(`[manager] Publish manager: http://localhost:${actualPort}`);
+        log(`[manager] Dev server: http://localhost:${actualPort}`);
         log(`[manager] Active connection: ${conn ? conn.name : "(none)"}; vault path: ${vaultPath || "(not set)"}`);
         log(`[manager] Source directory: ${TOOL_ROOT}`);
         log(`[manager] Data directory:   ${DATA_DIR}`);

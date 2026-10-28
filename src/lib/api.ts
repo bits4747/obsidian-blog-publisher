@@ -209,7 +209,7 @@ function emptyDetail(slug: string): NoteDetail {
 // 静态站是**纯只读**的：数据在构建时导出成 /data/*.json，随站点一起托管。
 // 因此这里没有任何"管理"类接口 —— 与全栈版不同的是，全栈版那些函数
 // （改公开、删笔记、上传、统计、发布）在静态站**根本不存在**，
-// 组件里也不应引用；需要这些能力请用全栈版或发布管理器。
+// 组件里也不应引用；需要这些能力请用全栈版或博客发布器。
 
 export async function fetchSiteInfo(): Promise<SiteInfo> {
   const { SITE_NAME } = await import('@/lib/site')

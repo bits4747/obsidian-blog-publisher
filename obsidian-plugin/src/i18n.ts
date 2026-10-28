@@ -117,7 +117,7 @@ const ZH: Strings = {
   pluginStartFail: (m) => '博客发布器启动失败：' + m,
   settingsTitle: '博客发布器',
   settingsDataDesc:
-    '数据目录与命令行版发布管理器共用（默认 %APPDATA%\\obsidian-blog），所以两边的连接、令牌、发布流水是同一份。',
+    '连接、令牌、发布流水都存在系统用户目录，换库、重装插件都不丢。',
   settingsOpenName: '打开发布器',
   settingsOpenDesc: '也可以点左侧栏的图标，或用命令面板「打开博客发布器」',
   settingsOpenBtn: '打开',
@@ -171,7 +171,7 @@ const EN: Strings = {
   pluginStartFail: (m) => 'Blog publisher failed to start: ' + m,
   settingsTitle: 'Blog publisher',
   settingsDataDesc:
-    'Shares the same data directory as the command-line manager (default %APPDATA%\\obsidian-blog), so connections, tokens and publish history are one and the same.',
+    'Connections, tokens and publish history live in your user data folder, so they survive reinstall and vault changes.',
   settingsOpenName: 'Open publisher',
   settingsOpenDesc: 'You can also click the ribbon icon or use the "Open blog publisher" command',
   settingsOpenBtn: 'Open',

@@ -2,61 +2,59 @@
 
 把 Obsidian 笔记发布成 GitHub Pages 静态博客。
 
-不用为了发布另建一个库：私人笔记和公开笔记放在一起，公开与否只是 frontmatter 里的一个 `public: true`。管理器逐篇勾选、一键推送，站点由 GitHub Actions 自动构建部署。
+不用为了发布另建一个库：私人笔记和公开笔记放在一起，公开与否只是 frontmatter 里的一个 `public: true`。发布器逐篇勾选、一键推送，站点由 GitHub Actions 自动构建部署。
 
 ![博客首页](docs/screenshots/home.png)
 
-## 特性一览
+## 优势一览
 
 - **同一个库，公私有别**——`public: true` 的笔记才会被读取、才会进仓库；私密笔记不参与构建
-- **图形化管理器**——本地网页，逐篇开关、批量操作、搜索筛选、变更三栏、自动同步
-- **Obsidian 插件**——公开开关直接长在 Obsidian 原生文件树上，不必另开网页
+- **公开开关长在文件树上**——每篇笔记右边一个小开关，文件夹标题栏有「全部公开 / 全部私密」，不用另开网页
 - **复刻 Obsidian 的阅读体验**——双链、嵌入、callout、公式、标签、块引用、悬浮预览、可拖拽大纲
 - **自定义外观**——粘贴一段 CSS 就能换配色与首页排版，内置六套预设（加「默认」共七项）带预览图，不用改代码
 - **纯静态**——无数据库、无账号、无服务端，构建产物可以直接丢到任何静态托管
+- **中英双语**——界面跟随 Obsidian 的语言设置，站点可随时切换
 
-## 快速开始
+## 安装
 
-需要 [Node.js](https://nodejs.org) 20.9+、[Git](https://git-scm.com)、一个 GitHub 账号。
+这是 Obsidian 插件。先把本仓库下载到本地，把 `obsidian-plugin/` 下的三个文件拷进你的库：
 
-```bash
-git clone <本项目地址> obsidian-blog
-cd obsidian-blog
-npm install
-npm run manage
+```
+<你的库>/.obsidian/plugins/blog-publisher/
+├── main.js
+├── worker.js
+└── manifest.json
 ```
 
-Windows 也可以直接双击 `启动管理器.bat`。浏览器打开 `http://localhost:3457`。
+然后在 Obsidian 设置 → 第三方插件里启用「博客发布器」（需要先关掉「安全模式」）。
 
-### 1. 连接你的库
+准备一个 GitHub 账号即可开始，本机还要装 [Git](https://git-scm.com)（发布时要推送，插件自己不带 git）。
 
-点右上角「设置」→「选择本地库文件夹」，选你的 Obsidian 库（必须是含 `.obsidian` 目录的根目录，选错会被拒绝）。
+## 第一次使用
 
-### 2. 填名字
+### 1. 建连接
 
-同一个设置页里填博客名。它同时是管理器里的显示名、网页标题和站点左上角的站名。
-
-### 3. 建仓库
-
-切到「帮我新建一个仓库」，填仓库名，点「在 GitHub 上创建」。管理器会建好仓库并自动启用 Pages。
+点右上角「设置」：本地库默认就是当前打开的这个库，填个博客名，再选「帮我新建一个仓库」，填仓库名点「在 GitHub 上创建」。
 
 已经有仓库的话，切到「我已经有仓库了」粘贴地址即可。Pages 不必手动开——首次发布成功后会自动启用，已经开过的不会重复创建。
 
-### 4. 授权
+博客名同时是发布器里的显示名、网页标题和站点左上角的站名。
+
+### 2. 授权
 
 点「GitHub 授权」，按弹窗里的步骤生成 Personal access token (classic)，勾选 `repo` 和 `workflow` 两个 scope，粘贴保存。
 
 有效期建议选「No expiration」。令牌过期后发布、建仓库、自动建站会一起失败，而报错信息看不出是过期。令牌只存在本机，不进仓库。
 
-### 5. 选笔记并发布
+### 3. 选笔记并发布
 
 打开要公开的笔记的开关，点「⟳ 发布到 GitHub」。等 1~2 分钟，访问 `https://你的用户名.github.io/仓库名/`。
 
-## 发布管理器
+## 发布器界面
 
-本地网页，管公开状态与发布。界面语言与明暗跟随系统。
+点左侧栏的图标，或命令面板里的「打开博客发布器」，主区域会开一个标签页。界面的语言与明暗跟随 Obsidian。
 
-![发布管理器](docs/screenshots/manager.png)
+![博客发布器](docs/screenshots/manager.png)
 
 | 功能 | 说明 |
 |---|---|
@@ -66,7 +64,7 @@ Windows 也可以直接双击 `启动管理器.bat`。浏览器打开 `http://lo
 | 搜索筛选 | 按标题和路径过滤，先筛再批量 |
 | 折叠 | 每个文件夹可收起，另有「一键展开 / 一键收起」 |
 | 变更三栏 | 新增 / 修改 / 删除三类改动分三栏列出，新增的可以在这一栏直接开公开开关。只列**需要你手动处理**的：自动同步开关开着的类别由后台自己发，不进三栏；如果最近一次自动同步推送失败，那几类会重新回到三栏提醒 |
-| 自动同步 | 三类改动各一个开关，勾选后该类改动自动发布，不必再点「发布」；默认「修改」开，「新增 / 删除」关。改了文件约 2.5 秒后自动提交推送，但**只在管理器进程开着时生效** |
+| 自动同步 | 三类改动各一个开关，勾选后该类改动自动发布，不必再点「发布」；默认「修改」开，「新增 / 删除」关。改了文件约 2.5 秒后自动提交推送，但**只在 Obsidian 开着时生效** |
 | 同步流水 | 自动同步那一行下方列出最近几次后台动作：开始推送的时刻、动了哪些文件、推没推上去、成功更新的时刻、两者相隔多久。推送失败、构建失败、构建超时都各留一条记录。存本地配置，重启不丢 |
 | 结果弹窗 | 每次「发布 / 更新源码 / 保存外观」都在右上角弹一张卡片，从转圈开始，最后定格成 ✓ 或 ✗，失败可展开日志。**没有关闭按钮，也不会自动消失，点卡片任意位置才收起** |
 | 构建诊断 | 推送成功后不只看线上产物，还会查 GitHub Actions 这次的结论：卡住或失败会明确说「构建失败」「构建超时」，并可直接点开 Actions 页面 |
@@ -77,7 +75,7 @@ Windows 也可以直接双击 `启动管理器.bat`。浏览器打开 `http://lo
 
 站点的**功能**与**外观**是分开的：功能由源码里的 React 组件实现，外观集中在两处可覆盖的地方——CSS 变量（颜色、圆角、字体）和 `data-region` 选择器（首页与列表的排版）。所以不用改一行代码，写 CSS 就能换一套皮肤。
 
-管理器右上角点「外观」，从下拉框里选一套预设（鼠标停在名字上能看简介，选中后下方显示这套的**预览图**），它会填进编辑框，再改成自己的。自己写的 CSS 无法预渲染，所以选「自定义」时不显示预览图。
+发布器右上角点「外观」，从下拉框里选一套预设（鼠标停在名字上能看简介，选中后下方显示这套的**预览图**），它会填进编辑框，再改成自己的。自己写的 CSS 无法预渲染，所以选「自定义」时不显示预览图。
 
 ![外观面板](docs/screenshots/theme.png)
 
@@ -170,32 +168,26 @@ body { font-family: "Songti SC", Georgia, serif; }
 
 站点支持中英切换与明暗主题，阅读偏好（字号、折叠、筛选）本地记住。
 
-## Obsidian 插件
+## 插件做了哪些事
 
-同一个发布管理器也做成了 Obsidian 插件，不必再挂一个后台进程。
-
-**装法**：把 `obsidian-plugin/` 下的 `main.js`、`worker.js`、`manifest.json` 拷到 `<你的库>/.obsidian/plugins/blog-publisher/`，在 Obsidian 设置 → 第三方插件里启用「博客发布器」。
-
-**用起来是什么样**
-
-- 左侧文件树里，每篇笔记右边一个小开关（24×13），点一下就能改公开状态——写的就是 frontmatter 里的 `public` 字段，和管理器完全同一份数据
+- 左侧文件树里，每篇笔记右边一个小开关（24×13），点一下就能改公开状态——写的就是 frontmatter 里的 `public` 字段
 - 每个文件夹标题右边有 `已公开数/总数` 和「公开」「私密」两个按钮，点哪个就是整夹变成哪个状态。用两个按钮而不是一个开关，是因为开关只有一个方向，一个部分公开的文件夹点下去只能被推断成「全公开」
 - 文件树顶部工具条有同样的按钮，管全库，点下去会先弹一次确认
 - 三种状态：全公开、全私密、部分公开（两个都不点亮，配合行尾的 `3/6` 计数一眼看出是混合状态）
-- 主区域开一个「博客发布器」标签页，里面是完整的管理器界面，功能与网页版一致
+- 主区域开的「博客发布器」标签页里是完整的发布界面，功能与上一节列的一致
 
 **几点需要知道的**
 
-- 插件版和命令行版共用同一份数据目录，连接、令牌、流水都是同一套；两个同时开着会抢同一个端口，只开一个
 - 首次启用时插件会把站点源码模板（42 个文件，约 408 KB）铺到数据目录的 `site-template/`，之后「更新源码」用它推送站点代码
 - 模板带内容指纹：升级插件后会自动重铺，不需要手动删目录
-- 文件树上的开关只在**当前库就是管理器配置的那个库**时生效，库对不上会提示一次并停用
+- 文件树上的开关只在**当前库就是发布器配置的那个库**时生效，库对不上会提示一次并停用
 - 界面的语言与明暗跟随 Obsidian（简体/繁体中文都算中文，其它语言算英文）
+- 每篇笔记的公开开关写进 frontmatter，所以笔记本身换了库、换了电脑，公开状态还是跟着走
 
 ## 常见问题
 
 **发布后网站没变？**
-GitHub Actions 要跑 1~2 分钟。管理器的结果弹窗会显示「正在构建部署…已等 N 秒」，完成后变成「已上线（用时 N 秒）」。超过 4 分钟还没上线，弹窗会提示去仓库的 Actions 页面看构建日志。
+GitHub Actions 要跑 1~2 分钟。发布器的结果弹窗会显示「正在构建部署…已等 N 秒」，完成后变成「已上线（用时 N 秒）」。超过 4 分钟还没上线，弹窗会提示去仓库的 Actions 页面看构建日志。
 
 **发布失败，说是推送失败？**
 先看弹窗里展开的日志。最常见的是令牌过期——症状是发布、建仓库、自动建站一起失败，报错信息看不出原因。重新生成一个 token 再粘进去即可。
@@ -207,15 +199,18 @@ GitHub Actions 要跑 1~2 分钟。管理器的结果弹窗会显示「正在构
 不能。外观只开放 CSS（见上文「为什么只给 CSS」）。加栏目属于功能改动，要改 React 源码。
 
 **想用自己的域名。**
-在 GitHub 仓库的 Settings → Pages 里填 Custom domain，再把 DNS 指过去。这一步在 GitHub 上做，管理器不涉及。
+在 GitHub 仓库的 Settings → Pages 里填 Custom domain，再把 DNS 指过去。这一步在 GitHub 上做，发布器不涉及。
 
-**能在本地先看看效果吗？**
-`npm run build` 之后 `npm run preview`，打开 `http://localhost:8080`。
+**安装插件时报「无法加载」？**
+先确认 `main.js`、`worker.js`、`manifest.json` 三个文件都在 `<库>/.obsidian/plugins/blog-publisher/` 里，目录名不要改。再确认本机装了 Git（发布要推送），Obsidian 处于「第三方插件」已开启的状态。
+
+**能在本地先看看站点效果吗？**
+`npm run build` 之后 `npm run preview`，打开 `http://localhost:8080`。这需要源码仓库，不是插件使用者的必需步骤。
 
 **可以跑多个博客吗？**
-可以。管理器里可以配多个连接，一个连接对应一个库和一个仓库。不过插件形态下没有切换入口——Obsidian 一次只开一个库，插件会按当前库自动选中对应连接。
+可以。一个 Obsidian 库对应一个博客，在库里配一条连接即可。换库就是换博客，发布器会按当前打开的库自动对上它的连接——插件里没有「切换」按钮，因为 Obsidian 一次只开一个库。
 
-**自动同步在关掉管理器后还会跑吗？**
+**自动同步在关掉发布器后还会跑吗？**
 不会，这是有意的：自动推 git 不该在没人看着的时候跑。
 
 ## 数据存放位置
@@ -230,7 +225,7 @@ GitHub Actions 要跑 1~2 分钟。管理器的结果弹窗会显示「正在构
 
 内含 `connections.json`（博客连接清单）、`local.json`（GitHub 令牌、各连接的本地库路径）、`repos/<连接id>/`（仓库工作副本）、`content/`（公开笔记镜像）、`build/`（构建产物）。
 
-想改到别处（U 盘、同步盘）：设环境变量 `OBSIDIAN_BLOG_DATA` 后重启管理器。
+想改到别处（U 盘、同步盘）：设环境变量 `OBSIDIAN_BLOG_DATA` 后重启 Obsidian。
 
 ## 工作原理
 
@@ -238,7 +233,7 @@ GitHub Actions 要跑 1~2 分钟。管理器的结果弹窗会显示「正在构
 你的 Obsidian 库（私人笔记 + 公开笔记混放）
    │  ① 只读取 public: true 的笔记及其引用的附件
    ▼
-发布管理器（本机 localhost:3457）
+博客发布器（Obsidian 里的插件，后台子进程跑同一套内核）
    │  ② git add / commit / push
    ▼
 GitHub 内容仓库（Markdown 原文）
@@ -251,18 +246,27 @@ GitHub Pages
 
 ## 本地开发
 
+这套代码同时是站点源码和一个 Obsidian 插件。改站点样式、Markdown 管线或发布逻辑，都在这个仓库里做。
+
 ```bash
 npm run dev        # 开发服务器 → http://localhost:3010
 npm run build      # 完整构建（生成内容 + 静态导出 + 搬运产物）
 npm run preview    # 预览构建产物 → http://localhost:8080
-npm run manage     # 启动发布管理器 → http://localhost:3457
 npm run typecheck  # 站点与插件的类型检查
 npm run plugin     # 打包 Obsidian 插件（main.js / worker.js）
 npm run presets    # 从 themes/*.css 重新生成内置预设
 npm test           # 端到端回归测试
 ```
 
-`npm run dev` 需要内容已生成——全新克隆先跑一次 `npm run build`，或用管理器连接一个库。
+调试发布逻辑时可以在浏览器里开同一个界面，比反复重载插件快：
+
+```bash
+npm run dev:manager   # → http://localhost:3457
+```
+
+它跑的是插件用的同一份内核（`scripts/manager-core.mjs`），只把界面换成浏览器打开，方便看请求与日志。`npm test` 也是靠它起实例的。**它不是给使用者准备的使用方式**——插件形态下界面就在 Obsidian 里，不需要另挂进程。
+
+`npm run dev` 需要内容已生成——全新克隆先跑一次 `npm run build`，或用发布器连一个库。
 
 ### 改内置预设
 
@@ -279,7 +283,7 @@ python tools/preview/pack-theme-previews.py      # 4. 压成 scripts/theme-previ
 
 第 3 步需要本机装了 Chrome（不在默认路径时用 `CHROME` 环境变量指定），第 4 步需要 Python 的 Pillow。示例内容是刻意造的假笔记：预览图会打包进插件随源码分发，不能出现任何真实笔记。
 
-`npm test`（即 `bash scripts/e2e-run.sh`）用独立的临时数据目录起一个管理器实例跑完整回归，不会碰你已有的连接、令牌与本地库。**不要直接跑 `node scripts/e2e-test.mjs`**：它会建/删连接，没有临时数据目录时会把测试连接写进你真实的配置目录（脚本现在会直接拒绝运行并提示改用上面的命令）。
+`npm test`（即 `bash scripts/e2e-run.sh`）用独立的临时数据目录起一个服务实例跑完整回归，不会碰你已有的连接、令牌与本地库。**不要直接跑 `node scripts/e2e-test.mjs`**：它会建/删连接，没有临时数据目录时会把测试连接写进你真实的配置目录（脚本现在会直接拒绝运行并提示改用上面的命令）。
 
 部署到自己的服务器：`npm run build` 后，把用户数据目录下 `build/site/` 的内容拷到任意静态服务器。
 
@@ -287,16 +291,16 @@ python tools/preview/pack-theme-previews.py      # 4. 压成 scripts/theme-previ
 
 ```
 obsidian-blog/
-├── README.md / LICENSE / CHANGELOG.md / 启动管理器.bat
+├── README.md / LICENSE / CHANGELOG.md
 ├── package.json                 依赖与脚本入口
 ├── next.config.ts               Next 配置（output: 'export'，支持 basePath）
 ├── .github/workflows/deploy.yml 构建并部署到 Pages
 ├── docs/screenshots/            README 用的截图
 │
 ├── scripts/
-│   ├── manager.mjs              ★ 命令行启动器（解析数据目录 → 起服务）
-│   ├── manager-core.mjs         ★ 发布管理器内核（HTTP 服务 + 全部接口）
-│   ├── ui-template.mjs          ★ 管理界面 HTML/CSS/JS（内核与插件共用同一份）
+│   ├── manager-core.mjs         ★ 发布内核（HTTP 服务 + 全部接口，插件与本地调试共用）
+│   ├── ui-template.mjs          ★ 界面 HTML/CSS/JS（插件与本地调试共用同一份）
+│   ├── manager.mjs              本地调试入口：在 Obsidian 外起内核（e2e 也用它）
 │   ├── build-content.mjs        ★ 内容编译器（Markdown → JSON）+ 产物搬运
 │   ├── theme-presets.mjs        内置外观预设（由 themes/*.css 生成）
 │   ├── theme-previews.mjs       预设预览图（base64 PNG）
@@ -338,7 +342,7 @@ obsidian-blog/
 | Markdown | react-markdown + remark/rehype 插件链 | 标准 AST 管线，Obsidian 语法以插件接入 |
 | 公式 | KaTeX | 能同步渲染，大纲也要用 |
 | 状态 | zustand + persist | 阅读偏好持久化，无账号体系 |
-| 管理界面 | 原生 JS（内嵌在 manager-core.mjs） | 本地工具，不值得再引一套构建链 |
+| 发布界面 | 原生 JS（内嵌在 ui-template.mjs） | 本地工具，不值得再引一套构建链 |
 | 部署 | GitHub Actions + Pages | 免费，无需服务器 |
 
 渲染管线：`remark-gfm`（表格 / 任务列表 / 删除线）→ `remark-math`（公式）→ **`remark-obsidian`**（双链 / 嵌入 / callout / 高亮 / 标签）→ `rehype-raw` → **`rehype-safety`**（安全净化）→ `rehype-highlight`（代码高亮）→ `rehype-katex`（公式渲染）。加粗的两个是本项目插件。

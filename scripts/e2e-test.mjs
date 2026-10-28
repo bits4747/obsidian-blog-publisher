@@ -1,4 +1,4 @@
-/* 发布管理器端到端回归测试（18 个检查点，覆盖多库切换、发布、公开开关、api() 方法不退化等）。
+/* 博客发布器端到端回归测试（18 个检查点，覆盖多库切换、发布、公开开关、api() 方法不退化等）。
  * 运行：bash scripts/e2e-run.sh —— 它会用独立的临时数据目录起管理器、跑完测试再清理，
  * 不会碰你已有的连接与令牌。必须有 Node 与 git；全新用户首次运行会跑 npm install。 */
 import { spawnSync } from 'node:child_process'
@@ -367,7 +367,7 @@ console.log('\n=== 16. 插件嵌入模式不显示「切换库」下拉，改按
 
   // 1) 下拉只在非嵌入模式出现
   ok(/embedded\s*=\s*document\.body\.classList\.contains\('embed-mode'\)/.test(uiSrc), '识别嵌入模式（embed-mode）')
-  ok(/S\.connections\.length\s*>\s*1\s*&&\s*!embedded/.test(uiSrc), '多连接下拉在插件里不渲染（命令行版保留）')
+  ok(/S\.connections\.length\s*>\s*1\s*&&\s*!embedded/.test(uiSrc), '多连接下拉在插件里不渲染（本地调试入口保留）')
 
   // 2) 插件把当前库路径传给界面，界面据此自动选中连接
   ok(/vault=/.test(pluginSrc) && /encodeURIComponent\(vaultPath\)/.test(pluginSrc), '插件把当前库路径传给 iframe')
@@ -395,7 +395,7 @@ console.log('\n=== 16. 插件嵌入模式不显示「切换库」下拉，改按
 
 console.log('\n=== 17. 跨进程发布互斥 + 「推送被拒但远端已有」不算失败 ===')
 // 用户报的：「把公开文章变私密后日志显示推送失败，同时没有弹窗提示」。
-// 根因之一：命令行版管理器与 Obsidian 插件里的管理器共用同一个数据目录与同一批
+// 根因之一：本地调试入口与 Obsidian 插件里的发布器共用同一个数据目录与同一批
 // git 工作副本，各自只有进程内的 PUBLISHING 变量，挡不住对方。转私密时两边几乎
 // 同时推送，先跑的推上去了，后跑的报「推送失败」—— 其实内容已经上线。
 {
@@ -424,7 +424,7 @@ console.log('\n=== 17. 跨进程发布互斥 + 「推送被拒但远端已有」
   })
   const busyJson = await busy.json().catch(() => ({}))
   ok(busy.status === 409, '另一个进程持锁时发布返回 409，实际 ' + busy.status)
-  ok(/另一个发布管理器/.test(String(busyJson.error || '')), '提示说明了是另一个管理器在推送')
+  ok(/另一个发布进程/.test(String(busyJson.error || '')), '提示说明了是另一个进程在推送')
   fs.rmSync(lockFile, { force: true })
   const after = await api('/api/publish', {})
   ok(after.failed !== true, '锁释放后可以正常发布')

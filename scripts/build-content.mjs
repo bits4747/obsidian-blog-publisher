@@ -19,7 +19,7 @@ import matter from 'gray-matter'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
 /**
- * 内容目录：优先用发布管理器所在的用户数据目录里的 content/，
+ * 内容目录：优先用博客发布器所在的用户数据目录里的 content/，
  * 其次用环境变量 CONTENT_DIR，最后才用仓库里的 content/（CI 走这条）。
  *
  * 这样源目录（可以开源的那份）里不放任何个人笔记，
@@ -76,7 +76,7 @@ const IS_CI = !!(process.env.CI || process.env.GITHUB_ACTIONS)
 
 /**
  * 站名（网页左上角标题 / <title>）从仓库里的 site-name.txt 读，
- * 由发布管理器在发布时写入并随本次提交一起推上来。
+ * 由博客发布器在发布时写入并随本次提交一起推上来。
  *
  * 这样网页标题不依赖 GitHub 的 Actions 变量接口：
  *   - 推送这条路一直是通的，名字跟着代码走，改名 + 发布即可生效；
@@ -364,7 +364,7 @@ const isPublicMd = (p) => /\.(md|markdown)$/i.test(p)
  *
  * 为什么需要：git 不保存文件 mtime，CI 全新 checkout 后每篇笔记的 mtime
  * 都是 checkout 那一刻，于是线上所有笔记的日期都变成部署日、排序也全乱。
- * 发布时间在用户本机，能读到真实 mtime/birthtime，所以由发布管理器把它们
+ * 发布时间在用户本机，能读到真实 mtime/birthtime，所以由博客发布器把它们
  * 记下来随 content/ 一起提交，构建时优先用这份清单。
  */
 const META_FILE = path.join(CONTENT, '.blog-meta.json')
@@ -387,7 +387,7 @@ if (FINALIZE_ONLY) {
 
 const rels = fsSync.existsSync(CONTENT) ? walk(CONTENT) : []
 if (rels.length === 0) {
-  console.log('[build-content] content/ 为空：先运行发布管理器（npm run manage）推送公开笔记')
+  console.log('[build-content] content/ 为空：先在 Obsidian 里用博客发布器推送公开笔记')
 }
 
 const mdRels = rels.filter(isPublicMd)
@@ -398,7 +398,7 @@ const assetRels = rels.filter((p) => !isPublicMd(p) && ASSET_EXTS.has(path.extna
 if (mdRels.length === 0) {
   console.error(
     '[build-content] content/ 里没有任何公开笔记 —— 拒绝构建空站点。' +
-      '先运行发布管理器（npm run manage）把笔记标为公开并发布；确实要构建空站请设 ALLOW_EMPTY=1。'
+      '先在 Obsidian 里用博客发布器把笔记标为公开并发布；确实要构建空站请设 ALLOW_EMPTY=1。'
   )
   if (!process.env.ALLOW_EMPTY) process.exit(1)
 }
@@ -667,7 +667,7 @@ await fs.writeFile(
     // 才能立刻按新标记去取笔记，不用等缓存过期。
     releaseTag,
     // Actions 会给每个步骤自动注入 GITHUB_SHA，不需要改 workflow。
-    // 发布管理器用它判断「线上这一版是不是我刚推的那次提交」，比比时间更准（不受本机时钟影响）。
+    // 博客发布器用它判断「线上这一版是不是我刚推的那次提交」，比比时间更准（不受本机时钟影响）。
     commit: process.env.GITHUB_SHA || '',
     generatedAt: new Date().toISOString(),
   })
@@ -702,8 +702,8 @@ await fs.writeFile(
   path.join(generatedDir, 'site-name.generated.ts'),
   [
     '// 本文件由 scripts/build-content.mjs 自动生成，请勿手改。',
-    '// 值来自仓库根目录的 site-name.txt（发布管理器在发布时写入）。',
-    '// 改站名请用发布管理器，或直接改 site-name.txt 后重新发布。',
+    '// 值来自仓库根目录的 site-name.txt（博客发布器在发布时写入）。',
+    '// 改站名请用博客发布器，或直接改 site-name.txt 后重新发布。',
     `export const SITE_NAME = ${JSON.stringify(siteName.name)}`,
     '',
   ].join('\n')
@@ -743,8 +743,8 @@ await fs.writeFile(
   path.join(generatedDir, 'theme.generated.ts'),
   [
     '// 本文件由 scripts/build-content.mjs 自动生成，请勿手改。',
-    '// 值来自仓库里的 public/theme.css（库主人在发布管理器的「外观」里保存的自定义 CSS）。',
-    '// 想改外观请用发布管理器，不要手改这个文件。',
+    '// 值来自仓库里的 public/theme.css（库主人在博客发布器的「外观」里保存的自定义 CSS）。',
+    '// 想改外观请用博客发布器，不要手改这个文件。',
     `export const THEME_EXISTS = ${themeCss.exists}`,
     `export const THEME_VERSION = ${JSON.stringify(themeCss.version)}`,
     '',

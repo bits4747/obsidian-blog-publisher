@@ -199,7 +199,7 @@ export const UI = `<!DOCTYPE html>
                  background: var(--accent-soft); font-weight: 500; }
   .vbar .vlink:hover { background: var(--accent-soft-hover); text-decoration: underline; }
   .vbar .vlink.hidden { display: none; }
-  /* 多连接时（只有命令行版会遇到）的紧凑下拉 */
+  /* 多连接时的紧凑下拉（本地调试入口才会遇到） */
   .vbar select { padding: 2px 6px; font-size: 13px; border-radius: 6px; }
 
   /* ---- 新建连接：一步一个库 + 一个仓库 ---- */
@@ -328,7 +328,7 @@ export const UI = `<!DOCTYPE html>
 </style></head><body>
 
 <div class="statusbar"><div class="inner">
-  <span class="title" data-i18n="appTitle">发布管理器</span>
+  <span class="title" data-i18n="appTitle">博客发布器</span>
   <span class="spacer"></span>
   <button class="mini" id="authBtn" onclick="openAuthDialog()" data-i18n="authBtn">GitHub 授权</button>
   <button class="mini" id="srcBtn" onclick="doUpdateSource()" data-i18n="srcBtn">⬆ 更新源码</button>
@@ -415,7 +415,7 @@ let S = { connections: [], active: null, vaultPath: '', vaultOk: false, notes: [
 // 注意：这一段在服务端 UI 模板字面量里，所以全程只用单引号拼接，不能出现反引号与美元花括号。
 const DICT = {
   zh: {
-    appTitle: '发布管理器',
+    appTitle: '博客发布器',
     publishBtn: '⟳ 发布到 GitHub',
     srcBtn: '⬆ 更新源码',
     updatingSrc: '正在更新源码…',
@@ -654,7 +654,7 @@ const DICT = {
     ok: '完成',
   },
   en: {
-    appTitle: 'Publish Manager',
+    appTitle: 'Blog Publisher',
     publishBtn: '⟳ Publish to GitHub',
     srcBtn: '⬆ Update source',
     updatingSrc: 'Updating source…',
@@ -897,7 +897,7 @@ function guessLang() {
  *
  * 插件里（?embed=1）由 Obsidian 决定：宿主把语言当查询参数传进来，
  * 之后主题/语言一变还会 postMessage 通知，所以**不再有语言切换按钮**。
- * 命令行版（直接用浏览器开 127.0.0.1:3457）没有宿主，只能按浏览器语言猜一次。
+ * 直接用浏览器开 127.0.0.1:3457 时没有宿主，只能按浏览器语言猜一次。
  *
  * 用户的要求：只有中英两种。Obsidian 是简体/繁体中文 → 管理器用中文，
  * 其它语言一律用英文。
@@ -1011,7 +1011,7 @@ function refreshDlgsAfterLang() {
 
 // ---- 明暗主题 ----
 // 插件里由 Obsidian 决定（宿主 postMessage 送 dark/light），没有切换按钮。
-// 命令行版没有宿主，退回跟随系统（prefers-color-scheme）。
+// 没有宿主时退回跟随系统（prefers-color-scheme）。
 // data-theme 必须在首帧前设好，否则会亮→暗闪一下。
 function applyTheme(mode) {
   const root = document.documentElement;
@@ -1692,7 +1692,7 @@ async function setAutoSync(type, value) {
 // ---- 单库信息条 ----
 // 只显示当前这一个库：库名 · 仓库 · 篇数 · 打开网页 · 设置。
 // 不铺卡片、不占一整张卡的高度 —— 这些信息一眼就能看完，占一大块地方纯属浪费首屏。
-// （命令行版如果配置过多个连接，这里给一个极窄的下拉做切换。）
+// （本地调试入口配置过多个连接时，这里给一个极窄的下拉做切换。）
 function renderVaults() {
   const bar = document.getElementById('vbar');
   if (!bar) return;

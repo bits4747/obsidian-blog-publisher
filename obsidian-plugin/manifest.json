@@ -1,9 +1,9 @@
 {
   "id": "blog-publisher",
   "name": "博客发布器",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "minAppVersion": "1.5.0",
-  "description": "把 Obsidian 笔记发布成静态博客：图形化选择哪些笔记公开、一键推送到 GitHub、自动同步、变更流水与上线进度。与命令行版发布管理器功能完全一致。",
+  "description": "把 Obsidian 笔记发布成静态博客：图形化选择哪些笔记公开、一键推送到 GitHub、自动同步、变更流水与上线进度。",
   "author": "bits47",
   "authorUrl": "https://github.com/bits4747",
   "isDesktopOnly": true

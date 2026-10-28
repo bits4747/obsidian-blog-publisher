@@ -3,7 +3,7 @@
  *
  * manager-core 的 initTemplate() 需要一个「模板根目录」（里面有 package.json、
  * src/、scripts/build-content.mjs、.github/ 等），新建连接时从它复制到仓库工作副本。
- * 命令行版的模板根目录就是 blog-static 源码目录；插件版没有源码目录，
+ * 源码仓库里模板根目录就是 blog-static 本身；插件版没有源码目录，
  * 所以首次需要时把打包进来的文件表铺到一个缓存目录，再把那个目录当作 toolRoot。
  */
 

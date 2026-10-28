@@ -2,7 +2,7 @@
 export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || ''
 
 // 站名（网页左上角标题 / <title>）：优先级从高到低
-//   1. site-name.txt —— 发布管理器在发布时写入仓库并随提交推上来（改名+发布即生效，
+//   1. site-name.txt —— 博客发布器在发布时写入仓库并随提交推上来（改名+发布即生效，
 //      不依赖 GitHub 的 Actions 变量接口，换机器/换网络都一样）
 //   2. NEXT_PUBLIC_SITE_NAME —— 兼容旧的 Actions 变量方式
 //   3. 「笔记」—— 中性兜底，绝不回退到某个具体人名

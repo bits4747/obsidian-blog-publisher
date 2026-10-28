@@ -95,7 +95,7 @@ fs.writeFileSync(tplPath, tpl.code, 'utf8')
  * 副本字节不一致属于部署遗漏，不是代码问题，所以让它跟着构建一起发生。
  *
  * 库路径来源：<数据目录>/local.json 的 vaultPaths（管理器「设置」里选的那个库），
- * 取当前 active 连接；命令行版没设过库时跳过，只打印提示。
+ * 取当前 active 连接；还没配过库时跳过，只打印提示。
  * 传 --no-deploy 可跳过（例如只想看构建结果）。
  */
 function deployToVault() {

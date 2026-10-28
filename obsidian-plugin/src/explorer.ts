@@ -8,7 +8,7 @@ import { hostLang, strings, type Strings } from './i18n.js'
  * 网格等于让用户在两个地方看同一批文件，而且两边折叠状态、排序、搜索都不同步。
  * 这里把公开状态贴到原生树的行上，用户在自己的文件树上就能直接点。
  *
- * 状态来源是发布管理器的 /api/state（它扫库读 frontmatter），点击调 /api/toggle。
+ * 状态来源是发布器的 /api/state（它扫库读 frontmatter），点击调 /api/toggle。
  * 所以插件界面（iframe）与这里的开关永远是同一份数据。
  *
  * 为什么用 requestUrl 而不是 fetch：Obsidian 的渲染进程跑在 app://obsidian.md 下，

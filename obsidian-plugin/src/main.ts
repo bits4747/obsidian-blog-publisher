@@ -114,7 +114,7 @@ function getUtilityProcess(): { fork: (p: string, a: string[], o?: Record<string
   return null
 }
 
-/** 插件把「模板根目录」铺在哪：与命令行版共用同一个用户数据目录 */
+/** 插件把「模板根目录」铺在哪：与其他运行方式共用同一个用户数据目录 */
 function dataRoot(): string {
   const fromEnv = (process.env.OBSIDIAN_BLOG_DATA || '').trim()
   if (fromEnv) return nodePath.resolve(fromEnv)

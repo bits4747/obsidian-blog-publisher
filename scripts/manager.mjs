@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * 发布管理器（命令行入口）
+ * 发布内核的本地调试入口
  *
- * 浏览器打开 http://localhost:3457
- *   - 连接管理：多个「本地库 ↔ GitHub 仓库」连接，图形化新建/切换，一键建立同步
- *   - 笔记管理：分栏文件夹视图，逐篇/按文件夹/全局切换公开状态（写 frontmatter public: true）
- *   - 一键发布：把公开笔记（含新增/修改/删除）完整同步到所连仓库并推送，GitHub Actions 自动构建上线
+ * 用户实际用的是 Obsidian 插件，界面开在 Obsidian 里。这个文件只是让内核
+ * 能在 Obsidian 外面跑起来，方便在浏览器里调接口、看日志；端到端测试也用它起实例。
  *
- * 真正的实现在 scripts/manager-core.mjs —— Obsidian 插件用的是同一份，
- * 所以两边功能永远一致。这个文件只负责：定位目录、读环境变量、启动、打印地址。
+ *   npm run dev:manager  →  http://localhost:3457
+ *
+ * 真正的实现在 scripts/manager-core.mjs —— 插件用的是同一份，所以行为和插件里完全一致。
+ * 这个文件只负责：定位目录、读环境变量、启动、打印地址。
  *
  * 配置文件：
  *   connections.json（随仓库同步）：{ connections: [{id,name,repo,branch}], }
@@ -56,7 +56,7 @@ mgr
   .start()
   .then((port) => {
     const { conn, vaultPath } = mgr.state()
-    console.log(`[manager] Publish manager: http://localhost:${port}`)
+    console.log(`[manager] Dev server: http://localhost:${port}`)
     console.log(`[manager] Active connection: ${conn ? conn.name : '(none)'}; vault path: ${vaultPath || '(not set)'}`)
     console.log(`[manager] Source directory: ${TOOL_ROOT}`)
     console.log(`[manager] Data directory:   ${DATA_DIR}`)

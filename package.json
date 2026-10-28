@@ -1,6 +1,6 @@
 {
   "name": "obsidian-blog",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "private": true,
   "description": "把 Obsidian 笔记发布成 GitHub Pages 静态博客：图形化选公开笔记、一键推送、自动同步、六套外观预设",
   "license": "MIT",
@@ -23,7 +23,7 @@
     "postdev": "node scripts/build-content.mjs --finalize",
     "build": "node scripts/build-content.mjs && next build && node scripts/build-content.mjs --finalize",
     "preview": "node scripts/serve.mjs",
-    "manage": "node scripts/manager.mjs",
+    "dev:manager": "node scripts/manager.mjs",
     "plugin": "node obsidian-plugin/esbuild.config.mjs",
     "presets": "node scripts/gen-theme-presets.mjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p obsidian-plugin/tsconfig.json",

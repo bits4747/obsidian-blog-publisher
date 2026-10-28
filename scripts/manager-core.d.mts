@@ -1,5 +1,5 @@
 /**
- * manager-core.mjs 是纯 JavaScript（命令行版与插件共用同一份），
+ * manager-core.mjs 是纯 JavaScript（本地调试入口与插件共用同一份），
  * 这里给出插件用到的那部分类型，让 tsc 能检查插件侧的调用。
  */
 export interface ManagerOptions {

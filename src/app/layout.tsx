@@ -7,7 +7,7 @@ import { SITE_NAME, withBase } from '@/lib/site'
 import { THEME_EXISTS, THEME_VERSION } from '@/lib/theme.generated'
 import { DEFAULT_LANG, LANG_STORAGE_KEY } from '@/lib/lang'
 
-// 站名 = 发布管理器里给这个库起的「名字」，原样显示，不自动补「的博客」——
+// 站名 = 博客发布器里给这个库起的「名字」，原样显示，不自动补「的博客」——
 // 用户起名「aaa的博客」就显示「aaa的博客」，起名「aaa」就显示「aaa」。
 // 名字来源见 src/lib/site.ts（仓库里的 site-name.txt 优先，由管理器在发布时写入）。
 
@@ -45,7 +45,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: LANG_BOOT }} />
         <script dangerouslySetInnerHTML={{ __html: FONT_BOOT }} />
         {/*
-          库主人自己粘贴的外观 CSS（发布管理器「外观」面板里保存）。
+          库主人自己粘贴的外观 CSS（博客发布器「外观」面板里保存）。
           文件是 public/theme.css，随仓库提交，由 Next 的 output:'export' 拷进 out/。
 
           为什么是外链 <link> 而不是把内容内联进 <style>：
