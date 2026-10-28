@@ -10,7 +10,7 @@
  * 不写成「只覆盖几个变量」的补丁 —— 补丁依赖默认主题的具体取值，
  * 默认主题一改预设就跟着走样；而且用户想改颜色时找不到完整变量表。
  *
- * 由 scripts/gen-theme-presets.mjs 从 _dev/themes/*.css 生成，不要手改。
+ * 由 scripts/gen-theme-presets.mjs 从 themes/*.css 生成，不要手改。
  */
 
 export const THEME_PRESETS = [

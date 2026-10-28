@@ -12,9 +12,10 @@ out
 public/data
 public/assets
 
-# 主题预览图的临时工作目录：_dev/gen-theme-previews.mjs 用它装「假内容 + 构建产物」，
-# 截图完就没用了。产物是 _dev/_preview_shots/*.png → scripts/theme-previews.mjs。
-_dev_preview/
+# 预览图生成链路（tools/preview/）的临时工作目录：
+# 装「示例笔记 + 构建产物 + 截图」，跑完就没用了。
+# 最终产物是 scripts/theme-previews.mjs（已入库）。
+_preview/
 
 # 个人数据：已全部迁到用户数据目录（Windows %APPDATA%\obsidian-blog，
 # macOS ~/Library/Application Support/obsidian-blog，Linux ~/.config/obsidian-blog），

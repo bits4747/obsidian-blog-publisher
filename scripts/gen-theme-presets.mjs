@@ -1,10 +1,9 @@
 /**
- * 把 _dev/themes/*.css 生成成 scripts/theme-presets.mjs。
+ * 把 themes/*.css 生成成 scripts/theme-presets.mjs。
  *
  * 为什么单独一个生成脚本而不是手抄：
- *   主题是我在 _dev/themes 里反复调出来的（一轮一轮看截图改色），
- *   手抄进管理器必然漂移 —— 改了主题文件却忘了同步预设，
- *   用户选到的和设计稿就不是一份东西。
+ *   预设是一轮一轮看截图改色调出来的，手抄进管理器必然漂移 ——
+ *   改了主题文件却忘了同步预设，用户选到的和设计稿就不是一份东西。
  *
  * 用法：node scripts/gen-theme-presets.mjs
  */
@@ -13,7 +12,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const SRC = path.resolve(__dirname, '..', '..', '_dev', 'themes')
+const SRC = path.resolve(__dirname, '..', 'themes')
 const OUT = path.join(__dirname, 'theme-presets.mjs')
 
 /** 文件名的编号即顺序；中文名取破折号后的部分 */
@@ -52,7 +51,7 @@ for (const f of files) {
   const num = f.slice(0, 2)
   const meta = META[num]
   if (!meta) throw new Error('未登记的预设编号: ' + f)
-  // 统一成 LF：Windows 上 git 的 core.autocrlf 会把 _dev/themes/*.css 检出成 CRLF，
+  // 统一成 LF：Windows 上 git 的 core.autocrlf 会把 themes/*.css 检出成 CRLF，
   // 不归一化的话生成的 theme-presets.mjs 里每个换行都变成 \r\n，
   // 一个主题从 6KB 涨到 6.3KB，而且 diff 里整块绿色（看着像改了整个文件）。
   // 更关键的是编辑器里的内容与预设比对（matchPreset）会因行尾不同而不相等。
@@ -80,7 +79,7 @@ const body =
   ' * 不写成「只覆盖几个变量」的补丁 —— 补丁依赖默认主题的具体取值，\n' +
   ' * 默认主题一改预设就跟着走样；而且用户想改颜色时找不到完整变量表。\n' +
   ' *\n' +
-  ' * 由 scripts/gen-theme-presets.mjs 从 _dev/themes/*.css 生成，不要手改。\n' +
+  ' * 由 scripts/gen-theme-presets.mjs 从 themes/*.css 生成，不要手改。\n' +
   ' */\n\n' +
   'export const THEME_PRESETS = ' +
   JSON.stringify(presets, null, 2) +

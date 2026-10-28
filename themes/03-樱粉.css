@@ -1,0 +1,219 @@
+/* ============================================================
+   樱粉 —— 杂志气质：极浅粉白 + 玫红点缀 + 大留白 + 单列大卡片
+   版面差异体现在：首页单列大卡片（一行一个）+ 文章标题居中放大（宽度与默认主题一致）
+   （大纲是站点的悬浮组件，任何主题都不去动它的位置与交互）
+   ============================================================ */
+
+:root {
+  --radius: 1.1rem;
+
+  --background: #fdf8f8;
+  --foreground: #3a2b30;
+
+  --card: #ffffff;
+  --card-foreground: #3a2b30;
+  --popover: #ffffff;
+  --popover-foreground: #3a2b30;
+
+  --primary: #c2456b;
+  --primary-foreground: #fff8fa;
+
+  --secondary: #fbeef1;
+  --secondary-foreground: #4a3239;
+  --muted: #f7ecef;
+  --muted-foreground: #8a6f78;
+  --accent: #fce4ea;
+  --accent-foreground: #3a2b30;
+
+  --border: #f0dfe4;
+  --input: #f0dfe4;
+  --ring: rgba(194, 69, 107, 0.4);
+
+  --code-bg: #fbf2f4;
+  --code-head-bg: #f6e7eb;
+  --code-head-fg: #8a6f78;
+  --code-fg: #3a2b30;
+}
+
+html.dark {
+  --background: #1a1417;
+  --foreground: #f0e2e6;
+
+  --card: #241b1f;
+  --card-foreground: #f0e2e6;
+  --popover: #241b1f;
+  --popover-foreground: #f0e2e6;
+
+  --primary: #f08bab;
+  --primary-foreground: #2a1219;
+
+  --secondary: #2d2227;
+  --secondary-foreground: #f0e2e6;
+  --muted: #2d2227;
+  --muted-foreground: #b394a0;
+  --accent: #35262c;
+  --accent-foreground: #f7eaee;
+
+  --border: rgba(230, 170, 190, 0.18);
+  --input: rgba(230, 170, 190, 0.24);
+  --ring: rgba(240, 139, 171, 0.55);
+
+  --code-bg: #211a1e;
+  --code-head-bg: #2d2227;
+  --code-head-fg: #b394a0;
+  --code-fg: #f0e2e6;
+}
+
+/* 字重轻一点、字距松一点，留白才显得是刻意的 */
+body,
+.markdown-body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
+}
+
+.markdown-body {
+  line-height: 2.05;
+  letter-spacing: 0.015em;
+}
+
+/* 标题用衬线 + 大字号 + 松字距，正文无衬线，拉开层次 */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+  font-family: 'Songti SC', 'STSong', 'Noto Serif SC', Georgia, serif;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+}
+.markdown-body h2 {
+  border-bottom: none;
+  font-size: 1.42em;
+  margin-top: 2.6em;
+}
+/* 标题上方加一个小圆点做分隔，杂志感 */
+.markdown-body h2::before {
+  content: '';
+  display: block;
+  width: 0.42em;
+  height: 0.42em;
+  border-radius: 50%;
+  background: var(--primary);
+  margin-bottom: 0.55em;
+}
+
+.markdown-body blockquote {
+  border-left: none;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+  padding: 1em 1.4em;
+  font-style: normal;
+  color: var(--foreground);
+}
+
+/* 顶栏：不要边界，只留一条极淡的线 */
+header.sticky {
+  background: color-mix(in srgb, var(--background) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+/* ============================================================
+   版面：杂志开本 —— 首页单列大卡片，大留白
+   ⚠️ 宽度由站点统一控制（globals.css 的 --content-w），主题里不写 max-width。
+   ============================================================ */
+
+/* 首页文件夹：单列大卡片，一行一个，像目录页 */
+[data-region='folders'] {
+  display: flex !important;
+  flex-direction: column;
+  gap: 0.6rem !important;
+  margin-bottom: 3rem;
+}
+[data-region='folders'] > * {
+  width: 100%;
+  border-radius: var(--radius) !important;
+  padding: 1.15rem 1.5rem !important;
+  border-color: color-mix(in srgb, var(--border) 80%, transparent) !important;
+  box-shadow: none !important;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+[data-region='folders'] > *:hover {
+  background: color-mix(in srgb, var(--primary) 4%, transparent) !important;
+  transform: translateX(4px);
+}
+/* 文件夹名放大，篇数缩小靠右 */
+[data-region='folders'] > * .font-serif {
+  font-size: calc(1.12 * var(--fsu, 1rem)) !important;
+  letter-spacing: 0.02em;
+}
+
+/* 笔记列表：同样单列，行距拉开 */
+[data-region='list'] {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+[data-region='list'] > div:first-child {
+  border-bottom: 1px solid var(--border) !important;
+  background: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+[data-region='list'] ul {
+  columns: 1 !important;
+  padding: 0.5rem 0 !important;
+}
+[data-region='list'] li > button {
+  padding-top: 0.55rem !important;
+  padding-bottom: 0.55rem !important;
+}
+
+/* 标签：细线分隔，不用胶囊 */
+[data-region='tags'] {
+  gap: 0 !important;
+  margin-bottom: 3rem !important;
+}
+[data-region='tags'] > button {
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0.2rem 0.85rem !important;
+  border-right: 1px solid var(--border) !important;
+  color: var(--muted-foreground) !important;
+  letter-spacing: 0.04em;
+}
+[data-region='tags'] > button:last-child {
+  border-right: none !important;
+}
+[data-region='tags'] > button:hover {
+  color: var(--primary) !important;
+}
+
+/* --- 文章页：标题居中放大 --- */
+[data-region='article'] {
+  width: 100%;
+}
+
+/* 文章标题居中、字号大，像杂志标题 */
+[data-region='article'] > header h1 {
+  text-align: center;
+  font-size: calc(2.1 * var(--fsu, 1rem)) !important;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.4rem;
+}
+[data-region='article'] > header > div {
+  justify-content: center;
+}
+
+/* 页脚居中 */
+[data-region='footer'] {
+  justify-content: center !important;
+  opacity: 0.7;
+  letter-spacing: 0.06em;
+}
+
+/* 窄屏：留白收敛，标题略小 */
+@media (max-width: 767px) {
+  [data-region='article'] > header h1 {
+    font-size: calc(1.6 * var(--fsu, 1rem)) !important;
+  }
+}

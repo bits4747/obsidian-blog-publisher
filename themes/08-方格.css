@@ -1,0 +1,293 @@
+/* ============================================================
+   方格 —— 首页做成大小不一的方块拼贴（bento），像一块仪表盘
+   第一块占 2×2 当主位，其余按 4 列自动铺；每块一个低饱和色底，
+   色块顺序固定（第 1~6 块各一色，第 7 块起循环），所以位置稳定不跳色
+   ⚠️ 宽度由站点统一控制（globals.css 的 --content-w），主题里不写 max-width：
+   所有主题的首页与正文宽度必须完全一致，主题只负责颜色、素材，以及
+   「非正文界面」的排布（首页文件夹 / 笔记列表 / 标签怎么摆）。
+   （大纲是站点的悬浮组件，任何主题都不去动它的位置与交互）
+   ============================================================ */
+
+:root {
+  --radius: 1.15rem;
+
+  --background: #f1f2f5;
+  --foreground: #1b1e24;
+
+  --card: #ffffff;
+  --card-foreground: #1b1e24;
+  --popover: #ffffff;
+  --popover-foreground: #1b1e24;
+
+  --primary: #4b63e0;
+  --primary-foreground: #ffffff;
+
+  --secondary: #e6e8ee;
+  --secondary-foreground: #1b1e24;
+  --muted: #e9ebf0;
+  --muted-foreground: #6b7280;
+  --accent: #e2e6f7;
+  --accent-foreground: #1b1e24;
+
+  --border: #dcdfe7;
+  --input: #dcdfe7;
+  --ring: rgba(75, 99, 224, 0.4);
+
+  --code-bg: #f4f5f8;
+  --code-head-bg: #e8eaf0;
+  --code-head-fg: #6b7280;
+  --code-fg: #1b1e24;
+
+  /* 方格的六个色底（日间：低饱和浅色） */
+  --bento-1: #dfe4fd;
+  --bento-2: #dcefe4;
+  --bento-3: #fbe6d8;
+  --bento-4: #f3e0f2;
+  --bento-5: #e3e6ea;
+  --bento-6: #fdf0d3;
+}
+
+html.dark {
+  --background: #14161b;
+  --foreground: #e6e8ee;
+
+  --card: #1c1f26;
+  --card-foreground: #e6e8ee;
+  --popover: #1c1f26;
+  --popover-foreground: #e6e8ee;
+
+  --primary: #8b9bff;
+  --primary-foreground: #101218;
+
+  --secondary: #232730;
+  --secondary-foreground: #e6e8ee;
+  --muted: #232730;
+  --muted-foreground: #9aa1ae;
+  --accent: #262b36;
+  --accent-foreground: #eef0f5;
+
+  --border: #2b303a;
+  --input: #333947;
+  --ring: rgba(139, 155, 255, 0.5);
+
+  --code-bg: #171a20;
+  --code-head-bg: #1f232b;
+  --code-head-fg: #9aa1ae;
+  --code-fg: #e6e8ee;
+
+  /* 夜间：同色相的深色版，保证对比度够 */
+  --bento-1: #1e2547;
+  --bento-2: #163226;
+  --bento-3: #3a2718;
+  --bento-4: #35203a;
+  --bento-5: #23272f;
+  --bento-6: #3a3018;
+}
+
+body,
+.markdown-body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', system-ui, sans-serif;
+}
+
+.markdown-body {
+  line-height: 1.85;
+}
+
+.markdown-body h2 {
+  border-bottom: none;
+  margin-top: 2.4em;
+  letter-spacing: -0.01em;
+}
+.markdown-body h2::before {
+  content: '';
+  display: inline-block;
+  width: 0.42em;
+  height: 0.42em;
+  margin-right: 0.5em;
+  border-radius: 0.1em;
+  background: var(--primary);
+  vertical-align: 0.18em;
+}
+
+.markdown-body blockquote {
+  background: var(--muted);
+  border-left: none;
+  border-radius: 0.85rem;
+  font-style: normal;
+  padding: 0.85em 1.1em;
+}
+
+/* 顶栏：无边框，靠一层浅底区分 */
+header.sticky {
+  background: var(--background);
+  backdrop-filter: none;
+  border-bottom: none;
+  box-shadow: 0 1px 0 var(--border);
+}
+
+/* ============================================================
+   版面：方格
+   ============================================================ */
+
+/* 首页文件夹：4 列方块，第一块占 2×2 */
+[data-region='folders'] {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  /* 行高用 minmax(基准, auto)：字号放大时方块跟着长高，文字不会被行高切掉
+     （写死 4.6rem 时 160% 字号下名字和篇数会被裁掉一截，看起来像穿模） */
+  grid-auto-rows: minmax(4.6rem, auto);
+  gap: 0.7rem !important;
+  margin-bottom: 1.6rem !important;
+}
+
+/* 色底按顺序发，一循环六色；位置只由 DOM 顺序决定，所以不会跳 */
+[data-region='folders'] > *:nth-child(6n + 1) { background: var(--bento-1) !important; }
+[data-region='folders'] > *:nth-child(6n + 2) { background: var(--bento-2) !important; }
+[data-region='folders'] > *:nth-child(6n + 3) { background: var(--bento-3) !important; }
+[data-region='folders'] > *:nth-child(6n + 4) { background: var(--bento-4) !important; }
+[data-region='folders'] > *:nth-child(6n + 5) { background: var(--bento-5) !important; }
+[data-region='folders'] > *:nth-child(6n + 6) { background: var(--bento-6) !important; }
+
+[data-region='folders'] > * {
+  height: 100%;
+  border: none !important;
+  border-radius: var(--radius) !important;
+  box-shadow: none !important;
+  padding: 0.85rem 0.95rem !important;
+  align-items: flex-start !important;
+  gap: 0.55rem !important;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+[data-region='folders'] > *:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px -12px rgba(20, 24, 34, 0.55) !important;
+}
+
+/* 主位砖只在文件夹够多时才启用：少于 5 个时强行占 2×2 会在右下角
+   留下一个填不满的空洞，反而不像「方格」。4 个以内就四块等分。 */
+[data-region='folders']:has(> *:nth-child(5)) > *:first-child {
+  grid-column: span 2;
+  grid-row: span 2;
+  padding: 1.15rem 1.2rem !important;
+  flex-direction: column !important;
+  justify-content: flex-end;
+}
+[data-region='folders']:has(> *:nth-child(5)) > *:first-child > span {
+  width: 100%;
+}
+[data-region='folders']:has(> *:nth-child(5)) > *:first-child .font-serif {
+  font-size: calc(1.5 * var(--fsu, 1rem)) !important;
+  line-height: 1.25;
+  white-space: normal !important;
+  overflow: visible !important;
+}
+
+/* 方块内部：名字在上、篇数在下，图标缩成小角标 */
+[data-region='folders'] > * > span {
+  display: flex !important;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+[data-region='folders'] > * .font-serif {
+  font-size: calc(0.95 * var(--fsu, 1rem)) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em;
+}
+[data-region='folders'] > * > span > span:last-child {
+  font-size: calc(0.7 * var(--fsu, 1rem));
+  color: var(--muted-foreground);
+  margin-top: 0 !important;
+  white-space: normal !important;
+}
+/* 图标缩小、颜色跟着文字走 */
+[data-region='folders'] > * > svg:first-child {
+  width: 1rem !important;
+  height: 1rem !important;
+  opacity: 0.55;
+}
+/* 右侧箭头去掉，方块不需要指示方向 */
+[data-region='folders'] > * > svg:last-child {
+  display: none;
+}
+
+/* 笔记列表：一块白底大卡，内部两栏 */
+[data-region='list'] {
+  border: none !important;
+  border-radius: var(--radius) !important;
+  background: var(--card) !important;
+  box-shadow: 0 1px 0 var(--border) !important;
+  overflow: visible !important;
+}
+[data-region='list'] > div:first-child {
+  border-bottom: 1px solid var(--border) !important;
+  background: transparent !important;
+  padding: 0.7rem 1rem !important;
+}
+[data-region='list'] ul {
+  columns: 1 !important;
+  padding: 0.4rem !important;
+}
+[data-region='list'] li > button {
+  border-radius: 0.7rem !important;
+  padding: 0.42rem 0.7rem !important;
+}
+[data-region='list'] li > button:hover {
+  background: var(--muted) !important;
+}
+
+/* 标签：小方糖，无边框 */
+[data-region='tags'] {
+  gap: 0.4rem !important;
+  margin-bottom: 1.1rem !important;
+}
+[data-region='tags'] > button {
+  border: none !important;
+  border-radius: 0.6rem !important;
+  background: var(--card) !important;
+  padding: 0.3rem 0.6rem !important;
+  font-size: calc(0.72 * var(--fsu, 1rem)) !important;
+  color: var(--muted-foreground) !important;
+  box-shadow: 0 1px 0 var(--border);
+}
+[data-region='tags'] > button:hover {
+  color: var(--foreground) !important;
+}
+[data-region='tags'] > button[class*='bg-primary'] {
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+/* 文章标题：方一点、紧一点 */
+[data-region='article'] > header h1 {
+  font-size: calc(2.05 * var(--fsu, 1rem)) !important;
+  letter-spacing: -0.02em;
+}
+
+/* 页脚 */
+[data-region='footer'] {
+  justify-content: center !important;
+  opacity: 0.55;
+  font-size: calc(0.72 * var(--fsu, 1rem));
+}
+
+/* 宽屏才铺 4 列；窄屏自然降列数，避免方块挤成一条 */
+@media (max-width: 1023px) {
+  [data-region='folders'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+@media (max-width: 639px) {
+  [data-region='folders'] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  [data-region='folders']:has(> *:nth-child(5)) > *:first-child {
+    grid-column: span 1;
+    grid-row: span 1;
+  }
+  [data-region='article'] > header h1 {
+    font-size: calc(1.6 * var(--fsu, 1rem)) !important;
+  }
+}
