@@ -25,6 +25,26 @@ const DATA_DIR = (() => {
   if (process.platform === 'darwin') return path.join(home, 'Library', 'Application Support', 'obsidian-blog')
   return path.join(process.env.XDG_CONFIG_HOME || path.join(home, '.config'), 'obsidian-blog')
 })()
+
+/**
+ * 没有显式给 OBSIDIAN_BLOG_DATA 就直接退出。
+ *
+ * 为什么必须拦：这个测试会建连接、删连接、改配置。以前没拦，直接 `node
+ * scripts/e2e-test.mjs` 跑一次，就会往**用户真实的** %APPDATA%\obsidian-blog
+ * 里塞进几条「测试A」连接（repo 指向 %TEMP%\mgr-remote.git，那个裸仓库
+ * 测试结束就被删了）。用户打开管理器就看到一个「选哪个库」的下拉，里面全是
+ * 用不了的测试项 —— 这正是用户报「这个东西是什么、没必要吧」的来源。
+ * 正确跑法只有一个：bash scripts/e2e-run.sh（它会自动指到临时目录）。
+ */
+if (!(process.env.OBSIDIAN_BLOG_DATA || '').trim()) {
+  console.error(
+    '\n[e2e] 拒绝运行：没有设置 OBSIDIAN_BLOG_DATA。\n' +
+      '      这个测试会写入连接配置，必须跑在临时数据目录里，\n' +
+      '      否则会把测试连接灌进你真实的 %APPDATA%\\obsidian-blog。\n' +
+      '      请改用：bash scripts/e2e-run.sh\n',
+  )
+  process.exit(2)
+}
 const VAULT_A = path.join(TEMP, 'mgr-vaultA').replace(/\\/g, '/')
 const VAULT_B = path.join(TEMP, 'mgr-vaultB').replace(/\\/g, '/')
 const REMOTE_A = path.join(TEMP, 'mgr-remote.git').replace(/\\/g, '/')
@@ -331,6 +351,46 @@ console.log('\n=== 15. 外观面板：默认进列表 + 说明≤50字 + 预设�
 
   // 自定义没有预览图：面板里要有「自定义」占位说明
   ok(/presetPreviewEmpty/.test(uiSrc) && /themePresetCustom/.test(uiSrc), '自定义外观不显示预览图，只给一行说明')
+}
+
+console.log('\n=== 16. 插件嵌入模式不显示「切换库」下拉，改按当前库自动选中 ===')
+// 用户报的：「obsidian 里一次只能打开一个库，这个选择没必要吧？」
+// 成因是测试污染：直接 `node scripts/e2e-test.mjs` 会往真实配置里塞「测试A」连接，
+// 于是顶栏冒出下拉。这里同时锁死「不再污染」与「插件里不显示」两件事。
+{
+  const uiSrc = fs.readFileSync(path.join(process.cwd(), 'scripts', 'ui-template.mjs'), 'utf8')
+  const e2eSrc = fs.readFileSync(path.join(process.cwd(), 'scripts', 'e2e-test.mjs'), 'utf8')
+  const pluginSrc = fs.readFileSync(
+    path.join(process.cwd(), 'obsidian-plugin', 'src', 'main.ts'),
+    'utf8',
+  )
+
+  // 1) 下拉只在非嵌入模式出现
+  ok(/embedded\s*=\s*document\.body\.classList\.contains\('embed-mode'\)/.test(uiSrc), '识别嵌入模式（embed-mode）')
+  ok(/S\.connections\.length\s*>\s*1\s*&&\s*!embedded/.test(uiSrc), '多连接下拉在插件里不渲染（命令行版保留）')
+
+  // 2) 插件把当前库路径传给界面，界面据此自动选中连接
+  ok(/vault=/.test(pluginSrc) && /encodeURIComponent\(vaultPath\)/.test(pluginSrc), '插件把当前库路径传给 iframe')
+  ok(/EMBED_VAULT/.test(uiSrc) && /syncActiveByVault/.test(uiSrc), '界面按库路径自动对齐活动连接')
+
+  // 3) 没设 OBSIDIAN_BLOG_DATA 时测试直接拒绝运行（防再次污染真实配置）
+  ok(/拒绝运行：没有设置 OBSIDIAN_BLOG_DATA/.test(e2eSrc), 'e2e 缺临时数据目录时拒绝运行')
+
+  // 4) 用户真实配置里不应残留指向已删除临时仓库的连接
+  //    注意不能查 DATA_DIR —— 那是本次测试自己的临时目录，里面本来就该有测试连接。
+  const realData = (() => {
+    const home = os.homedir() || ''
+    if (process.platform === 'win32') return path.join(process.env.APPDATA || path.join(home, 'AppData', 'Roaming'), 'obsidian-blog')
+    if (process.platform === 'darwin') return path.join(home, 'Library', 'Application Support', 'obsidian-blog')
+    return path.join(process.env.XDG_CONFIG_HOME || path.join(home, '.config'), 'obsidian-blog')
+  })()
+  const connFile = path.join(realData, 'connections.json')
+  if (fs.existsSync(connFile)) {
+    const list = (JSON.parse(fs.readFileSync(connFile, 'utf8')).connections || []).filter(
+      (c) => /[\\/](Temp|tmp)[\\/]/i.test(String(c.repo || '')) || /^mgr-remote/i.test(path.basename(String(c.repo || ''))),
+    )
+    ok(list.length === 0, '真实配置里没有指向临时测试仓库的残留连接', JSON.stringify(list.map((c) => c.name)))
+  }
 }
 
 console.log(`\n===== 结果：${pass} 通过 / ${fail} 失败 =====`)

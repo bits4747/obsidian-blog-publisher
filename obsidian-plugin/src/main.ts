@@ -510,7 +510,12 @@ class BlogPublisherView extends ItemView {
       const lang = hostLang(this.app)
       const theme = hostTheme()
       this.langSent = lang + '|' + theme
-      frame.src = `http://127.0.0.1:${port}/?embed=1&lang=${lang}&theme=${theme}`
+      // vault：把当前打开的库的绝对路径告诉界面。Obsidian 一次只开一个库，
+      // 所以界面里不该有「选哪个库」的下拉 —— 传路径过去，界面自己按路径
+      // 选中对应的连接（多条连接时也只认当前库那一条）。
+      const vaultPath = (this.app.vault.adapter as unknown as { basePath?: string }).basePath || ''
+      const vq = vaultPath ? '&vault=' + encodeURIComponent(vaultPath) : ''
+      frame.src = `http://127.0.0.1:${port}/?embed=1&lang=${lang}&theme=${theme}${vq}`
       frame.style.width = '100%'
       frame.style.height = '100%'
       frame.style.border = '0'

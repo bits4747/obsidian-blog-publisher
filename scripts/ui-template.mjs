@@ -1309,6 +1309,33 @@ async function loadState() {
   // "Cannot read properties of undefined"。这里只合并服务端字段，保留本地折叠状态。
   S = { ...next, collapsed: S.collapsed ?? new Set() };
   renderVaults(); renderChanges(); renderFolders(); syncAutoSyncUI();
+  // 插件里没有「切换库」的下拉，改为按当前打开的库自动对齐活动连接
+  syncActiveByVault();
+}
+
+// ---- 插件里按「当前打开的库」自动选中连接 ----
+// Obsidian 一次只打开一个库，库与连接是一对一的：用户不该在界面里选库。
+// 宿主把库的绝对路径当 vault 参数传进来（见 obsidian-plugin/src/main.ts），
+// 这里拿它和每条连接的 vaultPath 比一下，不一致就悄悄切过去（只切一次）。
+let EMBED_VAULT = '';
+let embedSynced = false;
+function syncActiveByVault() {
+  if (!EMBED_VAULT || embedSynced) return;
+  // 注意：整段界面处在外层模板字面量里，正则里的反斜杠会被吃掉一层，
+  // 结尾那半个会被当成注释开头。所以这里不用正则，改用 split/join。
+  const BS = String.fromCharCode(92);
+  const norm = (p) => {
+    let s = String(p || '').split(BS).join('/');
+    while (s.length > 1 && s.charAt(s.length - 1) === '/') s = s.slice(0, -1);
+    return s.toLowerCase();
+  };
+  const want = S.connections.find((c) => norm(c.vaultPath) === norm(EMBED_VAULT));
+  // 当前打开的库还没建过连接：保持原样，让用户在「设置」里建一条
+  if (!want || want.id === S.active) { embedSynced = true; return; }
+  embedSynced = true;
+  api('/api/connection/switch', { id: want.id })
+    .then(() => loadState())
+    .catch(() => { embedSynced = false; });   // 失败了下次轮询再试
 }
 
 // ---- 变更三栏（新增 / 修改 / 删除），列在所有文件夹上方 ----
@@ -1638,8 +1665,12 @@ function renderVaults() {
     }
   }
 
-  // 多个连接时（只有命令行版会遇到）给一个紧凑的下拉
-  if (S.connections.length > 1) {
+  // 多个连接时给一个紧凑的下拉。
+  // 但插件里（embed=1）**不给**：Obsidian 一次只打开一个库，库和连接是一对一的，
+  // 摆一个「选哪个库」的下拉只会让人以为要在这里切库（用户原话：「这个选择没必要吧？」）。
+  // 插件模式下改为按当前打开的库自动选中对应连接，见下面的 autoPickByVault。
+  const embedded = document.body.classList.contains('embed-mode');
+  if (S.connections.length > 1 && !embedded) {
     const sel = document.createElement('select');
     sel.className = 'vswitch';
     for (const c of S.connections) {
@@ -2644,8 +2675,11 @@ async function doUpdateSource() {
 document.getElementById('q').oninput = renderFolders;
 // 插件用 iframe 嵌入时带 ?embed=1：Obsidian 自己的文件树已经承担了「浏览 + 折叠」，
 // 这里的文件夹网格是重复的一套，藏掉它，界面只留发布相关的东西。
+// vault：宿主把当前打开的库的绝对路径一起传进来，用来在插件里自动选中对应连接
+// （插件里没有「切换库」的下拉 —— Obsidian 一次只开一个库，库和连接是一对一的）。
 if (new URLSearchParams(location.search).get('embed') === '1') {
   document.body.classList.add('embed-mode');
+  EMBED_VAULT = new URLSearchParams(location.search).get('vault') || '';
 }
 applyLang();
 loadState().catch((e) => setResult('err', t('loadFail') + e.message));

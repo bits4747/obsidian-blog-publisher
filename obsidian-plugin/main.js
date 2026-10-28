@@ -4444,7 +4444,9 @@ var BlogPublisherView = class extends import_obsidian2.ItemView {
       const lang = hostLang(this.app);
       const theme = hostTheme();
       this.langSent = lang + "|" + theme;
-      frame.src = `http://127.0.0.1:${port}/?embed=1&lang=${lang}&theme=${theme}`;
+      const vaultPath = this.app.vault.adapter.basePath || "";
+      const vq = vaultPath ? "&vault=" + encodeURIComponent(vaultPath) : "";
+      frame.src = `http://127.0.0.1:${port}/?embed=1&lang=${lang}&theme=${theme}${vq}`;
       frame.style.width = "100%";
       frame.style.height = "100%";
       frame.style.border = "0";
