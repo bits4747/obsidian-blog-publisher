@@ -344,8 +344,7 @@ obsidian-blog-publisher/
 ├── package.json                 依赖与脚本入口
 ├── next.config.ts               Next 配置（output: 'export'，支持 basePath）
 ├── .github/
-│   ├── workflows/verify.yml     类型检查 + e2e（推代码时跑）
-│   ├── workflows/deploy.yml     构建并部署到 Pages（站点仓库里跑）
+│   ├── workflows/deploy.yml     CI：站点仓库构建部署 / 插件仓库类型检查+打包
 │   └── ISSUE_TEMPLATE/          issue 模板
 ├── docs/screenshots/            README 用的截图
 │

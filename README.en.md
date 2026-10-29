@@ -344,8 +344,7 @@ obsidian-blog-publisher/
 ├── package.json                 dependencies and scripts
 ├── next.config.ts               Next config (output: 'export', supports basePath)
 ├── .github/
-│   ├── workflows/verify.yml     typecheck + e2e (runs on code pushes)
-│   ├── workflows/deploy.yml     build and deploy to Pages (runs in the site repo)
+│   ├── workflows/deploy.yml     CI: build+deploy in a site repo, typecheck+bundle in the plugin repo
 │   └── ISSUE_TEMPLATE/          issue templates
 ├── docs/screenshots/            screenshots used by the READMEs
 │
