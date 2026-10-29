@@ -387,8 +387,14 @@ export function createManager(opts) {
   /**
    * 探测「线上那份产物是不是我们要的这次构建」。
    * /api/live 与后台自动同步共用，所以单独抽出来。
-   * 判定优先用 commit（线上 index.json 里带构建提交号，不受本机时钟影响）；
-   * 旧产物没有该字段时才退回比时间（generatedAt 晚于基线）。
+   * 判定用「提交号相等」或「构建时刻晚于基线」，两者满足其一即可。
+   *
+   * ⚠️ 不能只认提交号相等。真实的坑：自动同步推了 dbcb6a1（23:02:10），
+   * 40 秒后又推了一笔改外观的 84bc4e8，线上最终的 commit 就变成 84bc4e8。
+   * 那条 dbcb6a1 的流水永远等不到「相等」，10 分钟后被判成「构建超时」——
+   * 而它的内容其实早就上线了，用户看到的是一条红字和一次误报提醒。
+   * 只要线上产物是**推完之后**才构建的，这一版内容就一定在里面，
+   * 所以 generatedAt 晚于基线同样是「已上线」，与提交号是否还被指着无关。
    */
   async function probeLiveSite(target, since, wantSha) {
     const t0 = Date.now()
@@ -402,8 +408,14 @@ export function createManager(opts) {
       const data = await r.json()
       const at = Date.parse(String((data && data.generatedAt) || '')) || 0
       const commit = String((data && data.commit) || '')
+      // 提交号相等 → 这次构建就是它；否则比时间（见函数上方注释）。
+      // ⚠️ 时间比较必须要求 since > 0：调用方没传基线时 since 是 0，
+      // 而 generatedAt 恒大于 0，否则这里会无条件判成「已上线」。
+      const byCommit = !!wantSha && !!commit && commit === wantSha
+      const byTime = since > 0 && at > since
+      const live = byCommit || byTime
       return {
-        live: wantSha && commit ? commit === wantSha : at > since,
+        live,
         commit,
         generatedAt: at,
         notes: Array.isArray(data && data.notes) ? data.notes.length : 0,
@@ -437,22 +449,26 @@ export function createManager(opts) {
     if (!sha) return null
     const parts = repoParts(repo)
     if (!parts) return null
-    const token = loadLocal().githubToken
+    // 必须用 readGithubToken()：令牌现在加密存在 githubTokenEnc 字段里，
+    // 直接读 local.githubToken 会永远拿到 undefined（迁移后该字段已删），
+    // 于是这里静默返回 null —— 界面上再也看不到「构建失败」，只会一路等到超时。
+    const token = readGithubToken()
     if (!token) return null
     try {
       const u =
         `https://api.github.com/repos/${parts.owner}/${parts.name}/actions/runs` +
         `?head_sha=${encodeURIComponent(sha)}&per_page=5`
-      const r = await fetch(u, {
-        headers: {
-          accept: 'application/vnd.github+json',
-          authorization: `Bearer ${token}`,
-          'user-agent': 'obsidian-blog-manager',
-        },
-        signal: AbortSignal.timeout(15000),
-      })
+      // 走 ghApi（内部用系统 curl.exe）：Node 自带的 fetch 用打包的 CA 列表，
+      // 不认加速器装进系统信任库的 MITM 证书，在这里必然
+      // UNABLE_TO_VERIFY_LEAF_SIGNATURE。而 git 与 curl.exe 走系统信任库，是通的。
+      const r = await ghApi(u, { token, accept: 'application/vnd.github+json' })
       if (!r.ok) return { httpStatus: r.status }
-      const data = await r.json()
+      let data = null
+      try {
+        data = JSON.parse(r.text || '{}')
+      } catch {
+        return { error: 'bad-json' }
+      }
       const runs = Array.isArray(data && data.workflow_runs) ? data.workflow_runs : []
       const hit = runs.find((x) => String(x.head_sha || '') === sha) || runs[0]
       if (!hit) return { found: false }
@@ -2936,6 +2952,21 @@ export function createManager(opts) {
     if (!conn || !validVault(vaultPath) || !workdir) return
     if (!fsSync.existsSync(path.join(workdir, 'content'))) return
     const flags = loadAutoSync()
+    // 跨进程互斥：另一个发布进程（插件内核 / 本地调试入口）可能正在同一个
+    // 工作副本上推送。抢不到就等下一轮 —— 绝不能两个进程同时 add/commit/push，
+    // 那会一个成功一个「推送失败」，界面上看着像失败、其实已经上线了。
+    //
+    // ⚠️ 必须先抢锁、再算 before，顺序不能反。反过来（先算改动再抢锁）会发生：
+    // A、B 两个进程同时看到同一批改动，A 拿到锁推完并更新了 publishMarks，
+    // B 之后拿到锁却还拿着自己那份**过期**的 before，于是照着旧差异又推一次 ——
+    // 内容没变，但流水里多出一条「已推送」却永远等不到结论的记录。
+    // 真实案例：10-28 16:55:12 有两条一模一样的记录，一条 live=true，
+    // 另一条一直悬在「已推送，等构建」。
+    const lk = acquireLock('publish-' + conn.id)
+    if (!lk.ok) {
+      requeueAutoSync(touched)
+      return
+    }
     const before = diffVault(vaultPath, workdir, loadPublishMark(conn.id))
     // 先把「这次看到的改动」记进日志，再决定发不发：
     // 自动同步往往在用户没打开界面时就跑完了（改完文件立刻被推上去），
@@ -2968,14 +2999,7 @@ export function createManager(opts) {
     if (!wantAdd && !wantMod && !wantDel) {
       // 确实有改动、但对应的自动开关没开：这些改动就留在三栏里等人手动发布，
       // 不再往流水里写「有改动，但开关没开」（用户明确说不需要这种记录）。
-      return
-    }
-    // 跨进程互斥：另一个发布进程（本地调试入口 / 插件）可能正在同一个
-    // 工作副本上推送。抢不到就等下一轮 —— 绝不能两个进程同时 add/commit/push，
-    // 那会一个成功一个「推送失败」，界面上看着像失败、其实已经上线了。
-    const lk = acquireLock('publish-' + conn.id)
-    if (!lk.ok) {
-      requeueAutoSync(touched)
+      lk.release()
       return
     }
     autoBusy = true
@@ -3062,7 +3086,14 @@ export function createManager(opts) {
         return
       }
       const b = await probeBuildStatus(repo, entry.commit || '')
-      if (b && b.found && b.status === 'completed' && b.conclusion && b.conclusion !== 'success') {
+      // cancelled 不算失败：deploy.yml 设了 concurrency.cancel-in-progress，
+      // 推送密集时后一笔提交会主动取消前一笔的构建（真实案例：dbcb6a1 被
+      // 40 秒后的 84bc4e8 取消）。这是正常行为，不是出错 —— 只要继续等，
+      // 上面那个时间比较会在新构建部署完后把这条判成「已上线」。
+      const failedConclusion =
+        b && b.found && b.status === 'completed' && b.conclusion &&
+        b.conclusion !== 'success' && b.conclusion !== 'cancelled'
+      if (failedConclusion) {
         patchAutoLog(conn.id, entry.at, {
           live: false,
           buildFailed: true,

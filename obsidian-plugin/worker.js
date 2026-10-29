@@ -6701,8 +6701,11 @@ function createManager(opts) {
       const data = await r.json();
       const at = Date.parse(String(data && data.generatedAt || "")) || 0;
       const commit = String(data && data.commit || "");
+      const byCommit = !!wantSha && !!commit && commit === wantSha;
+      const byTime = since > 0 && at > since;
+      const live = byCommit || byTime;
       return {
-        live: wantSha && commit ? commit === wantSha : at > since,
+        live,
         commit,
         generatedAt: at,
         notes: Array.isArray(data && data.notes) ? data.notes.length : 0,
@@ -6724,20 +6727,18 @@ function createManager(opts) {
     if (!sha) return null;
     const parts = repoParts(repo);
     if (!parts) return null;
-    const token = loadLocal().githubToken;
+    const token = readGithubToken();
     if (!token) return null;
     try {
       const u = `https://api.github.com/repos/${parts.owner}/${parts.name}/actions/runs?head_sha=${encodeURIComponent(sha)}&per_page=5`;
-      const r = await fetch(u, {
-        headers: {
-          accept: "application/vnd.github+json",
-          authorization: `Bearer ${token}`,
-          "user-agent": "obsidian-blog-manager"
-        },
-        signal: AbortSignal.timeout(15e3)
-      });
+      const r = await ghApi(u, { token, accept: "application/vnd.github+json" });
       if (!r.ok) return { httpStatus: r.status };
-      const data = await r.json();
+      let data = null;
+      try {
+        data = JSON.parse(r.text || "{}");
+      } catch {
+        return { error: "bad-json" };
+      }
       const runs = Array.isArray(data && data.workflow_runs) ? data.workflow_runs : [];
       const hit = runs.find((x) => String(x.head_sha || "") === sha) || runs[0];
       if (!hit) return { found: false };
@@ -8605,6 +8606,11 @@ function createManager(opts) {
     if (!conn || !validVault(vaultPath) || !workdir) return;
     if (!import_node_fs.default.existsSync(import_node_path.default.join(workdir, "content"))) return;
     const flags = loadAutoSync();
+    const lk = acquireLock("publish-" + conn.id);
+    if (!lk.ok) {
+      requeueAutoSync(touched);
+      return;
+    }
     const before = diffVault(vaultPath, workdir, loadPublishMark(conn.id));
     try {
       recordChanges(conn.id, before);
@@ -8627,11 +8633,7 @@ function createManager(opts) {
     });
     const startedAt = Date.now();
     if (!wantAdd && !wantMod && !wantDel) {
-      return;
-    }
-    const lk = acquireLock("publish-" + conn.id);
-    if (!lk.ok) {
-      requeueAutoSync(touched);
+      lk.release();
       return;
     }
     autoBusy = true;
@@ -8697,7 +8699,8 @@ function createManager(opts) {
         return;
       }
       const b = await probeBuildStatus(repo, entry.commit || "");
-      if (b && b.found && b.status === "completed" && b.conclusion && b.conclusion !== "success") {
+      const failedConclusion = b && b.found && b.status === "completed" && b.conclusion && b.conclusion !== "success" && b.conclusion !== "cancelled";
+      if (failedConclusion) {
         patchAutoLog(conn.id, entry.at, {
           live: false,
           buildFailed: true,
