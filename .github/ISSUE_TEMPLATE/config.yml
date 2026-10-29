@@ -1,8 +1,11 @@
 blank_issues_enabled: false
 contact_links:
-  - name: 使用说明
+  - name: 使用说明（中文）
     url: https://github.com/bits4747/obsidian-blog-publisher#readme
-    about: 安装、授权、发布、常见故障，先看这里
-  - name: 英文文档
+    about: 安装、授权、发布、常见故障，先看这里 / Install, authorize, publish, troubleshooting
+  - name: Documentation (English)
     url: https://github.com/bits4747/obsidian-blog-publisher/blob/main/README.en.md
-    about: English documentation
+    about: English documentation — installation, authorization, publishing, FAQ
+  - name: 贡献指南 / Contributing
+    url: https://github.com/bits4747/obsidian-blog-publisher/blob/main/CONTRIBUTING.md
+    about: 报告要带什么、本地怎么跑 / What to include in a report, how to run the code

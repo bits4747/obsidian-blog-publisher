@@ -1,11 +1,12 @@
-name: Bug 报告
-description: 发布失败、界面异常、插件装不上
+name: Bug 报告 / Bug report
+description: 发布失败、界面异常、插件装不上 / Publish failures, UI bugs, plugin won't load
 labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
         先用下面的命令确认前置环境，很多「点了没反应」都是缺 Git 或 Node：
+        First check the prerequisites — many "nothing happens" reports are a missing Git or Node:
 
         ```bash
         git --version
@@ -15,8 +16,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: 版本号
-      description: 管理器右下角，或 obsidian-plugin/manifest.json 里的 version
+      label: 版本号 / Version
+      description: 管理器右下角，或 obsidian-plugin/manifest.json 里的 version / Bottom right of the manager, or `version` in obsidian-plugin/manifest.json
       placeholder: 1.0.0
     validations:
       required: true
@@ -24,7 +25,7 @@ body:
   - type: dropdown
     id: os
     attributes:
-      label: 操作系统
+      label: 操作系统 / OS
       options:
         - Windows
         - macOS
@@ -35,34 +36,36 @@ body:
   - type: dropdown
     id: step
     attributes:
-      label: 卡在哪一步
+      label: 卡在哪一步 / Which step failed
       options:
-        - 插件装不上 / 启用后没反应
-        - 建连接
-        - GitHub 授权
-        - 选择本地库
-        - 切换公开 / 私密
-        - 发布到 GitHub
-        - 更新源码
-        - 站点显示不对（网页版）
+        - 插件装不上 / 启用后没反应 (Plugin won't load / nothing happens)
+        - 建连接 (Create connection)
+        - GitHub 授权 (GitHub authorization)
+        - 选择本地库 (Select local vault)
+        - 切换公开 / 私密 (Toggle public / private)
+        - 发布到 GitHub (Publish to GitHub)
+        - 更新源码 (Update source)
+        - 站点显示不对（网页版）(Site renders wrong)
     validations:
       required: true
 
   - type: textarea
     id: what
     attributes:
-      label: 发生了什么
-      description: 你点了什么、期望看到什么、实际看到什么
+      label: 发生了什么 / What happened
+      description: 你点了什么、期望看到什么、实际看到什么 / What you clicked, what you expected, what you actually saw
     validations:
       required: true
 
   - type: textarea
     id: log
     attributes:
-      label: 管理器日志
+      label: 管理器日志 / Manager log
       description: |
         点发布后展开的 Details 全文，或管理器窗口里的输出。**不要截断报错原文** ——
         `fatal: unable to access ...` 这类原文是定位问题的关键。
+        The full Details text after clicking publish, or the manager window output.
+        **Don't truncate the raw error** — `fatal: unable to access ...` is what pinpoints the problem.
       render: shell
     validations:
       required: false
@@ -70,11 +73,11 @@ body:
   - type: dropdown
     id: proxy
     attributes:
-      label: 网络环境
-      description: 本项目大量「发布失败」是 GitHub 连不上导致的
+      label: 网络环境 / Network
+      description: 本项目大量「发布失败」是 GitHub 连不上导致的 / Most "publish failed" reports here are GitHub being unreachable
       options:
-        - 直连，没有代理
-        - 开了代理 / 加速器（如 Steam++、Clash 等）
-        - 不确定
+        - 直连，没有代理 (Direct, no proxy)
+        - 开了代理 / 加速器，如 Steam++、Clash (Proxy or accelerator on)
+        - 不确定 (Not sure)
     validations:
       required: true

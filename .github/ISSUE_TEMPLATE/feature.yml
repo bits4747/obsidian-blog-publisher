@@ -1,26 +1,26 @@
-name: 功能建议
-description: 想要某个功能，或现有功能用起来别扭
+name: 功能建议 / Feature request
+description: 想要某个功能，或现有功能用起来别扭 / Something missing, or an existing feature is awkward
 labels: [enhancement]
 body:
   - type: textarea
     id: problem
     attributes:
-      label: 你遇到的实际问题
-      description: 先说场景，再说你想要什么。比如「我有 200 篇笔记，每次找某篇要点好几层」比「加个搜索」有用得多
+      label: 你遇到的实际问题 / The actual problem
+      description: 先说场景，再说你想要什么。比如「我有 200 篇笔记，每次找某篇要点好几层」比「加个搜索」有用得多 / Describe the situation first, then the request. "I have 200 notes and it takes several clicks to find one" is far more useful than "add search"
     validations:
       required: true
 
   - type: textarea
     id: idea
     attributes:
-      label: 你希望它怎么解决
+      label: 你希望它怎么解决 / How you'd like it solved
     validations:
       required: false
 
   - type: textarea
     id: workaround
     attributes:
-      label: 现在你是怎么绕过去的
-      description: 如果有的话。这能说明问题的严重程度
+      label: 现在你是怎么绕过去的 / How you work around it today
+      description: 如果有的话。这能说明问题的严重程度 / If any — it shows how badly this hurts
     validations:
       required: false

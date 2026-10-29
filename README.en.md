@@ -1,5 +1,7 @@
 # Obsidian Blog
 
+[中文](README.md)
+
 Publish your Obsidian notes as a static blog on GitHub Pages.
 
 You don't need a second vault. Private and public notes live together — going public is just `public: true` in the frontmatter. Toggle notes one by one in the publisher, push once, and GitHub Actions builds and deploys the site.
