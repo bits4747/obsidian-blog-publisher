@@ -248,6 +248,15 @@ GitHub Pages
 
 这套代码同时是站点源码和一个 Obsidian 插件。改站点样式、Markdown 管线或发布逻辑，都在这个仓库里做。
 
+插件是独立的 npm 包（`obsidian`、`esbuild` 只它用），所以装完根目录还要装一次它的依赖，否则 `npm run typecheck` / `npm run plugin` 会报找不到 `obsidian`：
+
+```bash
+npm ci
+npm --prefix obsidian-plugin ci
+```
+
+之后：
+
 ```bash
 npm run dev        # 开发服务器 → http://localhost:3010
 npm run build      # 完整构建（生成内容 + 静态导出 + 搬运产物）
