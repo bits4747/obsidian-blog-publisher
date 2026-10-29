@@ -4,6 +4,18 @@
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Security
+- The GitHub token is no longer stored in plain text: Windows uses DPAPI (`CryptProtectData`, CurrentUser scope) and macOS uses the Keychain. The ciphertext lives in the `githubTokenEnc` field of `local.json`, decryptable only by your own account on this machine. The old plain-text `githubToken` field is migrated to ciphertext and deleted on first read; if migration fails (system command unavailable) the original is left untouched, so you never lose the token. Linux has no dependency-free equivalent and still falls back to plain text, as documented in the README.
+- Fixed a subtler token leak: `git()` and `preflightRemote()` used to pass the token on the command line (`-c http.extraHeader=Authorization: Basic ...`), which shows up in the process list and can be echoed by tool error output. They now inject it through git's official `GIT_CONFIG_COUNT` / `GIT_CONFIG_KEY_0` / `GIT_CONFIG_VALUE_0` environment variables — same effect, nothing in argv.
+- The decrypted token is cached in memory so each git call doesn't spawn a subprocess.
+
+### Documentation
+- README: "Worth knowing" folded into the FAQ and rewritten as questions (what `site-template/` is and whether it can be deleted, why the explorer switches don't respond, why interface language and theme can't be set separately, where the public flag lives)
+- README: token section now says "encrypted by the OS" and notes the Linux plain-text fallback
+- README: project layout aligned with the real tree (added `.editorconfig` / `.gitattributes` / `CHANGELOG.en.md` / `CONTRIBUTING*.md` / `versions.json` / `main.js` / `worker.js`); the CI entry now reflects the four jobs in `deploy.yml` (`check` / `verify` / `build` / `deploy`) serving both repos — build and deploy in a site repo, typecheck and bundle in the plugin repo
+
 ## [1.0.0] - 2026-10-30
 
 First public release. Earlier version numbers were internal iteration (`1.0.0` – `1.8.0`); public releases restart at `1.0.0`, so an internal `1.0.0` also appears below. They are not the same release — internal versions are prefixed with "internal".

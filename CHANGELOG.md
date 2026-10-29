@@ -4,6 +4,18 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [未发布]
+
+### 安全
+- GitHub 令牌不再明文落盘：Windows 用 DPAPI（`CryptProtectData`，CurrentUser 作用域）、macOS 用 Keychain 加密，密文存在 `local.json` 的 `githubTokenEnc` 字段，只有本机当前账号能解开。旧格式的明文 `githubToken` 在首次读取时自动迁移成密文并删除原字段；迁移失败（系统命令不可用）则保持原样，不会让用户丢掉令牌。Linux 没有免依赖的等价物，仍退回明文并在 README 写明。
+- 修掉一个更隐蔽的令牌泄露：`git()` 与 `preflightRemote()` 原先把令牌拼进命令行参数（`-c http.extraHeader=Authorization: Basic ...`），会出现在进程列表里、也可能被工具的错误输出带出来。改用 git 官方的 `GIT_CONFIG_COUNT` / `GIT_CONFIG_KEY_0` / `GIT_CONFIG_VALUE_0` 环境变量注入，配置照样生效但不出现在 argv。
+- 令牌解密结果在内存里缓存，避免每次 git 调用都起一次子进程。
+
+### 文档
+- README 把「几点需要知道的」并入常见问题，逐条改写成问句（`site-template/` 的作用与能否删除、文件树开关为何不响应、界面语言与明暗为何不能单独设、公开状态存在哪）
+- README 令牌说明改为「系统加密保存」，并补 Linux 回退明文的前提
+- README 项目结构树对齐实际文件：补 `.editorconfig` / `.gitattributes` / `CHANGELOG.en.md` / `CONTRIBUTING*.md` / `versions.json` / `main.js` / `worker.js`，CI 段改为反映 `deploy.yml` 里 `check` / `verify` / `build` / `deploy` 四个 job 的双重用途（站点仓库构建部署、插件仓库类型检查+打包）
+
 ## [1.0.0] - 2026-10-30
 
 首个公开版本。此前版本号是内部迭代（`1.0.0` ~ `1.8.0`），公开发布统一从 `1.0.0` 重新起算，
