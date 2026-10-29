@@ -6,6 +6,11 @@ export interface ManagerOptions {
   toolRoot: string
   dataDir: string
   port?: number
+  /**
+   * 宿主的界面语言。启动期报错（端口占用、服务起不来）没有 HTTP 请求可读
+   * x-lang 头，只能由宿主在创建时告诉这里，否则英文界面会弹出中文错误。
+   */
+  lang?: 'zh' | 'en'
   log?: (msg: string) => void
 }
 

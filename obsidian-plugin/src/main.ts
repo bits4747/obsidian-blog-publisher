@@ -355,10 +355,10 @@ export default class BlogPublisherPlugin extends Plugin {
       const workerPath = basePath
         ? nodePath.join(basePath, this.manifest.dir || '', 'worker.js')
         : nodePath.join(this.manifest.dir || '', 'worker.js')
-      const startEnv = { ...process.env, BLOG_PUBLISHER_START: JSON.stringify({ toolRoot: this.toolRoot, dataDir: root, port: 0 }) }
+      const startEnv = { ...process.env, BLOG_PUBLISHER_START: JSON.stringify({ toolRoot: this.toolRoot, dataDir: root, port: 0, lang: this.lang }) }
 
       const port = await new Promise<number>((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error('后台服务启动超时（40 秒）')), 40000)
+        const timer = setTimeout(() => reject(new Error(this.t.startTimeout(40))), 40000)
 
         // 优先用 Electron 的 utilityProcess：它起的是真 Node 进程，与 Obsidian
         // 共用同一个 Electron 二进制，用户机器上不需要另装 Node。
@@ -416,7 +416,7 @@ export default class BlogPublisherPlugin extends Plugin {
             resolve(m.port)
           } else if (m.type === 'error') {
             clearTimeout(timer)
-            reject(new Error(m.error || '未知错误'))
+            reject(new Error(m.error || this.t.unknownError))
           } else if (m.type === 'log') {
             console.log('[blog-publisher] ' + m.text)
           }
@@ -427,7 +427,7 @@ export default class BlogPublisherPlugin extends Plugin {
         })
         c.on('exit', (code: number) => {
           clearTimeout(timer)
-          reject(new Error('后台服务进程退出（code ' + code + '）'))
+          reject(new Error(this.t.workerExited(code)))
         })
       })
 

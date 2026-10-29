@@ -3661,6 +3661,9 @@ var ZH = {
   viewTitle: "\u535A\u5BA2\u53D1\u5E03\u5668",
   loading: "\u6B63\u5728\u542F\u52A8\u53D1\u5E03\u5668\u2026",
   startFail: (m) => "\u542F\u52A8\u5931\u8D25\uFF1A" + m,
+  startTimeout: (s) => `\u540E\u53F0\u670D\u52A1\u542F\u52A8\u8D85\u65F6\uFF08${s} \u79D2\uFF09`,
+  workerExited: (code) => "\u540E\u53F0\u670D\u52A1\u8FDB\u7A0B\u9000\u51FA\uFF08code " + code + "\uFF09",
+  unknownError: "\u672A\u77E5\u9519\u8BEF",
   publishing: "\u6B63\u5728\u53D1\u5E03\u2026",
   publishFailed: (m) => "\u53D1\u5E03\u5931\u8D25\uFF1A" + m,
   pushed: "\u5DF2\u63A8\u9001 GitHub\uFF0C\u6B63\u5728\u6784\u5EFA",
@@ -3711,6 +3714,9 @@ var EN = {
   viewTitle: "Blog publisher",
   loading: "Starting publisher\u2026",
   startFail: (m) => "Failed to start: " + m,
+  startTimeout: (s) => `The background service did not start within ${s} seconds`,
+  workerExited: (code) => "The background service exited (code " + code + ")",
+  unknownError: "Unknown error",
   publishing: "Publishing\u2026",
   publishFailed: (m) => "Publish failed: " + m,
   pushed: "Pushed to GitHub, building now",
@@ -4452,9 +4458,9 @@ var BlogPublisherPlugin = class extends import_obsidian2.Plugin {
       }
       const basePath = this.app.vault.adapter.basePath || "";
       const workerPath = basePath ? nodePath.join(basePath, this.manifest.dir || "", "worker.js") : nodePath.join(this.manifest.dir || "", "worker.js");
-      const startEnv = { ...process.env, BLOG_PUBLISHER_START: JSON.stringify({ toolRoot: this.toolRoot, dataDir: root, port: 0 }) };
+      const startEnv = { ...process.env, BLOG_PUBLISHER_START: JSON.stringify({ toolRoot: this.toolRoot, dataDir: root, port: 0, lang: this.lang }) };
       const port = await new Promise((resolve2, reject) => {
-        const timer = setTimeout(() => reject(new Error("\u540E\u53F0\u670D\u52A1\u542F\u52A8\u8D85\u65F6\uFF0840 \u79D2\uFF09")), 4e4);
+        const timer = setTimeout(() => reject(new Error(this.t.startTimeout(40))), 4e4);
         const utility = getUtilityProcess();
         let child = null;
         if (utility) {
@@ -4503,7 +4509,7 @@ var BlogPublisherPlugin = class extends import_obsidian2.Plugin {
             resolve2(m.port);
           } else if (m.type === "error") {
             clearTimeout(timer);
-            reject(new Error(m.error || "\u672A\u77E5\u9519\u8BEF"));
+            reject(new Error(m.error || this.t.unknownError));
           } else if (m.type === "log") {
             console.log("[blog-publisher] " + m.text);
           }
@@ -4514,7 +4520,7 @@ var BlogPublisherPlugin = class extends import_obsidian2.Plugin {
         });
         c.on("exit", (code) => {
           clearTimeout(timer);
-          reject(new Error("\u540E\u53F0\u670D\u52A1\u8FDB\u7A0B\u9000\u51FA\uFF08code " + code + "\uFF09"));
+          reject(new Error(this.t.workerExited(code)));
         });
       });
       this.port = port;

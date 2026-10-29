@@ -6424,6 +6424,7 @@ function createManager(opts) {
   const TOOL_ROOT = import_node_path.default.resolve(opts.toolRoot);
   const DATA_DIR = import_node_path.default.resolve(opts.dataDir);
   const PORT = Number.isFinite(opts.port) ? opts.port : 3457;
+  const HOST_LANG = opts.lang === "en" ? "en" : "zh";
   const log = typeof opts.log === "function" ? opts.log : (m) => console.log(m);
   const __dirname = import_node_path.default.join(TOOL_ROOT, "scripts");
   function migrateDataToUserDir() {
@@ -7620,7 +7621,7 @@ function createManager(opts) {
         "utf8"
       );
     } catch (e) {
-      log2.push(`[meta] \u65F6\u95F4\u6E05\u5355\u5199\u5165\u5931\u8D25\uFF1A${e.message}`);
+      log2.push(sm(lang, "logMetaFail") + e.message);
     }
     log2.push(msg2("logPublic", publicNotes.length, updated + copied, removed));
     const siteNameFile = import_node_path.default.join(workdir, "site-name.txt");
@@ -7906,7 +7907,11 @@ function createManager(opts) {
       reasonBadRepo: "\u4ED3\u5E93\u5730\u5740\u4E0D\u662F GitHub \u4ED3\u5E93",
       reasonNoToken: "\u7F3A\u5C11 GitHub \u6388\u6743",
       reasonHttp: (status) => `GitHub \u8FD4\u56DE HTTP ${status}`,
-      reasonNetwork: "\u8FDE\u4E0D\u4E0A GitHub"
+      reasonNetwork: "\u8FDE\u4E0D\u4E0A GitHub",
+      logMetaFail: "[meta] \u7B14\u8BB0\u65F6\u95F4\u6E05\u5355\u5199\u5165\u5931\u8D25\uFF1A",
+      // ---- 服务启动（插件里会直接弹成 Notice，所以必须跟着语言走）----
+      errPortInUse: (port2) => `\u7AEF\u53E3 ${port2} \u5DF2\u88AB\u5360\u7528\uFF1A\u53EF\u80FD\u5DF2\u7ECF\u6709\u4E00\u4E2A\u53D1\u5E03\u5668\u5728\u8FD0\u884C\u3002`,
+      errServerStart: (detail) => "\u53D1\u5E03\u5668\u670D\u52A1\u542F\u52A8\u5931\u8D25\uFF1A" + detail
     },
     en: {
       errNeedNameRepo: "Name and repo URL are required",
@@ -7976,7 +7981,11 @@ function createManager(opts) {
       reasonBadRepo: "The repo URL is not a GitHub repo",
       reasonNoToken: "Missing GitHub authorization",
       reasonHttp: (status) => `GitHub returned HTTP ${status}`,
-      reasonNetwork: "Couldn't reach GitHub"
+      reasonNetwork: "Couldn't reach GitHub",
+      logMetaFail: "[meta] Could not write the note-timestamp manifest: ",
+      // ---- 服务启动（插件里会直接弹成 Notice，所以必须跟着语言走）----
+      errPortInUse: (port2) => `Port ${port2} is already in use \u2014 another publisher is probably running.`,
+      errServerStart: (detail) => "The publisher server failed to start: " + detail
     }
   };
   const langOf = (req) => String(req.headers["x-lang"] || "").toLowerCase().startsWith("en") ? "en" : "zh";
@@ -8736,9 +8745,9 @@ function createManager(opts) {
       const onError = (e) => {
         server.removeListener("listening", onListening);
         if (e && e.code === "EADDRINUSE") {
-          reject(new Error(`\u7AEF\u53E3 ${PORT} \u5DF2\u88AB\u5360\u7528\uFF1A\u53EF\u80FD\u5DF2\u7ECF\u6709\u4E00\u4E2A\u7BA1\u7406\u5668\u5728\u8FD0\u884C\u3002`));
+          reject(new Error(sm(HOST_LANG, "errPortInUse", PORT)));
         } else {
-          reject(new Error("\u670D\u52A1\u542F\u52A8\u5931\u8D25\uFF1A" + String(e && e.message || e)));
+          reject(new Error(sm(HOST_LANG, "errServerStart", String(e && e.message || e))));
         }
       };
       const onListening = () => {
@@ -8827,13 +8836,15 @@ function send(m) {
 }
 var msg = readStartMsg();
 if (!msg) {
-  send({ type: "error", error: "\u7F3A\u5C11\u542F\u52A8\u53C2\u6570\uFF08BLOG_PUBLISHER_START\uFF09" });
+  send({ type: "error", error: "missing BLOG_PUBLISHER_START" });
   process.exit(1);
 } else {
   const mgr = createManager({
     toolRoot: msg.toolRoot,
     dataDir: msg.dataDir,
     port: msg.port,
+    // 启动期的报错没有 HTTP 请求可读 x-lang，只能由宿主把界面语言传进来
+    lang: msg.lang === "en" ? "en" : "zh",
     // 子进程没有控制台可看，日志通过消息发回主进程
     log: (m) => send({ type: "log", text: String(m) })
   });

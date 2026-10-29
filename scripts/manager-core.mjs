@@ -34,6 +34,9 @@ export function createManager(opts) {
   const TOOL_ROOT = path.resolve(opts.toolRoot)
   const DATA_DIR = path.resolve(opts.dataDir)
   const PORT = Number.isFinite(opts.port) ? opts.port : 3457
+  // 宿主（Obsidian 插件）自己的界面语言。启动期的报错没有 HTTP 请求可读
+  // x-lang 头，只能由宿主在创建时告诉这里，否则英文界面会弹出中文错误。
+  const HOST_LANG = opts.lang === 'en' ? 'en' : 'zh'
   const log = typeof opts.log === 'function' ? opts.log : (m) => console.log(m)
   const __dirname = path.join(TOOL_ROOT, "scripts")
 
@@ -1696,7 +1699,7 @@ export function createManager(opts) {
         'utf8'
       )
     } catch (e) {
-      log.push(`[meta] 时间清单写入失败：${e.message}`)
+      log.push(sm(lang, 'logMetaFail') + e.message)
     }
 
     log.push(msg('logPublic', publicNotes.length, updated + copied, removed))
@@ -2074,6 +2077,10 @@ export function createManager(opts) {
       reasonNoToken: '缺少 GitHub 授权',
       reasonHttp: (status) => `GitHub 返回 HTTP ${status}`,
       reasonNetwork: '连不上 GitHub',
+      logMetaFail: '[meta] 笔记时间清单写入失败：',
+      // ---- 服务启动（插件里会直接弹成 Notice，所以必须跟着语言走）----
+      errPortInUse: (port) => `端口 ${port} 已被占用：可能已经有一个发布器在运行。`,
+      errServerStart: (detail) => '发布器服务启动失败：' + detail,
     },
     en: {
       errNeedNameRepo: 'Name and repo URL are required',
@@ -2144,6 +2151,10 @@ export function createManager(opts) {
       reasonNoToken: 'Missing GitHub authorization',
       reasonHttp: (status) => `GitHub returned HTTP ${status}`,
       reasonNetwork: "Couldn't reach GitHub",
+      logMetaFail: '[meta] Could not write the note-timestamp manifest: ',
+      // ---- 服务启动（插件里会直接弹成 Notice，所以必须跟着语言走）----
+      errPortInUse: (port) => `Port ${port} is already in use — another publisher is probably running.`,
+      errServerStart: (detail) => 'The publisher server failed to start: ' + detail,
     },
   }
   // 客户端语言：请求头 x-lang，只认 en，其余一律按中文处理。
@@ -3116,9 +3127,9 @@ export function createManager(opts) {
       const onError = (e) => {
         server.removeListener("listening", onListening)
         if (e && e.code === "EADDRINUSE") {
-          reject(new Error(`端口 ${PORT} 已被占用：可能已经有一个管理器在运行。`))
+          reject(new Error(sm(HOST_LANG, 'errPortInUse', PORT)))
         } else {
-          reject(new Error("服务启动失败：" + String((e && e.message) || e)))
+          reject(new Error(sm(HOST_LANG, 'errServerStart', String((e && e.message) || e))))
         }
       }
         const onListening = () => {

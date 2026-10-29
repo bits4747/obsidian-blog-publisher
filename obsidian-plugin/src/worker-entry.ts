@@ -18,7 +18,7 @@
 
 import { createManager } from '../../scripts/manager-core.mjs'
 
-type StartMsg = { toolRoot: string; dataDir: string; port: number }
+type StartMsg = { toolRoot: string; dataDir: string; port: number; lang?: string }
 
 interface Port {
   postMessage: (m: unknown) => void
@@ -64,13 +64,15 @@ function send(m: unknown): void {
 const msg = readStartMsg()
 
 if (!msg) {
-  send({ type: 'error', error: '缺少启动参数（BLOG_PUBLISHER_START）' })
+  send({ type: 'error', error: 'missing BLOG_PUBLISHER_START' })
   process.exit(1)
 } else {
   const mgr = createManager({
     toolRoot: msg.toolRoot,
     dataDir: msg.dataDir,
     port: msg.port,
+    // 启动期的报错没有 HTTP 请求可读 x-lang，只能由宿主把界面语言传进来
+    lang: msg.lang === 'en' ? 'en' : 'zh',
     // 子进程没有控制台可看，日志通过消息发回主进程
     log: (m: string) => send({ type: 'log', text: String(m) }),
   })

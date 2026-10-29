@@ -60,6 +60,12 @@ export interface Strings {
   viewTitle: string
   loading: string
   startFail: (msg: string) => string
+  /** 后台服务 40 秒没起来 */
+  startTimeout: (sec: number) => string
+  /** 后台进程意外退出 */
+  workerExited: (code: number) => string
+  /** 兜底：宿主没给出任何错误文本 */
+  unknownError: string
   publishing: string
   publishFailed: (msg: string) => string
   pushed: string
@@ -110,6 +116,9 @@ const ZH: Strings = {
   viewTitle: '博客发布器',
   loading: '正在启动发布器…',
   startFail: (m) => '启动失败：' + m,
+  startTimeout: (s) => `后台服务启动超时（${s} 秒）`,
+  workerExited: (code) => '后台服务进程退出（code ' + code + '）',
+  unknownError: '未知错误',
   publishing: '正在发布…',
   publishFailed: (m) => '发布失败：' + m,
   pushed: '已推送 GitHub，正在构建',
@@ -164,6 +173,9 @@ const EN: Strings = {
   viewTitle: 'Blog publisher',
   loading: 'Starting publisher…',
   startFail: (m) => 'Failed to start: ' + m,
+  startTimeout: (s) => `The background service did not start within ${s} seconds`,
+  workerExited: (code) => 'The background service exited (code ' + code + ')',
+  unknownError: 'Unknown error',
   publishing: 'Publishing…',
   publishFailed: (m) => 'Publish failed: ' + m,
   pushed: 'Pushed to GitHub, building now',
