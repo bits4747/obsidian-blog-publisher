@@ -75,7 +75,7 @@
 
 有效期建议选「No expiration」。令牌过期后发布、建仓库、自动建站会一起失败，而报错信息看不出是过期。
 
-**令牌怎么存的**：明文保存在本机的 `local.json`（见下文「数据存放位置」），不加密、不进仓库、不上传。任何能读你用户目录的程序都能读到它——公用电脑上建议用完就删掉令牌。想撤掉授权，去 GitHub 的 Settings → Developer settings → Tokens 里删除该 token 即可。
+**令牌怎么存的**：用系统自带的加密保存（Windows DPAPI / macOS Keychain），密文写在 `local.json` 里，只有你这个本机账号能解开，不进仓库、不上传。Linux 没有免依赖的等价物，退回明文并在下文说明。想撤掉授权，去 GitHub 的 Settings → Developer settings → Tokens 里删除该 token 即可。
 
 ### 3. 选笔记并发布
 
@@ -207,18 +207,22 @@ body { font-family: "Songti SC", Georgia, serif; }
 - 三种状态：全公开、全私密、部分公开（两个都不点亮，配合行尾的 `3/6` 计数一眼看出是混合状态）
 - 主区域开的「博客发布器」标签页里是完整的发布界面，功能与上一节列的一致
 
-**几点需要知道的**
-
-- 首次启用时插件会把站点源码模板（42 个文件，约 408 KB）铺到数据目录的 `site-template/`，之后「更新源码」用它推送站点代码
-- 模板带内容指纹：升级插件后会自动重铺，不需要手动删目录
-- 文件树上的开关只在**当前库就是发布器配置的那个库**时生效，库对不上会提示一次并停用
-- 界面的语言与明暗跟随 Obsidian（简体/繁体中文都算中文，其它语言算英文）
-- 每篇笔记的公开开关写进 frontmatter，所以笔记本身换了库、换了电脑，公开状态还是跟着走
-
 ## 常见问题
 
 **发布后网站没变？**
 GitHub Actions 要跑 1~2 分钟。发布器的结果弹窗会显示「正在构建部署…已等 N 秒」，完成后变成「已上线（用时 N 秒）」。超过 4 分钟还没上线，弹窗会提示去仓库的 Actions 页面看构建日志。
+
+**`site-template/` 是干什么的？能删吗？**
+首次启用时插件会把站点源码模板（42 个文件，约 408 KB）铺到数据目录的 `site-template/`，之后「更新源码」用它推送站点代码。不用手动删——模板带内容指纹，升级插件后会自动重铺。
+
+**文件树上的开关点了没反应？**
+开关只在**当前库就是发布器配置的那个库**时生效。库对不上会提示一次并停用，因为发布器一次只服务一个库。
+
+**界面语言和明暗能单独设吗？**
+不能，跟随 Obsidian：简体/繁体中文都算中文，其它语言算英文；明暗也跟着 Obsidian 的主题走。
+
+**公开状态存在哪？换电脑还在吗？**
+写进每篇笔记 frontmatter 里的 `public` 字段，所以公开状态跟着笔记走——换了库、换了电脑，打开还是原来的状态。
 
 **发布失败，说是推送失败？**
 先看弹窗里展开的日志。最常见的是令牌过期——症状是发布、建仓库、自动建站一起失败，报错信息看不出原因。重新生成一个 token 再粘进去即可。
@@ -256,7 +260,7 @@ GitHub Actions 要跑 1~2 分钟。发布器的结果弹窗会显示「正在构
 
 内含 `connections.json`（博客连接清单）、`local.json`（GitHub 令牌、各连接的本地库路径）、`repos/<连接id>/`（仓库工作副本）、`content/`（公开笔记镜像）、`build/`（构建产物）。
 
-`local.json` 里的 GitHub 令牌是**明文**存的（不加密）。它在你的用户目录下，只有本机账号能读；但这也意味着任何能读你用户目录的程序都能拿到它。公用电脑上用完记得在 GitHub 里删掉该 token。
+`local.json` 里的 GitHub 令牌用**系统加密**保存：Windows 走 DPAPI（CryptProtectData，作用域 CurrentUser），macOS 走 Keychain，密文存在 `local.json` 的 `githubTokenEnc` 字段里，只有你这个本机账号能解开。Linux 没有免依赖的等价物，会退回明文的 `githubToken` 字段——在那种环境下，任何能读你用户目录的程序都能拿到它。想彻底撤掉授权，去 GitHub 删掉该 token。
 
 想改到别处（U 盘、同步盘）：设环境变量 `OBSIDIAN_BLOG_DATA` 后重启 Obsidian。
 
@@ -332,11 +336,17 @@ python tools/preview/pack-theme-previews.py      # 4. 压成 scripts/theme-previ
 ## 项目结构
 
 ```
-obsidian-blog/
-├── README.md / LICENSE / CHANGELOG.md
+obsidian-blog-publisher/
+├── README.md / README.en.md     中文 / 英文说明
+├── CHANGELOG.md / .en.md        版本变更
+├── CONTRIBUTING.md / .en.md     贡献指南
+├── LICENSE / .editorconfig / .gitattributes / .gitignore
 ├── package.json                 依赖与脚本入口
 ├── next.config.ts               Next 配置（output: 'export'，支持 basePath）
-├── .github/workflows/deploy.yml 构建并部署到 Pages
+├── .github/
+│   ├── workflows/verify.yml     类型检查 + e2e（推代码时跑）
+│   ├── workflows/deploy.yml     构建并部署到 Pages（站点仓库里跑）
+│   └── ISSUE_TEMPLATE/          issue 模板
 ├── docs/screenshots/            README 用的截图
 │
 ├── scripts/
@@ -354,7 +364,8 @@ obsidian-blog/
 ├── tools/preview/               预览图生成链路（示例内容 → 截图 → 打包）
 │
 ├── obsidian-plugin/             Obsidian 插件（复用上面的内核与界面）
-│   ├── manifest.json / package.json / esbuild.config.mjs
+│   ├── manifest.json / versions.json / package.json / esbuild.config.mjs
+│   ├── main.js / worker.js      构建产物（Release 里上传的就是这两个）
 │   └── src/
 │       ├── main.ts              插件入口：utilityProcess 起内核、开视图
 │       ├── worker-entry.ts      内核跑在子进程里（git 是同步调用，不能占主线程）

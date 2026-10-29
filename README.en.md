@@ -75,7 +75,7 @@ Click "GitHub access" and follow the dialog to create a **Personal access token 
 
 Set the expiration to "No expiration". An expired token makes publishing, repo creation, and automatic Pages setup all fail together, and the error message doesn't tell you it expired.
 
-**How the token is stored**: in plain text in `local.json` on your machine (see "Where data lives" below). Not encrypted, not committed, never uploaded. Any program that can read your user directory can read it — on a shared computer, delete the token when you're done. To revoke access, delete the token in GitHub's Settings → Developer settings → Tokens.
+**How the token is stored**: encrypted with the OS keychain (Windows DPAPI / macOS Keychain). The ciphertext sits in `local.json` and only your own account on this machine can decrypt it; it is never committed or uploaded. Linux has no dependency-free equivalent and falls back to plain text, as described below. To revoke access, delete the token in GitHub's Settings → Developer settings → Tokens.
 
 ### 3. Pick notes and publish
 
@@ -207,18 +207,22 @@ The site supports Chinese/English switching and light/dark themes, and remembers
 - Three states: all public, all private, and partially public (neither button lit, with a `3/6` count at the end of the row)
 - The "Blog Publisher" tab in the main area is the full publishing interface, matching the previous section
 
-**Worth knowing**
-
-- On first enable the plugin lays down the site source template (42 files, about 408 KB) into `site-template/` in the data directory; "Update source" uses it to push site code
-- The template carries a content fingerprint, so upgrading the plugin re-lays it automatically — no need to delete the directory
-- The explorer switches only work when **the current vault is the one configured in the publisher**; otherwise you get a notice and they're disabled
-- Interface language and theme follow Obsidian (Simplified and Traditional Chinese both count as Chinese; everything else is English)
-- The public flag is written into each note's frontmatter, so it travels with the note to another vault or machine
-
 ## FAQ
 
 **Published, but the site didn't change?**
 GitHub Actions takes 1–2 minutes. The result card shows "GitHub is building… N seconds elapsed" and switches to "Live (took N seconds)". After 4 minutes it points you to the repo's Actions page.
+
+**What is `site-template/` for? Can I delete it?**
+On first enable the plugin lays down the site source template (42 files, about 408 KB) into `site-template/` in the data directory; "Update source" uses it to push site code. There's no need to delete it — the template carries a content fingerprint, so upgrading the plugin re-lays it automatically.
+
+**The switches in the file explorer don't respond?**
+They only work when **the current vault is the one configured in the publisher**. If the vault doesn't match you get a notice and they're disabled, because the publisher serves one vault at a time.
+
+**Can I set the interface language and theme separately?**
+No, they follow Obsidian: Simplified and Traditional Chinese both count as Chinese, everything else is English; the theme follows Obsidian's too.
+
+**Where is the public flag stored? Will it survive a move?**
+In each note's frontmatter as the `public` field, so it travels with the note — switch vaults or machines and it's still whatever you set.
 
 **Publishing fails with a push error?**
 Read the expanded log first. The most common cause is an expired token — publishing, repo creation, and automatic Pages setup all fail together, and the message doesn't say why. Generate a new token and paste it in.
@@ -256,7 +260,7 @@ The source directory holds only program code. Personal data (connections, tokens
 
 It contains `connections.json` (blog connections), `local.json` (GitHub token and each connection's local vault path), `repos/<connection-id>/` (repo working copies), `content/` (mirror of public notes), and `build/` (build output).
 
-The GitHub token in `local.json` is stored **in plain text** (not encrypted). It's under your user directory, readable only by your account — which also means any program that can read your user directory can get it. On a shared computer, delete the token on GitHub when you're done.
+The GitHub token in `local.json` is stored **encrypted by the OS**: Windows uses DPAPI (CryptProtectData, CurrentUser scope), macOS uses the Keychain, and the ciphertext lives in the `githubTokenEnc` field — only your own account on this machine can decrypt it. Linux has no dependency-free equivalent and falls back to a plain-text `githubToken` field; there, any program that can read your user directory can get it. To revoke access entirely, delete the token on GitHub.
 
 To move it elsewhere (USB drive, sync folder), set the `OBSIDIAN_BLOG_DATA` environment variable and restart Obsidian.
 
@@ -332,11 +336,17 @@ Deploying to your own server: after `npm run build`, copy the contents of `build
 ## Project layout
 
 ```
-obsidian-blog/
-├── README.md / README.en.md / LICENSE / CHANGELOG.md
+obsidian-blog-publisher/
+├── README.md / README.en.md     Chinese / English docs
+├── CHANGELOG.md / .en.md        release notes
+├── CONTRIBUTING.md / .en.md     contribution guide
+├── LICENSE / .editorconfig / .gitattributes / .gitignore
 ├── package.json                 dependencies and scripts
 ├── next.config.ts               Next config (output: 'export', supports basePath)
-├── .github/workflows/deploy.yml build and deploy to Pages
+├── .github/
+│   ├── workflows/verify.yml     typecheck + e2e (runs on code pushes)
+│   ├── workflows/deploy.yml     build and deploy to Pages (runs in the site repo)
+│   └── ISSUE_TEMPLATE/          issue templates
 ├── docs/screenshots/            screenshots used by the READMEs
 │
 ├── scripts/
@@ -354,7 +364,8 @@ obsidian-blog/
 ├── tools/preview/               preview generation chain (sample content → screenshots → packing)
 │
 ├── obsidian-plugin/             the Obsidian plugin (reuses the core and UI above)
-│   ├── manifest.json / package.json / esbuild.config.mjs
+│   ├── manifest.json / versions.json / package.json / esbuild.config.mjs
+│   ├── main.js / worker.js      build output (these two are what the Release ships)
 │   └── src/
 │       ├── main.ts              plugin entry: starts the core via utilityProcess, opens the view
 │       ├── worker-entry.ts      the core in a child process (git calls are synchronous and must not block the main thread)

@@ -747,9 +747,21 @@ export function createManager(opts) {
     // 一律当成 GitHub，导致**任何**远端仓库都会收到 GitHub 令牌 —— 这里改成读
     // .git/config 里真实的 origin 地址再判断。
     const looksGithub = /github[.]com/i.test(args.join(' ')) || (!!cwd && isGithubWorkdir(cwd))
+    // ⚠️ 令牌不能拼进命令行参数：`-c http.extraHeader=Authorization: Basic ...`
+    // 会出现在进程列表里（同机其它用户/进程都能看到），也会被某些工具的
+    // 错误输出带出来。改用 git 官方的环境变量注入（GIT_CONFIG_COUNT 系列），
+    // 配置照样生效，但不出现在 argv 里。
+    const env = {
+      ...process.env,
+      GIT_TERMINAL_PROMPT: '0',
+    }
     if (token && looksGithub) {
       const basic = Buffer.from('x-access-token:' + token).toString('base64')
-      pre.push('-c', 'http.extraHeader=Authorization: Basic ' + basic)
+      env.GIT_CONFIG_COUNT = '1'
+      env.GIT_CONFIG_KEY_0 = 'http.extraHeader'
+      env.GIT_CONFIG_VALUE_0 = 'Authorization: Basic ' + basic
+      // 见函数上方注释 ③：有令牌且目标是 GitHub 时，跳过 MITM 证书的吊销检查
+      env.GIT_SSL_NO_VERIFY = '1'
     }
     const r = spawnSync('git', [...pre, ...args], {
       cwd,
@@ -757,12 +769,7 @@ export function createManager(opts) {
       stdio: ['ignore', 'pipe', 'pipe'],
       timeout: 120000,
       windowsHide: true,
-      // 见函数上方注释 ③：有令牌且目标是 GitHub 时，跳过 MITM 证书的吊销检查
-      env: {
-        ...process.env,
-        GIT_TERMINAL_PROMPT: '0',
-        ...(token && looksGithub ? { GIT_SSL_NO_VERIFY: '1' } : null),
-      },
+      env,
     })
     if (r.error) throw new Error(r.error.message)
     if (r.status !== 0) {
@@ -838,13 +845,132 @@ export function createManager(opts) {
    * 优先级：环境变量 GITHUB_TOKEN/GH_TOKEN > 本机在管理器里存过的令牌 > git 凭据管理器。
    * 读不到就返回 null，调用方据此给出「如何授权」的指引，而不是让 git 卡在交互提示上。
    */
+  /**
+   * 令牌在磁盘上的存法。
+   *
+   * 旧格式是 local.json 里的 `githubToken` 明文字段——任何能读你用户目录的程序
+   * 都能直接拿走它。现在改成用系统自带的「只能本用户解开」的加密：
+   *
+   *   Windows  DPAPI（CryptProtectData，作用域 CurrentUser）
+   *   macOS    Keychain（security 命令）
+   *   Linux    没有免依赖的等价物，退回明文并在 README 里写明
+   *
+   * 两种格式并存：读到 `githubTokenEnc` 就用加密的；读到旧 `githubToken` 就顺手
+   * 迁移成加密的并删掉明文字段。迁移失败（系统命令不可用）就保持原样，
+   * 绝不让用户因此丢掉令牌。
+   *
+   * 为什么走子进程而不是纯 JS：DPAPI 是 Windows 系统 API，Node 标准库没有；
+   * 装原生模块会给「下载即用」的插件加一道编译门槛。子进程只在保存和首次读取时
+   * 各跑一次，结果缓存在内存里，不影响发布速度。
+   */
+  const TOKEN_ENC_FIELD = 'githubTokenEnc'
+
+  const PS_DPAPI_PROTECT = [
+    'Add-Type -AssemblyName System.Security',
+    '$p=[Console]::In.ReadToEnd()',
+    '$b=[Text.Encoding]::UTF8.GetBytes($p)',
+    "$e=[Security.Cryptography.ProtectedData]::Protect($b,$null,'CurrentUser')",
+    '[Console]::Out.Write([Convert]::ToBase64String($e))',
+  ].join('; ')
+
+  const PS_DPAPI_UNPROTECT = [
+    'Add-Type -AssemblyName System.Security',
+    '$s=[Console]::In.ReadToEnd()',
+    '$e=[Convert]::FromBase64String($s)',
+    "$b=[Security.Cryptography.ProtectedData]::Unprotect($e,$null,'CurrentUser')",
+    '[Console]::Out.Write([Text.Encoding]::UTF8.GetString($b))',
+  ].join('; ')
+
+  function runWithInput(cmd, args, input) {
+    const r = spawnSync(cmd, args, {
+      input,
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 20000,
+      windowsHide: true,
+    })
+    if (r.status !== 0 || r.error) return null
+    return r.stdout
+  }
+
+  /** 加密令牌；返回 null 表示这台机器没有可用的系统加密，调用方退回明文 */
+  function encryptToken(plain) {
+    const s = String(plain || '')
+    if (!s) return null
+    try {
+      if (process.platform === 'win32') {
+        const out = runWithInput('powershell', ['-NoProfile', '-NonInteractive', '-Command', PS_DPAPI_PROTECT], s)
+        return out && out.trim() ? out.trim() : null
+      }
+      if (process.platform === 'darwin') {
+        const acct = process.env.USER || 'user'
+        const r = spawnSync('security', ['add-generic-password', '-U', '-a', acct, '-s', 'obsidian-blog-publisher', '-w', s], {
+          encoding: 'utf8',
+          timeout: 20000,
+        })
+        return r.status === 0 ? 'keychain' : null
+      }
+    } catch {
+      /* 系统加密不可用就当没有 */
+    }
+    return null
+  }
+
+  /** 解密令牌；拿不到就返回 null */
+  function decryptToken(enc) {
+    const s = String(enc || '')
+    if (!s) return null
+    try {
+      if (s === 'keychain') {
+        const acct = process.env.USER || 'user'
+        const r = spawnSync('security', ['find-generic-password', '-a', acct, '-s', 'obsidian-blog-publisher', '-w'], {
+          encoding: 'utf8',
+          timeout: 20000,
+        })
+        return r.status === 0 && r.stdout ? r.stdout.replace(/\n$/, '') : null
+      }
+      if (process.platform === 'win32') {
+        const out = runWithInput('powershell', ['-NoProfile', '-NonInteractive', '-Command', PS_DPAPI_UNPROTECT], s)
+        return out && out.length ? out : null
+      }
+    } catch {
+      /* 解不开就当没有，让用户重新粘贴 */
+    }
+    return null
+  }
+
+  // 解密结果缓存：readGithubToken() 每次 git 调用都会走一遍，不能每次都起子进程。
+  let tokenCache = undefined // undefined=还没读过；null=没有令牌；string=令牌
+
   function readGithubToken() {
     const fromEnv = (process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '').trim()
     if (fromEnv) return fromEnv
     // 管理器里粘贴保存过的令牌（local.json，仅本机、已 gitignore）
+    if (tokenCache !== undefined) return tokenCache
     try {
-      const saved = (loadLocal().githubToken || '').trim()
-      if (saved) return saved
+      const local = loadLocal()
+      let saved = ''
+      if (local[TOKEN_ENC_FIELD]) {
+        saved = (decryptToken(local[TOKEN_ENC_FIELD]) || '').trim()
+      } else if (local.githubToken) {
+        // 旧格式：顺手迁移成加密的，迁移失败就继续用明文
+        saved = String(local.githubToken).trim()
+        try {
+          const enc = encryptToken(saved)
+          if (enc) {
+            local[TOKEN_ENC_FIELD] = enc
+            delete local.githubToken
+            saveLocal(local)
+          }
+        } catch {
+          /* 迁移失败不影响本次使用 */
+        }
+      }
+      if (saved) {
+        tokenCache = saved
+        return saved
+      }
+      tokenCache = null
     } catch {
       /* 读不到就当没有 */
     }
@@ -872,9 +998,16 @@ export function createManager(opts) {
   function saveGithubToken(token) {
     const local = loadLocal()
     const t = String(token || '').trim()
-    if (t) local.githubToken = t
-    else delete local.githubToken
+    // 两个字段都先清掉，避免新旧两份不一致
+    delete local.githubToken
+    delete local[TOKEN_ENC_FIELD]
+    if (t) {
+      const enc = encryptToken(t)
+      if (enc) local[TOKEN_ENC_FIELD] = enc
+      else local.githubToken = t // 这台机器没有可用的系统加密，退回明文（README 有说明）
+    }
     saveLocal(local)
+    tokenCache = t || null
     return !!t
   }
 
@@ -1392,9 +1525,15 @@ export function createManager(opts) {
     const token = readGithubToken()
     const looksGithub = /github[.]com/i.test(repo)
     const pre = ['-c', 'credential.interactive=false']
+    // 同 git()：令牌走环境变量注入，不拼进 argv（argv 会出现在进程列表里）
+    const env = { ...process.env, GIT_TERMINAL_PROMPT: '0' }
     if (token && looksGithub) {
       const basic = Buffer.from('x-access-token:' + token).toString('base64')
-      pre.push('-c', 'http.extraHeader=Authorization: Basic ' + basic)
+      env.GIT_CONFIG_COUNT = '1'
+      env.GIT_CONFIG_KEY_0 = 'http.extraHeader'
+      env.GIT_CONFIG_VALUE_0 = 'Authorization: Basic ' + basic
+      // 同 git()：加速器的 MITM 证书会卡在吊销检查，有令牌时跳过（见 git() 注释 ③）
+      env.GIT_SSL_NO_VERIFY = '1'
     }
     const started = Date.now()
     const r = spawnSync('git', [...pre, 'ls-remote', '--heads', repo], {
@@ -1402,12 +1541,7 @@ export function createManager(opts) {
       stdio: ['ignore', 'pipe', 'pipe'],
       timeout: 12000,
       windowsHide: true,
-      // 同 git()：加速器的 MITM 证书会卡在吊销检查，有令牌时跳过（见 git() 注释 ③）
-      env: {
-        ...process.env,
-        GIT_TERMINAL_PROMPT: '0',
-        ...(token && looksGithub ? { GIT_SSL_NO_VERIFY: '1' } : null),
-      },
+      env,
     })
     if (r.status === 0) return { ok: true }
     const detail = ((r.stderr || '') + (r.stdout || '')).trim().slice(0, 300)

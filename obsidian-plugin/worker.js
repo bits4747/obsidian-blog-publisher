@@ -6934,9 +6934,16 @@ function createManager(opts) {
     const token = readGithubToken();
     const pre = ["-c", "credential.interactive=false"];
     const looksGithub = /github[.]com/i.test(args.join(" ")) || !!cwd && isGithubWorkdir(cwd);
+    const env = {
+      ...process.env,
+      GIT_TERMINAL_PROMPT: "0"
+    };
     if (token && looksGithub) {
       const basic = Buffer.from("x-access-token:" + token).toString("base64");
-      pre.push("-c", "http.extraHeader=Authorization: Basic " + basic);
+      env.GIT_CONFIG_COUNT = "1";
+      env.GIT_CONFIG_KEY_0 = "http.extraHeader";
+      env.GIT_CONFIG_VALUE_0 = "Authorization: Basic " + basic;
+      env.GIT_SSL_NO_VERIFY = "1";
     }
     const r = (0, import_node_child_process.spawnSync)("git", [...pre, ...args], {
       cwd,
@@ -6944,12 +6951,7 @@ function createManager(opts) {
       stdio: ["ignore", "pipe", "pipe"],
       timeout: 12e4,
       windowsHide: true,
-      // 见函数上方注释 ③：有令牌且目标是 GitHub 时，跳过 MITM 证书的吊销检查
-      env: {
-        ...process.env,
-        GIT_TERMINAL_PROMPT: "0",
-        ...token && looksGithub ? { GIT_SSL_NO_VERIFY: "1" } : null
-      }
+      env
     });
     if (r.error) throw new Error(r.error.message);
     if (r.status !== 0) {
@@ -6994,12 +6996,99 @@ function createManager(opts) {
     if (!m) m = s.match(/^git@github\.com:([^/]+)\/([^/]+?)(?:\.git)?$/i);
     return m ? `${m[1]}/${m[2]}` : null;
   }
+  const TOKEN_ENC_FIELD = "githubTokenEnc";
+  const PS_DPAPI_PROTECT = [
+    "Add-Type -AssemblyName System.Security",
+    "$p=[Console]::In.ReadToEnd()",
+    "$b=[Text.Encoding]::UTF8.GetBytes($p)",
+    "$e=[Security.Cryptography.ProtectedData]::Protect($b,$null,'CurrentUser')",
+    "[Console]::Out.Write([Convert]::ToBase64String($e))"
+  ].join("; ");
+  const PS_DPAPI_UNPROTECT = [
+    "Add-Type -AssemblyName System.Security",
+    "$s=[Console]::In.ReadToEnd()",
+    "$e=[Convert]::FromBase64String($s)",
+    "$b=[Security.Cryptography.ProtectedData]::Unprotect($e,$null,'CurrentUser')",
+    "[Console]::Out.Write([Text.Encoding]::UTF8.GetString($b))"
+  ].join("; ");
+  function runWithInput(cmd, args, input) {
+    const r = (0, import_node_child_process.spawnSync)(cmd, args, {
+      input,
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"],
+      timeout: 2e4,
+      windowsHide: true
+    });
+    if (r.status !== 0 || r.error) return null;
+    return r.stdout;
+  }
+  function encryptToken(plain) {
+    const s = String(plain || "");
+    if (!s) return null;
+    try {
+      if (process.platform === "win32") {
+        const out = runWithInput("powershell", ["-NoProfile", "-NonInteractive", "-Command", PS_DPAPI_PROTECT], s);
+        return out && out.trim() ? out.trim() : null;
+      }
+      if (process.platform === "darwin") {
+        const acct = process.env.USER || "user";
+        const r = (0, import_node_child_process.spawnSync)("security", ["add-generic-password", "-U", "-a", acct, "-s", "obsidian-blog-publisher", "-w", s], {
+          encoding: "utf8",
+          timeout: 2e4
+        });
+        return r.status === 0 ? "keychain" : null;
+      }
+    } catch {
+    }
+    return null;
+  }
+  function decryptToken(enc) {
+    const s = String(enc || "");
+    if (!s) return null;
+    try {
+      if (s === "keychain") {
+        const acct = process.env.USER || "user";
+        const r = (0, import_node_child_process.spawnSync)("security", ["find-generic-password", "-a", acct, "-s", "obsidian-blog-publisher", "-w"], {
+          encoding: "utf8",
+          timeout: 2e4
+        });
+        return r.status === 0 && r.stdout ? r.stdout.replace(/\n$/, "") : null;
+      }
+      if (process.platform === "win32") {
+        const out = runWithInput("powershell", ["-NoProfile", "-NonInteractive", "-Command", PS_DPAPI_UNPROTECT], s);
+        return out && out.length ? out : null;
+      }
+    } catch {
+    }
+    return null;
+  }
+  let tokenCache = void 0;
   function readGithubToken() {
     const fromEnv = (process.env.GITHUB_TOKEN || process.env.GH_TOKEN || "").trim();
     if (fromEnv) return fromEnv;
+    if (tokenCache !== void 0) return tokenCache;
     try {
-      const saved = (loadLocal().githubToken || "").trim();
-      if (saved) return saved;
+      const local = loadLocal();
+      let saved = "";
+      if (local[TOKEN_ENC_FIELD]) {
+        saved = (decryptToken(local[TOKEN_ENC_FIELD]) || "").trim();
+      } else if (local.githubToken) {
+        saved = String(local.githubToken).trim();
+        try {
+          const enc = encryptToken(saved);
+          if (enc) {
+            local[TOKEN_ENC_FIELD] = enc;
+            delete local.githubToken;
+            saveLocal(local);
+          }
+        } catch {
+        }
+      }
+      if (saved) {
+        tokenCache = saved;
+        return saved;
+      }
+      tokenCache = null;
     } catch {
     }
     try {
@@ -7022,9 +7111,15 @@ function createManager(opts) {
   function saveGithubToken(token) {
     const local = loadLocal();
     const t = String(token || "").trim();
-    if (t) local.githubToken = t;
-    else delete local.githubToken;
+    delete local.githubToken;
+    delete local[TOKEN_ENC_FIELD];
+    if (t) {
+      const enc = encryptToken(t);
+      if (enc) local[TOKEN_ENC_FIELD] = enc;
+      else local.githubToken = t;
+    }
     saveLocal(local);
+    tokenCache = t || null;
     return !!t;
   }
   function systemCurlPath() {
@@ -7393,9 +7488,13 @@ function createManager(opts) {
     const token = readGithubToken();
     const looksGithub = /github[.]com/i.test(repo);
     const pre = ["-c", "credential.interactive=false"];
+    const env = { ...process.env, GIT_TERMINAL_PROMPT: "0" };
     if (token && looksGithub) {
       const basic = Buffer.from("x-access-token:" + token).toString("base64");
-      pre.push("-c", "http.extraHeader=Authorization: Basic " + basic);
+      env.GIT_CONFIG_COUNT = "1";
+      env.GIT_CONFIG_KEY_0 = "http.extraHeader";
+      env.GIT_CONFIG_VALUE_0 = "Authorization: Basic " + basic;
+      env.GIT_SSL_NO_VERIFY = "1";
     }
     const started = Date.now();
     const r = (0, import_node_child_process.spawnSync)("git", [...pre, "ls-remote", "--heads", repo], {
@@ -7403,12 +7502,7 @@ function createManager(opts) {
       stdio: ["ignore", "pipe", "pipe"],
       timeout: 12e3,
       windowsHide: true,
-      // 同 git()：加速器的 MITM 证书会卡在吊销检查，有令牌时跳过（见 git() 注释 ③）
-      env: {
-        ...process.env,
-        GIT_TERMINAL_PROMPT: "0",
-        ...token && looksGithub ? { GIT_SSL_NO_VERIFY: "1" } : null
-      }
+      env
     });
     if (r.status === 0) return { ok: true };
     const detail = ((r.stderr || "") + (r.stdout || "")).trim().slice(0, 300);
