@@ -318,13 +318,14 @@ It runs the same core the plugin uses (`scripts/manager-core.mjs`), just with th
 
 Preset CSS sources live in `themes/`. **Don't edit `scripts/theme-presets.mjs`** — it's generated. Edit `themes/*.css`, then run `npm run presets`; the presets' Chinese and English names and descriptions live in `META` in `scripts/gen-theme-presets.mjs`.
 
-Preview images come from a four-step chain (build the site with sample notes → inject each preset and screenshot → pack into a base64 module), under `tools/preview/`:
+Preview images come from a five-step chain (build the site with sample notes → inject each preset and screenshot → pack into a base64 module), under `tools/preview/`:
 
 ```bash
 node tools/preview/make-preview-content.mjs      # 1. generate sample notes (site name "示例博客")
 npm run build                                    # 2. build
-node tools/preview/gen-theme-previews.mjs _preview/site _preview/shots   # 3. headless Chrome screenshots
-python tools/preview/pack-theme-previews.py      # 4. pack into scripts/theme-previews.mjs
+node tools/preview/preview-serve.mjs _preview/site 3480 &   # 3. start preview server (keep running)
+node tools/preview/gen-theme-previews.mjs _preview/site _preview/shots   # 4. headless Chrome screenshots
+python tools/preview/pack-theme-previews.py      # 5. pack into scripts/theme-previews.mjs
 ```
 
 Step 3 needs Chrome installed (point `CHROME` at it if it's not in the default location); step 4 needs Python's Pillow. The sample content is deliberately fake — the previews ship inside the plugin alongside the source, so no real notes may appear.

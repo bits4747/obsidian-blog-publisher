@@ -318,13 +318,14 @@ npm run dev:manager   # → http://localhost:3457
 
 预设的 CSS 源文件在 `themes/`，**不要直接改 `scripts/theme-presets.mjs`**（它是生成物）。改完 `themes/*.css` 后跑 `npm run presets` 重新生成；预设的中英文名与简介写在 `scripts/gen-theme-presets.mjs` 的 `META` 里。
 
-预览图是「用示例笔记构建一遍站点 → 逐套注入 CSS 截图 → 压成 base64 模块」四步产物，链路在 `tools/preview/`：
+预览图是「用示例笔记构建一遍站点 → 逐套注入 CSS 截图 → 压成 base64 模块」五步产物，链路在 `tools/preview/`：
 
 ```bash
 node tools/preview/make-preview-content.mjs      # 1. 造示例笔记（站名「示例博客」）
 npm run build                                    # 2. 构建
-node tools/preview/gen-theme-previews.mjs _preview/site _preview/shots   # 3. 无头 Chrome 截图
-python tools/preview/pack-theme-previews.py      # 4. 压成 scripts/theme-previews.mjs
+node tools/preview/preview-serve.mjs _preview/site 3480 &   # 3. 起预览服务（保持运行）
+node tools/preview/gen-theme-previews.mjs _preview/site _preview/shots   # 4. 无头 Chrome 截图
+python tools/preview/pack-theme-previews.py      # 5. 压成 scripts/theme-previews.mjs
 ```
 
 第 3 步需要本机装了 Chrome（不在默认路径时用 `CHROME` 环境变量指定），第 4 步需要 Python 的 Pillow。示例内容是刻意造的假笔记：预览图会打包进插件随源码分发，不能出现任何真实笔记。
