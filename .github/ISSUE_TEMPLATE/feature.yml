@@ -1,0 +1,26 @@
+name: 功能建议
+description: 想要某个功能，或现有功能用起来别扭
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你遇到的实际问题
+      description: 先说场景，再说你想要什么。比如「我有 200 篇笔记，每次找某篇要点好几层」比「加个搜索」有用得多
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: 你希望它怎么解决
+    validations:
+      required: false
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: 现在你是怎么绕过去的
+      description: 如果有的话。这能说明问题的严重程度
+    validations:
+      required: false

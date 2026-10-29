@@ -15,6 +15,19 @@ import path from 'node:path'
 import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import matter from 'gray-matter'
+// Obsidian 语法解析（wikilink 扫描 / 坏引用修复 / 标签 / 链接解析）与渲染期
+// （src/lib/obsidian.ts、remark-obsidian.ts）共用同一份实现。
+// 以前这里是手抄的副本，注释写着「必须与另一边保持一致」——那是靠纪律维持的一致性，
+// 迟早会漂移（漂移后的症状是「正文里是标签、标签页里没有」这类自相矛盾的 bug）。
+import {
+  normalizePath as normalize,
+  toSlug,
+  repairObsidianArtifacts,
+  scanWikilinks,
+  parseWikilink,
+  extractWikiRefs,
+  extractTags,
+} from '../src/lib/wikilink.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
@@ -107,8 +120,8 @@ const SKIP = ['.obsidian', '.trash', '.smart-env', '.git']
 const ASSET_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.bmp', '.ico', '.avif', '.pdf', '.mp3', '.wav', '.ogg', '.m4a', '.mp4', '.webm'])
 
 // ---------- 与 src/lib/obsidian.ts 一致的工具 ----------
-const normalize = (p) => p.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '')
-const toSlug = (p) => normalize(p).replace(/\.(md|markdown)$/i, '')
+// normalize / toSlug 直接从 ../src/lib/wikilink.mjs 引入（见文件头），这里只留
+// 构建期独有的几个路径小工具。
 const basenameOf = (p) => {
   const n = normalize(p)
   const base = n.split('/').pop() || n
@@ -179,129 +192,6 @@ const searchTextOf = (content) => {
     .trim()
   return text.slice(0, 20000)
 }
-function extractTags(data, content) {
-  const out = new Set()
-  const add = (v) => {
-    if (typeof v === 'string') v.split(/[,，]/).forEach((s) => s.trim() && out.add(s.trim()))
-    else if (Array.isArray(v)) v.forEach((x) => typeof x === 'string' && x.trim() && out.add(x.trim()))
-  }
-  add(data.tags)
-  add(data.tag)
-  const plain = content
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/~~~[\s\S]*?~~~/g, ' ')
-    .replace(/`[^`\n]*`/g, ' ')
-    .replace(/<[^>\n]+>/g, ' ')
-    .replace(/\[\[[^\]\n]*\]\]/g, ' ')
-  for (const m of plain.matchAll(/(^|[^\w#])#([\p{L}\p{N}][\p{L}\p{N}_/-]*)/gu)) {
-    const t = m[2]
-    if (t && !/^\d+$/.test(t) && !/^[0-9a-fA-F]{3,8}$/.test(t)) out.add(t)
-  }
-  return [...out].slice(0, 30)
-}
-/**
- * 修「markdown 链接被塞进 wikilink」的坏行（与 src/lib/obsidian.ts 的
- * repairObsidianArtifacts 同一实现）。
- *
- * Obsidian 允许 wikilink 目标里带成对方括号，但早期导出/手滑会写出
- *   ![[P8820 [CSP-S 2022] 数据传输](https //x)](CSP-S.md#[P8820%20...](https%20//x))
- * 这种「两层 markdown 链接套在 [[ ]] 里、且没有闭合 ]]」的行。按方括号配平
- * 扫描时它没有结束符，整段引用直接失效。这里只处理「整行、含 [[、不含 ]]」
- * 的行，把它重写成 [[外层链接目标|显示文字]]。
- */
-const ARTIFACT_LINE = /^(\s*)(!?)\[\[(.+?)\]\(([^)]*)\)\]\((.+)\)\s*$/
-const MD_LINK_RE = /\[([^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*)\]\([^()]*\)/g
-function stripMdLinks(input) {
-  let cur = input
-  let prev
-  let guard = 0
-  do {
-    prev = cur
-    cur = cur.replace(MD_LINK_RE, '$1')
-  } while (cur !== prev && ++guard < 8)
-  return cur
-}
-function repairObsidianArtifacts(content) {
-  if (!content.includes('[[')) return content
-  let inFence = false
-  const lines = content.split('\n').map((line) => {
-    if (/^\s*(```|~~~)/.test(line)) {
-      inFence = !inFence
-      return line
-    }
-    if (inFence || !line.includes('[[')) return line
-    let l = line
-    if (!l.includes(']]')) {
-      const m = ARTIFACT_LINE.exec(l)
-      if (m) {
-        const [, indent, bang, label, , target] = m
-        l = `${indent}${bang}[[${target.trim()}|${label.trim()}]]`
-      }
-    }
-    // wikilink 内部含 markdown 链接语法时，mdast 解析会把 [[ 与 ]] 拆散，
-    // 这里先剥成纯文字（与 src/lib/obsidian.ts 同一实现）
-    const toks = scanWikilinks(l)
-    if (toks.length === 0) return l
-    let res = ''
-    let last = 0
-    for (const tk of toks) {
-      res += l.slice(last, tk.start)
-      res += (tk.isEmbed ? '!' : '') + '[[' + stripMdLinks(tk.inner) + ']]'
-      last = tk.end
-    }
-    return res + l.slice(last)
-  })
-  return lines.join('\n')
-}
-
-/**
- * 按方括号配平扫描 wikilink（与 src/lib/obsidian.ts 的 scanWikilinks 同一规则）。
- * 不能用 /\[\[([^\][\n]+?)\]\]/ 这种朴素正则：本库存在目标里带成对方括号的
- * wikilink（标题本身就是 markdown 链接），朴素正则会漏掉或截断它们。
- */
-function scanWikilinks(text) {
-  const out = []
-  for (let i = 0; i < text.length; i++) {
-    const isEmbed = text[i] === '!' && text[i + 1] === '[' && text[i + 2] === '['
-    const start = isEmbed ? i + 1 : i
-    if (text[start] !== '[' || text[start + 1] !== '[') continue
-    let j = start + 2
-    let depth = 0
-    let inner = ''
-    while (j < text.length) {
-      const ch = text[j]
-      if (ch === '\\') {
-        inner += text[j + 1] ?? ''
-        j += 2
-        continue
-      }
-      if (ch === '\n') break
-      if (ch === '[') depth++
-      else if (ch === ']') {
-        if (depth === 0 && text[j + 1] === ']') {
-          out.push({ start: i, end: j + 2, isEmbed, inner })
-          i = j + 1
-          break
-        }
-        if (depth > 0) depth--
-      }
-      inner += ch
-      j++
-    }
-  }
-  return out
-}
-
-function extractWikiRefs(raw) {
-  const all = []
-  const embeds = []
-  const links = []
-  for (const tk of scanWikilinks(repairObsidianArtifacts(raw))) {
-    all.push(tk.inner)
-    ;(tk.isEmbed ? embeds : links).push(tk.inner)
-  }
-  return { all, embeds, links }
-}
 function extractMdImagePaths(raw) {
   const out = []
   for (const m of raw.matchAll(/!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g)) {
@@ -311,25 +201,7 @@ function extractMdImagePaths(raw) {
   }
   return out
 }
-function parseWikilink(link) {
-  let s = link.trim()
-  let alias = null
-  const bi = s.indexOf('|')
-  if (bi >= 0) {
-    alias = s.slice(bi + 1).trim() || null
-    s = s.slice(0, bi)
-  }
-  let heading = ''
-  const hi = s.indexOf('#')
-  if (hi >= 0) {
-    heading = s.slice(hi)
-    s = s.slice(0, hi)
-  }
-  s = normalize(s.replace(/\.(md|markdown)$/i, ''))
-  return { target: s, heading, alias }
-}
 const refSlugOf = (link) => parseWikilink(link).target || '#unresolved'
-
 function walk(dir, out = []) {
   let entries
   try {

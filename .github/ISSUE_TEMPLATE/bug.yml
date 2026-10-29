@@ -1,0 +1,80 @@
+name: Bug 报告
+description: 发布失败、界面异常、插件装不上
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        先用下面的命令确认前置环境，很多「点了没反应」都是缺 Git 或 Node：
+
+        ```bash
+        git --version
+        node -v
+        ```
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本号
+      description: 管理器右下角，或 obsidian-plugin/manifest.json 里的 version
+      placeholder: 1.0.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: 操作系统
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+
+  - type: dropdown
+    id: step
+    attributes:
+      label: 卡在哪一步
+      options:
+        - 插件装不上 / 启用后没反应
+        - 建连接
+        - GitHub 授权
+        - 选择本地库
+        - 切换公开 / 私密
+        - 发布到 GitHub
+        - 更新源码
+        - 站点显示不对（网页版）
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: 发生了什么
+      description: 你点了什么、期望看到什么、实际看到什么
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: 管理器日志
+      description: |
+        点发布后展开的 Details 全文，或管理器窗口里的输出。**不要截断报错原文** ——
+        `fatal: unable to access ...` 这类原文是定位问题的关键。
+      render: shell
+    validations:
+      required: false
+
+  - type: dropdown
+    id: proxy
+    attributes:
+      label: 网络环境
+      description: 本项目大量「发布失败」是 GitHub 连不上导致的
+      options:
+        - 直连，没有代理
+        - 开了代理 / 加速器（如 Steam++、Clash 等）
+        - 不确定
+    validations:
+      required: true

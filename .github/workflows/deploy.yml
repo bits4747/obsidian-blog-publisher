@@ -3,6 +3,7 @@ name: 构建并发布静态博客
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -19,7 +20,9 @@ jobs:
   #   ① 用户博客仓库的根目录（本文件由发布器铺过去）——这里要真的构建部署；
   #   ② 插件源码仓库（它本身就是模板的出处）——那里没有 content/，
   #      跑构建会「拒绝构建空站点」而失败，在开源仓库上留一堆红叉。
-  # 所以先用 content/ 里有没有笔记来区分：没有就整体跳过，有才继续。
+  # 所以先用 content/ 里有没有笔记来区分，两个仓库各跑各的：
+  #   有 content/ → build + deploy（用户博客）
+  #   没有 content/ → verify（插件仓库：类型检查 + 打包，不部署）
   check:
     runs-on: ubuntu-latest
     outputs:
@@ -32,8 +35,41 @@ jobs:
             echo "has=true" >> "$GITHUB_OUTPUT"
           else
             echo "has=false" >> "$GITHUB_OUTPUT"
-            echo "content/ 里没有笔记，这不是一个博客仓库，跳过构建部署。"
+            echo "content/ 里没有笔记：按插件源码仓库处理，跳过构建部署、改跑类型检查。"
           fi
+
+  # 插件源码仓库的 CI：类型检查 + 打包。
+  # 这一步存在的意义：插件仓库里 deploy 永远被跳过，若不加这个 job，
+  # 7500 行脚本、40 多次提交就没有任何自动化校验，坏代码能直接进 main。
+  verify:
+    needs: check
+    if: needs.check.outputs.has_content == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 安装站点依赖
+        run: npm ci
+
+      - name: 安装插件依赖
+        run: npm --prefix obsidian-plugin ci
+
+      - name: 类型检查（站点 + 插件）
+        run: npm run typecheck
+
+      - name: 打包插件（确保 main.js / worker.js 可产出）
+        run: npm run plugin
+
+      - name: 确认产物非空
+        run: |
+          for f in obsidian-plugin/main.js obsidian-plugin/worker.js; do
+            test -s "$f" || { echo "::error::$f 没有产出或为空"; exit 1; }
+          done
+          echo "main.js $(wc -c < obsidian-plugin/main.js) 字节，worker.js $(wc -c < obsidian-plugin/worker.js) 字节"
 
   build:
     needs: check
@@ -58,6 +94,8 @@ jobs:
 
   deploy:
     needs: build
+    # 只在 main 上推才部署：PR 里构建通过即可，不该把预览内容发上线。
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

@@ -2,6 +2,27 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.0.0] - 2026-10-30
+
+首个公开版本。此前版本号是内部迭代（`v1.8.0` 及更早），公开发布统一从 `1.0.0` 起算。
+
+### 新增
+- 英文文档 `README.en.md`，中文 README 顶部加语言切换
+- `CONTRIBUTING.md`：报告问题要带什么、本地怎么跑、提交前三道检查、六条硬规矩
+- `.github/ISSUE_TEMPLATE/`：Bug 报告与功能建议模板，关闭空白 issue
+- `obsidian-plugin/versions.json`（Obsidian 社区插件要求的最低版本映射）
+- CI 增加 `verify` job：`typecheck` + 打包插件 + 断言产物非空，**不依赖博客内容**；`pull_request` 触发
+- e2e 补两节：`/api/connection/setup`（三条负例 + 一条正例，锁死「不留半成品连接」）、`/api/update-source`（源码改动后模板被全量覆盖、无活动连接被拒）
+
+### 变更
+- 版本号统一为 `1.0.0`（`package.json`、`obsidian-plugin/package.json`、`obsidian-plugin/manifest.json`、两个 lock 文件）
+- README 安装段改为从 Release 下载三个文件，不再让人克隆仓库再拷贝；补「前置条件」表（Git / **Node.js** / GitHub 账号）与「手动更新」段
+- README 授权段用表格说明 `repo` 与 `workflow` 两个 scope 各自的作用，并写明令牌以**明文**存在本机 `local.json`
+- 把 `scanWikilinks` / `repairObsidianArtifacts` / `stripMdLinks` / `parseWikilink` / `extractWikiRefs` / `extractTags` 从两份手抄副本合并为 `src/lib/wikilink.mjs` 单一实现
+
+### 修复
+- 渲染端 `extractWikiRefs` 漏掉部分引用（`DP/DDP.md`、`图论/圆方树.md`、`图论/最小割.md`、`字符串/回文自动机PAM.md` 四篇）——该函数在 `src/` 里没有消费者，实际反链由构建期索引生成，所以线上未受影响，但隐患已消除
+
 ## [1.8.0] - 2026-10-29
 
 ### 变更

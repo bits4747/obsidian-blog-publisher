@@ -177,6 +177,84 @@ ok(logC.length > 0, 'clone 保留了远端已有提交（不是空白 git init�
 ok(exists(path.join(repoDirC, 'content/B1.md')), 'clone 拉到了远端已有内容 B1.md')
 ok(exists(path.join(repoDirC, 'package.json')), '模板文件已补齐')
 
+console.log('\n=== 10b. 一键建连接 /api/connection/setup（新用户主路径） ===')
+// 这是界面上「新建博客」默认走的接口：校验库 + 准备仓库 + 落盘一条龙。
+// 它把 prepareWorkdir 的失败提前到建连接时暴露（见 errRepoUnreachable 注释），
+// 所以两条路径都要测：能连通时建成功、连不通时**不留下半成品连接**。
+{
+  const before = (await api('/api/state')).connections.length
+
+  // 负例 1：仓库地址为空
+  let e1 = null
+  try { await api('/api/connection/setup', { vaultPath: VAULT_A, repo: '', initFromTemplate: true }) }
+  catch (e) { e1 = e.message }
+  ok(!!e1, '空仓库地址被拒：' + e1)
+
+  // 负例 2：库路径没有 .obsidian
+  let e2 = null
+  try {
+    await api('/api/connection/setup', {
+      vaultPath: path.resolve(process.cwd()), repo: REMOTE_A, initFromTemplate: true,
+    })
+  } catch (e) { e2 = e.message }
+  ok(!!e2, '非 Obsidian 库被拒：' + e2)
+
+  // 负例 3：远端连不上 → 必须 400 且**连接不落盘**
+  let e3 = null
+  try {
+    await api('/api/connection/setup', {
+      vaultPath: VAULT_A, repo: path.join(TEMP, 'no-such-remote-xyz.git'), initFromTemplate: true,
+    })
+  } catch (e) { e3 = e.message }
+  ok(!!e3, '连不上的仓库被拒：' + e3)
+  const afterBad = (await api('/api/state')).connections.length
+  ok(afterBad === before, '失败时没有留下半成品连接（前 ' + before + ' 后 ' + afterBad + '）')
+
+  // 正例：指向已有内容的 REMOTE_B，应当 clone 并落盘
+  const okSetup = await api('/api/connection/setup', {
+    name: '测试D-setup', vaultPath: VAULT_B, repo: REMOTE_B, initFromTemplate: true,
+  })
+  ok(!!okSetup.id, 'setup 建连接成功，id=' + okSetup.id)
+  const stD = await api('/api/state')
+  ok(stD.connections.length === before + 1, '连接数 +1，实际 ' + stD.connections.length)
+  ok(stD.vaultPath.replace(/\\/g, '/') === VAULT_B, '库路径已保存：' + stD.vaultPath)
+  const dirD = path.join(DATA_DIR, 'repos', okSetup.id)
+  ok(exists(path.join(dirD, 'content/B1.md')), 'setup 已把远端内容 clone 下来')
+  await api('/api/connection/switch', { id: idA })
+}
+
+console.log('\n=== 10c. 更新站点源码 /api/update-source ===')
+// 背景：publish() 只同步笔记到 content/，站点源码 src/ 不会动。
+// 改完源码必须走这个接口才会覆盖工作副本并推上去（否则用户以为发布了、线上其实没变）。
+{
+  const repoDirA2 = path.join(DATA_DIR, 'repos', idA)
+  // 人为改坏一个模板文件，模拟「用户改了源码」/「工作副本被改脏」
+  const pkgPath = path.join(repoDirA2, 'package.json')
+  const orig = fs.readFileSync(pkgPath, 'utf8')
+  fs.writeFileSync(pkgPath, orig.replace('"name": "obsidian-blog"', '"name": "obsidian-blog-DIRTY"'), 'utf8')
+  ok(fs.readFileSync(pkgPath, 'utf8').includes('DIRTY'), '工作副本已被改脏（模拟源码更新）')
+
+  const u = await api('/api/update-source', {})
+  ok(Array.isArray(u.log) && u.log.length > 0, '返回日志：' + JSON.stringify(u.log))
+  ok(u.failed !== true, '更新源码没有失败')
+  ok(!fs.readFileSync(pkgPath, 'utf8').includes('DIRTY'),
+    '模板被全量覆盖回原样（工作副本的脏改动被清掉）')
+
+  // 负例：没有活动连接时应该被拒，而不是 500 崩掉
+  const savedLocal = path.join(DATA_DIR, 'local.json')
+  const locBackup = fs.readFileSync(savedLocal, 'utf8')
+  try {
+    const loc = JSON.parse(locBackup)
+    delete loc.active
+    fs.writeFileSync(savedLocal, JSON.stringify(loc), 'utf8')
+  } catch { /* 读不出来就跳过这条负例 */ }
+  let eNoActive = null
+  try { await api('/api/update-source', {}) } catch (e) { eNoActive = e.message }
+  fs.writeFileSync(savedLocal, locBackup, 'utf8')
+  ok(!!eNoActive, '无活动连接时被拒：' + eNoActive)
+  await api('/api/connection/switch', { id: idA })
+}
+
 console.log('\n=== 11. 回归：发布按钮必须能用「无 body 的 POST」调用 ===')
 // 曾经的真实故障：UI 的 doPublish() 写 `api('/api/publish')`（不传 body），
 // 而 fetch 在无 body 时默认 GET → 服务端只注册了 POST → 返回 404，
@@ -453,10 +531,14 @@ console.log('\n=== 18. 行内标签识别：题目编号 / 颜色值 / 链接文
   // 判定规则本身：纯数字、3~8 位十六进制都不算标签
   ok(/\^\\d\+\$/.test(libSrc), '纯数字（如 #2427 题目编号）不算标签')
   ok(/\^\[0-9a-fA-F\]\{3,8\}\$/.test(libSrc), '十六进制颜色值（如 #ff0000）不算标签')
-  // 与 build-content.mjs 的标签提取口径对齐（同一份排除规则，两处都得有）
-  const buildSrc = fs.readFileSync(path.join(process.cwd(), 'scripts', 'build-content.mjs'), 'utf8')
-  ok(/!\/\^\\d\+\$\/\.test\(t\)/.test(buildSrc), '构建端 extractTags 也排除纯数字')
-  ok(/!\/\^\[0-9a-fA-F\]\{3,8\}\$\/\.test\(t\)/.test(buildSrc), '构建端 extractTags 也排除颜色值')
+  // 与构建端的标签提取口径对齐（同一份排除规则，两处都得有）
+  // 注意：extractTags 现在只有一份实现，在 src/lib/wikilink.mjs（构建期与渲染期共用），
+  // 所以查共享模块而不是 scripts/build-content.mjs —— 后者只是 import 它。
+  const sharedSrc = fs.readFileSync(path.join(process.cwd(), 'src', 'lib', 'wikilink.mjs'), 'utf8')
+  ok(/!\/\^\\d\+\$\/\.test\(t\)/.test(sharedSrc), '构建端 extractTags 也排除纯数字')
+  ok(/!\/\^\[0-9a-fA-F\]\{3,8\}\$\/\.test\(t\)/.test(sharedSrc), '构建端 extractTags 也排除颜色值')
+  ok(/extractTags/.test(fs.readFileSync(path.join(process.cwd(), 'scripts', 'build-content.mjs'), 'utf8')),
+    '构建端复用同一份 extractTags（没有第二份手抄副本）')
 }
 
 console.log(`\n===== 结果：${pass} 通过 / ${fail} 失败 =====`)

@@ -1,5 +1,7 @@
 # Obsidian 博客
 
+[English](README.en.md)
+
 把 Obsidian 笔记发布成 GitHub Pages 静态博客。
 
 不用为了发布另建一个库：私人笔记和公开笔记放在一起，公开与否只是 frontmatter 里的一个 `public: true`。发布器逐篇勾选、一键推送，站点由 GitHub Actions 自动构建部署。
@@ -17,7 +19,15 @@
 
 ## 安装
 
-这是 Obsidian 插件。先把本仓库下载到本地，把 `obsidian-plugin/` 下的三个文件拷进你的库：
+不需要克隆仓库，也不用自己打包。到 [Releases](https://github.com/bits4747/obsidian-blog-publisher/releases/latest) 下载最新版的三个文件：
+
+| 文件 | 说明 |
+|---|---|
+| `main.js` | 插件本体 |
+| `worker.js` | 后台内核（发布、同步跑在子进程里，不占 Obsidian 主线程） |
+| `manifest.json` | 插件清单 |
+
+放进库的插件目录，目录名必须正好是 `blog-publisher`：
 
 ```
 <你的库>/.obsidian/plugins/blog-publisher/
@@ -28,7 +38,19 @@
 
 然后在 Obsidian 设置 → 第三方插件里启用「博客发布器」（需要先关掉「安全模式」）。
 
-准备一个 GitHub 账号即可开始，本机还要装 [Git](https://git-scm.com)（发布时要推送，插件自己不带 git）。
+### 前置条件
+
+| 需要 | 为什么 |
+|---|---|
+| **Git**（[下载](https://git-scm.com)） | 发布、拉取都靠它，插件不自带 git |
+| **Node.js** | 后台内核跑在子进程里。Obsidian 自带 Electron 时优先用它的 `utilityProcess`，拿不到时退回系统 `node`——两条路都走不通就会「插件装上了但点了没反应」 |
+| GitHub 账号 | 站点托管在 GitHub Pages |
+
+如果启用后点击没反应，先确认 `git --version` 和 `node -v` 在终端里都能正常输出。
+
+### 手动更新
+
+新版本发布后，把上面三个文件重新下载覆盖即可（Obsidian 重启后生效）。插件不会自动更新——它没上架社区插件商店。
 
 ## 第一次使用
 
@@ -42,9 +64,18 @@
 
 ### 2. 授权
 
-点「GitHub 授权」，按弹窗里的步骤生成 Personal access token (classic)，勾选 `repo` 和 `workflow` 两个 scope，粘贴保存。
+点「GitHub 授权」，按弹窗里的步骤生成 **Personal access token (classic)**，勾选这两个 scope：
 
-有效期建议选「No expiration」。令牌过期后发布、建仓库、自动建站会一起失败，而报错信息看不出是过期。令牌只存在本机，不进仓库。
+| Scope | 用途 |
+|---|---|
+| `repo` | 推送内容、创建仓库 |
+| `workflow` | 首次建站要把 `.github/workflows/deploy.yml` 推上去；GitHub 规定含 workflow 文件的推送必须带这个权限 |
+
+> 只勾 `repo` 不够——推送会被 GitHub 拒绝，报错是 `refusing to allow a Personal Access Token to create or update workflow`。
+
+有效期建议选「No expiration」。令牌过期后发布、建仓库、自动建站会一起失败，而报错信息看不出是过期。
+
+**令牌怎么存的**：明文保存在本机的 `local.json`（见下文「数据存放位置」），不加密、不进仓库、不上传。任何能读你用户目录的程序都能读到它——公用电脑上建议用完就删掉令牌。想撤掉授权，去 GitHub 的 Settings → Developer settings → Tokens 里删除该 token 即可。
 
 ### 3. 选笔记并发布
 
@@ -225,6 +256,8 @@ GitHub Actions 要跑 1~2 分钟。发布器的结果弹窗会显示「正在构
 
 内含 `connections.json`（博客连接清单）、`local.json`（GitHub 令牌、各连接的本地库路径）、`repos/<连接id>/`（仓库工作副本）、`content/`（公开笔记镜像）、`build/`（构建产物）。
 
+`local.json` 里的 GitHub 令牌是**明文**存的（不加密）。它在你的用户目录下，只有本机账号能读；但这也意味着任何能读你用户目录的程序都能拿到它。公用电脑上用完记得在 GitHub 里删掉该 token。
+
 想改到别处（U 盘、同步盘）：设环境变量 `OBSIDIAN_BLOG_DATA` 后重启 Obsidian。
 
 ## 工作原理
@@ -333,6 +366,7 @@ obsidian-blog/
     ├── components/blog/         ★ 应用外壳 / 首页 / 详情页 / 悬浮预览 / Markdown 管线
     ├── components/ui/           shadcn/ui 基础组件
     └── lib/
+        ├── wikilink.mjs         ★ Obsidian 语法解析的唯一实现（构建期与渲染期共用）
         ├── obsidian.ts          ★ 数据模型：标题提取、公式切分、路径映射
         ├── remark-obsidian.ts   ★ remark 插件：wikilink / 嵌入 / callout / 高亮 / 标签
         ├── rehype-safety.ts     安全净化：挡危险链接与内联脚本
