@@ -15,7 +15,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # 这个 workflow 同时存在于两个地方：
+  #   ① 用户博客仓库的根目录（本文件由发布器铺过去）——这里要真的构建部署；
+  #   ② 插件源码仓库（它本身就是模板的出处）——那里没有 content/，
+  #      跑构建会「拒绝构建空站点」而失败，在开源仓库上留一堆红叉。
+  # 所以先用 content/ 里有没有笔记来区分：没有就整体跳过，有才继续。
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      has_content: ${{ steps.c.outputs.has }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: c
+        run: |
+          if [ -d content ] && [ -n "$(find content -name '*.md' -print -quit)" ]; then
+            echo "has=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has=false" >> "$GITHUB_OUTPUT"
+            echo "content/ 里没有笔记，这不是一个博客仓库，跳过构建部署。"
+          fi
+
   build:
+    needs: check
+    if: needs.check.outputs.has_content == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
