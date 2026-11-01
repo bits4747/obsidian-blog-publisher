@@ -267,6 +267,17 @@ The plugin reads and writes files outside your vault for three reasons:
 
 Beyond that one data directory, the plugin only reads the vault you currently have open (and only notes with `public: true` plus the attachments they reference) and the files it generated itself inside the repo working copy. It does not read your Documents, your Desktop, or any other directory.
 
+### Network access
+
+The plugin talks to GitHub only — no other remote service, and no usage reporting of any kind:
+
+| Target | Purpose |
+|---|---|
+| `api.github.com` | Create the repo, read and write repo variables, enable Pages, check Actions run and build status, verify the token |
+| `github.com` | `git clone` / `git push` to upload your notes and the site source |
+
+Both happen only after you click Publish, Create repository, or Refresh status, or when auto-sync is on. The token is yours and stays on your machine. Apart from those GitHub requests the plugin sends nothing: it collects no usage data and uploads note content nowhere except your own repository.
+
 ## How it works
 
 ```
