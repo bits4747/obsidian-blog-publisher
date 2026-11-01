@@ -23,6 +23,9 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: 安装站点依赖
+        run: npm ci
+
       - name: 安装插件依赖
         run: npm --prefix obsidian-plugin ci
 
