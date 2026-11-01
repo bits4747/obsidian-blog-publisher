@@ -4,13 +4,15 @@
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [Semantic Versioning](https://semver.org).
 
-## [Unreleased]
+## [1.0.1] - 2026-11-01
 
 ### Changed
 - The plugin now ships as a single file: `worker.js` is folded into `main.js` (1.17 MB), so both the community-directory install and the manual install need only `main.js` and `manifest.json`. The same bundle serves two roles, selected by the `BLOG_PUBLISHER_START` environment variable — set it and it runs as the background service, omit it and it runs as the plugin itself.
 - Plugin id is now `note-blog-publisher` and the name is **Note Blog Publisher** (`blog-publisher` was already taken in the community directory). The plugin directory name changed accordingly; upgrading from an older build means moving the files to `.obsidian/plugins/note-blog-publisher/`.
 - Added `.github/workflows/release.yml`: pushing a tag verifies that the tag matches the `version` in `manifest.json`, bundles the plugin, generates a build provenance attestation, and creates a Release with both assets.
 - `manifest.json` and `versions.json` moved to the repository root: the community directory reads only the root manifest on the default branch, so keeping it under `obsidian-plugin/` would get the submission rejected. `release.yml` and the vault-deploy step follow the new path.
+- The settings tab and the confirmation modal now use `Setting#setHeading()` instead of writing `<h2>` / `<h3>` elements directly.
+- Removed console debug output, keeping only error messages.
 
 ### Documentation
 - README installation now leads with the community directory and keeps manual install as the fallback; added a "Why it writes outside the vault" section covering the three reasons (cloned repo, cross-vault reuse, token isolation) and stating that beyond that one data directory the plugin only reads public notes from the vault you have open.
