@@ -1,4 +1,4 @@
-import { App, Modal, Notice, requestUrl } from 'obsidian'
+import { App, Modal, Notice, Setting, requestUrl } from 'obsidian'
 import { hostLang, strings, type Strings } from './i18n.js'
 
 /**
@@ -530,7 +530,9 @@ class ConfirmModal extends Modal {
   }
   onOpen(): void {
     const { contentEl } = this
-    contentEl.createEl('h3', { text: this.opts.title })
+    // 用 setHeading() 而不是 createEl('h3')：官方指南要求标题走 Setting，
+    // 直接用 HTML 标题元素会与其它插件的样式不一致。
+    new Setting(contentEl).setName(this.opts.title).setHeading()
     contentEl.createEl('p', { text: this.opts.body })
     const row = contentEl.createDiv({ cls: 'modal-button-container' })
     const yes = row.createEl('button', { text: this.opts.cta, cls: 'mod-warning' })

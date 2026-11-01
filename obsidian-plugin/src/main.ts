@@ -581,7 +581,9 @@ class BlogPublisherSettingTab extends PluginSettingTab {
     const { containerEl } = this
     containerEl.empty()
     const t = this.plugin.t
-    containerEl.createEl('h2', { text: t.settingsTitle })
+    // 用 setHeading() 而不是 createEl('h2')：官方指南要求标题走 Setting，
+    // 直接用 HTML 标题元素会与其它插件的样式不一致。
+    new Setting(containerEl).setName(t.settingsTitle).setHeading()
 
     containerEl.createEl('p', {
       text: t.settingsDataDesc,

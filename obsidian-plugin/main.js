@@ -13055,7 +13055,7 @@ var ConfirmModal = class extends import_obsidian.Modal {
   }
   onOpen() {
     const { contentEl } = this;
-    contentEl.createEl("h3", { text: this.opts.title });
+    new import_obsidian.Setting(contentEl).setName(this.opts.title).setHeading();
     contentEl.createEl("p", { text: this.opts.body });
     const row = contentEl.createDiv({ cls: "modal-button-container" });
     const yes = row.createEl("button", { text: this.opts.cta, cls: "mod-warning" });
@@ -13524,7 +13524,7 @@ var BlogPublisherSettingTab = class extends import_obsidian2.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     const t = this.plugin.t;
-    containerEl.createEl("h2", { text: t.settingsTitle });
+    new import_obsidian2.Setting(containerEl).setName(t.settingsTitle).setHeading();
     containerEl.createEl("p", {
       text: t.settingsDataDesc,
       cls: "setting-item-description"
