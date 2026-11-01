@@ -13,6 +13,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), version
 - `manifest.json` and `versions.json` moved to the repository root: the community directory reads only the root manifest on the default branch, so keeping it under `obsidian-plugin/` would get the submission rejected. `release.yml` and the vault-deploy step follow the new path.
 - The settings tab and the confirmation modal now use `Setting#setHeading()` instead of writing `<h2>` / `<h3>` elements directly.
 - Removed console debug output, keeping only error messages.
+- The public toggle and batch buttons in the file explorer now use Obsidian theme variables (`--interactive-accent`, `--shadow-s`), so they follow the active theme instead of hardcoded colors.
 
 ### Documentation
 - README installation now leads with the community directory and keeps manual install as the fallback; added a "Why it writes outside the vault" section covering the three reasons (cloned repo, cross-vault reuse, token isolation) and stating that beyond that one data directory the plugin only reads public notes from the vault you have open.
