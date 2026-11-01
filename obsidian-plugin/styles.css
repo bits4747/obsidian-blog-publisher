@@ -1,0 +1,60 @@
+/* Note Blog Publisher —— 文件树上的公开开关与批量按钮。
+   全部走 Obsidian 的主题变量，跟随主题与配色方案，不做深浅判断。 */
+
+/* 单篇开关：和管理器界面里那个 .sw 同一个造型（胶囊 + 圆钮），
+   但缩到 24×13，因为在 250px 宽的文件树里 30×16 太占地方。 */
+.blog-pub-sw {
+  position: relative; flex-shrink: 0; margin-left: 6px;
+  width: 24px; height: 13px; border-radius: 999px;
+  background: var(--background-modifier-border);
+  cursor: pointer; user-select: none;
+  transition: background-color .15s ease;
+}
+.blog-pub-sw::after {
+  content: ''; position: absolute; top: 1.5px; left: 2px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--text-on-accent, #fff);
+  box-shadow: 0 1px 2px var(--shadow-s, rgba(0, 0, 0, .25));
+  transition: left .15s ease;
+}
+.blog-pub-sw.on { background: var(--interactive-accent); }
+.blog-pub-sw.on::after { left: 12px; }
+.blog-pub-sw:hover { box-shadow: 0 0 0 2px var(--background-modifier-hover); }
+
+/* 文件行：开关贴到行尾（和文件夹行对齐，不然它紧跟在标题后面） */
+.nav-file-title .blog-pub-sw { margin-left: auto; }
+
+/* 批量按钮（文件夹 / 全库）：两个明确的「公开」「私密」。
+   做成一个连体的分段控件（共用外框、中间一道分隔线），比两个独立小胶囊
+   紧凑得多，视觉上也只占「一个控件」的位置。 */
+.blog-pub-batch {
+  margin-left: 6px; flex-shrink: 0;
+  display: inline-flex; align-items: stretch;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px; overflow: hidden;
+}
+.blog-pub-bbtn {
+  font-size: 10px; line-height: 12px; padding: 1px 5px;
+  cursor: pointer; user-select: none;
+  color: var(--text-faint); background: transparent;
+  transition: background-color .12s ease, color .12s ease;
+}
+.blog-pub-bbtn + .blog-pub-bbtn { border-left: 1px solid var(--background-modifier-border); }
+.blog-pub-bbtn:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
+.blog-pub-bbtn.active {
+  background: var(--interactive-accent); color: var(--text-on-accent, #fff);
+}
+.blog-pub-bbtn.active:hover { background: var(--interactive-accent); color: var(--text-on-accent, #fff); }
+
+/* 文件夹行尾：计数常驻（不悬停也能看到公开了几篇），按钮组跟后面 */
+.blog-pub-folder {
+  margin-left: auto; flex-shrink: 0;
+  display: flex; align-items: center; gap: 4px;
+}
+.blog-pub-folder .blog-pub-fcount {
+  font-size: 10px; line-height: 15px; color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 顶部工具条里的按钮组：跟着 nav-action-button 的尺寸走 */
+.blog-pub-navwrap { display: inline-flex; align-items: center; padding: 0 4px; }

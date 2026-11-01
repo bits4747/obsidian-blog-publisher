@@ -44,6 +44,7 @@ jobs:
         with:
           subject-path: |
             obsidian-plugin/main.js
+            obsidian-plugin/styles.css
             manifest.json
 
       - name: 创建 Release
@@ -54,4 +55,4 @@ jobs:
           gh release create "$tag" \
             --title="$tag" \
             --notes="见 [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/$tag/CHANGELOG.md)。" \
-            obsidian-plugin/main.js manifest.json
+            obsidian-plugin/main.js obsidian-plugin/styles.css manifest.json

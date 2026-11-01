@@ -212,6 +212,7 @@ function deployToVault() {
   // manifest.json 在仓库根目录（社区目录只认根目录那一份），构建产物在 obsidian-plugin/
   fs.copyFileSync(path.join(__dirname, 'main.js'), path.join(dest, 'main.js'))
   fs.copyFileSync(path.join(ROOT, 'manifest.json'), path.join(dest, 'manifest.json'))
+  fs.copyFileSync(path.join(__dirname, 'styles.css'), path.join(dest, 'styles.css'))
   console.log(`  已装进库：${dest}`)
   console.log('  → Obsidian 里「重载插件」（或重启）才会生效')
 }

@@ -21,12 +21,13 @@
 
 在 Obsidian 里打开 设置 → 第三方插件 → 浏览，搜索 **Note Blog Publisher** 安装即可。
 
-手动安装：到 [Releases](https://github.com/bits4747/obsidian-blog-publisher/releases/latest) 下载 `main.js` 与 `manifest.json` 两个文件，放进库的插件目录，目录名必须是 `note-blog-publisher`：
+手动安装：到 [Releases](https://github.com/bits4747/obsidian-blog-publisher/releases/latest) 下载 `main.js`、`manifest.json` 与 `styles.css` 三个文件，放进库的插件目录，目录名必须是 `note-blog-publisher`：
 
 ```
 <你的库>/.obsidian/plugins/note-blog-publisher/
 ├── main.js
-└── manifest.json
+├── manifest.json
+└── styles.css
 ```
 
 然后在 Obsidian 设置 → 第三方插件里启用「Note Blog Publisher」（需要先关掉「安全模式」）。
@@ -230,7 +231,7 @@ GitHub Actions 要跑 1~2 分钟。发布器的结果弹窗会显示「正在构
 在 GitHub 仓库的 Settings → Pages 里填 Custom domain，再把 DNS 指过去。这一步在 GitHub 上做，发布器不涉及。
 
 **安装插件时报「无法加载」？**
-先确认 `main.js` 与 `manifest.json` 两个文件都在 `<库>/.obsidian/plugins/note-blog-publisher/` 里，目录名不要改。再确认本机装了 Git（发布要推送），Obsidian 处于「第三方插件」已开启的状态。
+先确认 `main.js`、`manifest.json` 与 `styles.css` 三个文件都在 `<库>/.obsidian/plugins/note-blog-publisher/` 里，目录名不要改。再确认本机装了 Git（发布要推送），Obsidian 处于「第三方插件」已开启的状态。
 
 **能在本地先看看站点效果吗？**
 `npm run build` 之后 `npm run preview`，打开 `http://localhost:8080`。这需要源码仓库，不是插件使用者的必需步骤。
@@ -381,6 +382,7 @@ obsidian-blog-publisher/
 ├── obsidian-plugin/             Obsidian 插件（复用上面的内核与界面）
 │   ├── package.json / esbuild.config.mjs
 │   ├── main.js                  构建产物（Release 里上传的就是这个，单文件含插件与后台服务）
+│   ├── styles.css               文件树开关与批量按钮的样式（Release 里一起上传）
 │   └── src/
 │       ├── main.ts              插件入口：utilityProcess 起内核、开视图
 │       ├── worker-entry.ts      内核跑在子进程里（git 是同步调用，不能占主线程）

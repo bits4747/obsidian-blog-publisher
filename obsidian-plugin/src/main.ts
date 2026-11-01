@@ -21,66 +21,6 @@ function hostTheme(): 'dark' | 'light' {
   return document.body.classList.contains('theme-dark') ? 'dark' : 'light'
 }
 
-/** 文件树上「公开 / 私密」开关的样式。注入一次，跟随 Obsidian 主题变量。 */
-const EXPLORER_CSS = `
-/* 单篇开关：和管理器界面里那个 .sw 同一个造型（胶囊 + 圆钮），
-   但缩到 24×13，因为在 250px 宽的文件树里 30×16 太占地方。 */
-.blog-pub-sw {
-  position: relative; flex-shrink: 0; margin-left: 6px;
-  width: 24px; height: 13px; border-radius: 999px;
-  background: var(--background-modifier-border);
-  cursor: pointer; user-select: none;
-  transition: background-color .15s ease;
-}
-.blog-pub-sw::after {
-  content: ''; position: absolute; top: 1.5px; left: 2px;
-  width: 10px; height: 10px; border-radius: 50%;
-  background: var(--text-on-accent, #fff);
-  box-shadow: 0 1px 2px var(--shadow-s, rgba(0,0,0,.25));
-  transition: left .15s ease;
-}
-.blog-pub-sw.on { background: var(--interactive-accent); }
-.blog-pub-sw.on::after { left: 12px; }
-.blog-pub-sw:hover { box-shadow: 0 0 0 2px var(--background-modifier-hover); }
-
-/* 文件行：开关贴到行尾（和文件夹行对齐，不然它紧跟在标题后面） */
-.nav-file-title .blog-pub-sw { margin-left: auto; }
-
-/* 批量按钮（文件夹 / 全库）：两个明确的「公开」「私密」。
-   做成一个连体的分段控件（共用外框、中间一道分隔线），比两个独立小胶囊
-   紧凑得多，视觉上也只占「一个控件」的位置。 */
-.blog-pub-batch {
-  margin-left: 6px; flex-shrink: 0;
-  display: inline-flex; align-items: stretch;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px; overflow: hidden;
-}
-.blog-pub-bbtn {
-  font-size: 10px; line-height: 12px; padding: 1px 5px;
-  cursor: pointer; user-select: none;
-  color: var(--text-faint); background: transparent;
-  transition: background-color .12s ease, color .12s ease;
-}
-.blog-pub-bbtn + .blog-pub-bbtn { border-left: 1px solid var(--background-modifier-border); }
-.blog-pub-bbtn:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
-.blog-pub-bbtn.active {
-  background: var(--interactive-accent); color: var(--text-on-accent, #fff);
-}
-.blog-pub-bbtn.active:hover { background: var(--interactive-accent); color: var(--text-on-accent, #fff); }
-
-/* 文件夹行尾：计数常驻（不悬停也能看到公开了几篇），按钮组跟后面 */
-.blog-pub-folder {
-  margin-left: auto; flex-shrink: 0;
-  display: flex; align-items: center; gap: 4px;
-}
-.blog-pub-folder .blog-pub-fcount {
-  font-size: 10px; line-height: 15px; color: var(--text-faint);
-  font-variant-numeric: tabular-nums;
-}
-/* 顶部工具条里的按钮组：跟着 nav-action-button 的尺寸走 */
-.blog-pub-navwrap { display: inline-flex; align-items: center; padding: 0 4px; }
-`
-
 /** 后台服务子进程的通信句柄（utilityProcess 或 child_process 的统一外观） */
 interface ChildHandle {
   postMessage: (m: unknown) => void
@@ -263,12 +203,6 @@ export default class BlogPublisherPlugin extends Plugin {
       'blog-publisher',
       '<svg viewBox="0 0 100 100"><path fill="currentColor" d="M20 15h60a5 5 0 0 1 5 5v60a5 5 0 0 1-5 5H20a5 5 0 0 1-5-5V20a5 5 0 0 1 5-5zm10 15v10h40V30H30zm0 18v8h40v-8H30zm0 16v8h26v-8H30z"/></svg>',
     )
-
-    const style = document.createElement('style')
-    style.id = 'blog-publisher-explorer-css'
-    style.textContent = EXPLORER_CSS
-    document.head.appendChild(style)
-    this.register(() => style.remove())
 
     this.registerView(VIEW_TYPE, (leaf) => new BlogPublisherView(leaf, this))
 

@@ -4,12 +4,17 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.0.2] - 2026-11-01
+
+### 变更
+- 文件树开关与批量按钮的样式从插件代码里搬到 `obsidian-plugin/styles.css`：样式不再由 `main.js` 注入 `<style>`，用户可以用 CSS 片段覆盖，主题也能接管。Release 因此多一个 `styles.css` 资产，手动安装需要三个文件。
+
 ## [1.0.1] - 2026-11-01
 
 ### 变更
 - 插件改为单文件分发：`worker.js` 并入 `main.js`（1.17 MB），官方安装与手动安装都只需 `main.js` + `manifest.json` 两个文件。同一份 bundle 用 `BLOG_PUBLISHER_START` 环境变量区分角色——有它就以后台服务身份运行，没有就走插件本体。
 - 插件 id 改为 `note-blog-publisher`，名称改为 **Note Blog Publisher**（原 `blog-publisher` 已被社区目录占用）。插件目录名随之改变，从旧版升级需要把文件挪到 `.obsidian/plugins/note-blog-publisher/`。
-- 新增 `.github/workflows/release.yml`：打 tag 触发，校验 tag 与 `manifest.json` 的 version 一致后打包、生成构建溯源证明、创建 Release 并附上两个资产。
+- 新增 `.github/workflows/release.yml`：打 tag 触发，校验 tag 与 `manifest.json` 的 version 一致后打包、生成构建溯源证明、创建 Release 并附上资产。
 - `manifest.json` 与 `versions.json` 移到仓库根目录：社区目录只读默认分支根目录那一份清单，放在 `obsidian-plugin/` 子目录里会导致提交被拒。`release.yml` 与装库脚本随之改路径。
 - 设置页与确认弹窗的标题改用 `Setting#setHeading()`，不再直接写 `<h2>` / `<h3>` 元素。
 - 去掉控制台调试输出，只保留错误信息。

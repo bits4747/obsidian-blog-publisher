@@ -21,12 +21,13 @@ You don't need a second vault. Private and public notes live together — going 
 
 In Obsidian, open Settings → Community plugins → Browse and search for **Note Blog Publisher**.
 
-Manual install: download `main.js` and `manifest.json` from [Releases](https://github.com/bits4747/obsidian-blog-publisher/releases/latest) and put them in your vault's plugin directory. The directory name must be exactly `note-blog-publisher`:
+Manual install: download `main.js`, `manifest.json`, and `styles.css` from [Releases](https://github.com/bits4747/obsidian-blog-publisher/releases/latest) and put them in your vault's plugin directory. The directory name must be exactly `note-blog-publisher`:
 
 ```
 <your vault>/.obsidian/plugins/note-blog-publisher/
 ├── main.js
-└── manifest.json
+├── manifest.json
+└── styles.css
 ```
 
 Then enable "Note Blog Publisher" in Obsidian settings → Community plugins (turn off Safe mode first).
@@ -230,7 +231,7 @@ No. Appearance is CSS only (see "Why CSS only" above). Adding a section is a fea
 Set Custom domain in the GitHub repo's Settings → Pages and point your DNS at it. That's done on GitHub; the publisher isn't involved.
 
 **"Failed to load plugin" when installing?**
-Check that `main.js` and `manifest.json` are both in `<vault>/.obsidian/plugins/note-blog-publisher/` with the directory name unchanged. Then confirm Git is installed (publishing needs it) and that community plugins are enabled.
+Check that `main.js`, `manifest.json`, and `styles.css` are all in `<vault>/.obsidian/plugins/note-blog-publisher/` with the directory name unchanged. Then confirm Git is installed (publishing needs it) and that community plugins are enabled.
 
 **Can I preview the site locally?**
 Run `npm run build` then `npm run preview`, and open `http://localhost:8080`. This needs the source repo — not required for plugin users.
@@ -381,6 +382,7 @@ obsidian-blog-publisher/
 ├── obsidian-plugin/             the Obsidian plugin (reuses the core and UI above)
 │   ├── package.json / esbuild.config.mjs
 │   ├── main.js                  build output (what the Release ships; single file with plugin + background service)
+│   ├── styles.css               styling for the explorer toggle and batch buttons (shipped with the Release)
 │   └── src/
 │       ├── main.ts              plugin entry: starts the core via utilityProcess, opens the view
 │       ├── worker-entry.ts      the core in a child process (git calls are synchronous and must not block the main thread)

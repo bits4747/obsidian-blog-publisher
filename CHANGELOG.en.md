@@ -4,12 +4,17 @@
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [Semantic Versioning](https://semver.org).
 
+## [1.0.2] - 2026-11-01
+
+### Changed
+- The explorer toggle and batch-button styling moved out of the plugin code into `obsidian-plugin/styles.css`: styles are no longer injected as a `<style>` element from `main.js`, so users can override them with a CSS snippet and themes can take over. The Release therefore carries a third asset, and manual install needs all three files.
+
 ## [1.0.1] - 2026-11-01
 
 ### Changed
 - The plugin now ships as a single file: `worker.js` is folded into `main.js` (1.17 MB), so both the community-directory install and the manual install need only `main.js` and `manifest.json`. The same bundle serves two roles, selected by the `BLOG_PUBLISHER_START` environment variable — set it and it runs as the background service, omit it and it runs as the plugin itself.
 - Plugin id is now `note-blog-publisher` and the name is **Note Blog Publisher** (`blog-publisher` was already taken in the community directory). The plugin directory name changed accordingly; upgrading from an older build means moving the files to `.obsidian/plugins/note-blog-publisher/`.
-- Added `.github/workflows/release.yml`: pushing a tag verifies that the tag matches the `version` in `manifest.json`, bundles the plugin, generates a build provenance attestation, and creates a Release with both assets.
+- Added `.github/workflows/release.yml`: pushing a tag verifies that the tag matches the `version` in `manifest.json`, bundles the plugin, generates a build provenance attestation, and creates a Release with the assets.
 - `manifest.json` and `versions.json` moved to the repository root: the community directory reads only the root manifest on the default branch, so keeping it under `obsidian-plugin/` would get the submission rejected. `release.yml` and the vault-deploy step follow the new path.
 - The settings tab and the confirmation modal now use `Setting#setHeading()` instead of writing `<h2>` / `<h3>` elements directly.
 - Removed console debug output, keeping only error messages.

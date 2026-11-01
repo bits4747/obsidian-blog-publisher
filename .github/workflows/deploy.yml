@@ -69,6 +69,9 @@ jobs:
           f=obsidian-plugin/main.js
           test -s "$f" || { echo "::error::$f 没有产出或为空"; exit 1; }
           echo "main.js $(wc -c < "$f") 字节"
+          c=obsidian-plugin/styles.css
+          test -s "$c" || { echo "::error::$c 缺失或为空"; exit 1; }
+          echo "styles.css $(wc -c < "$c") 字节"
 
   build:
     needs: check
