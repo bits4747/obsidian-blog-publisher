@@ -36,10 +36,10 @@ const EXPLORER_CSS = `
   content: ''; position: absolute; top: 1.5px; left: 2px;
   width: 10px; height: 10px; border-radius: 50%;
   background: var(--text-on-accent, #fff);
-  box-shadow: 0 1px 2px rgba(0,0,0,.25);
+  box-shadow: 0 1px 2px var(--shadow-s, rgba(0,0,0,.25));
   transition: left .15s ease;
 }
-.blog-pub-sw.on { background: #2570cc; }
+.blog-pub-sw.on { background: var(--interactive-accent); }
 .blog-pub-sw.on::after { left: 12px; }
 .blog-pub-sw:hover { box-shadow: 0 0 0 2px var(--background-modifier-hover); }
 
@@ -64,11 +64,9 @@ const EXPLORER_CSS = `
 .blog-pub-bbtn + .blog-pub-bbtn { border-left: 1px solid var(--background-modifier-border); }
 .blog-pub-bbtn:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
 .blog-pub-bbtn.active {
-  background: #2570cc; color: var(--text-on-accent, #fff);
+  background: var(--interactive-accent); color: var(--text-on-accent, #fff);
 }
-.blog-pub-bbtn.active:hover { background: #2570cc; color: var(--text-on-accent, #fff); }
-body.theme-dark .blog-pub-bbtn.active,
-body.theme-dark .blog-pub-bbtn.active:hover { background: #5b9bf8; }
+.blog-pub-bbtn.active:hover { background: var(--interactive-accent); color: var(--text-on-accent, #fff); }
 
 /* 文件夹行尾：计数常驻（不悬停也能看到公开了几篇），按钮组跟后面 */
 .blog-pub-folder {
@@ -81,10 +79,6 @@ body.theme-dark .blog-pub-bbtn.active:hover { background: #5b9bf8; }
 }
 /* 顶部工具条里的按钮组：跟着 nav-action-button 的尺寸走 */
 .blog-pub-navwrap { display: inline-flex; align-items: center; padding: 0 4px; }
-
-/* 深色主题下用亮一档的蓝，否则 #2570cc 压在深底上发闷。
-   （.theme-dark 是 Obsidian 挂在 body 上的，不需要插件自己判断。） */
-body.theme-dark .blog-pub-sw.on { background: #5b9bf8; }
 `
 
 /** 后台服务子进程的通信句柄（utilityProcess 或 child_process 的统一外观） */

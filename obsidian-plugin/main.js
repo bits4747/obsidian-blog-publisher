@@ -13099,10 +13099,10 @@ var EXPLORER_CSS = `
   content: ''; position: absolute; top: 1.5px; left: 2px;
   width: 10px; height: 10px; border-radius: 50%;
   background: var(--text-on-accent, #fff);
-  box-shadow: 0 1px 2px rgba(0,0,0,.25);
+  box-shadow: 0 1px 2px var(--shadow-s, rgba(0,0,0,.25));
   transition: left .15s ease;
 }
-.blog-pub-sw.on { background: #2570cc; }
+.blog-pub-sw.on { background: var(--interactive-accent); }
 .blog-pub-sw.on::after { left: 12px; }
 .blog-pub-sw:hover { box-shadow: 0 0 0 2px var(--background-modifier-hover); }
 
@@ -13127,11 +13127,9 @@ var EXPLORER_CSS = `
 .blog-pub-bbtn + .blog-pub-bbtn { border-left: 1px solid var(--background-modifier-border); }
 .blog-pub-bbtn:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
 .blog-pub-bbtn.active {
-  background: #2570cc; color: var(--text-on-accent, #fff);
+  background: var(--interactive-accent); color: var(--text-on-accent, #fff);
 }
-.blog-pub-bbtn.active:hover { background: #2570cc; color: var(--text-on-accent, #fff); }
-body.theme-dark .blog-pub-bbtn.active,
-body.theme-dark .blog-pub-bbtn.active:hover { background: #5b9bf8; }
+.blog-pub-bbtn.active:hover { background: var(--interactive-accent); color: var(--text-on-accent, #fff); }
 
 /* \u6587\u4EF6\u5939\u884C\u5C3E\uFF1A\u8BA1\u6570\u5E38\u9A7B\uFF08\u4E0D\u60AC\u505C\u4E5F\u80FD\u770B\u5230\u516C\u5F00\u4E86\u51E0\u7BC7\uFF09\uFF0C\u6309\u94AE\u7EC4\u8DDF\u540E\u9762 */
 .blog-pub-folder {
@@ -13144,10 +13142,6 @@ body.theme-dark .blog-pub-bbtn.active:hover { background: #5b9bf8; }
 }
 /* \u9876\u90E8\u5DE5\u5177\u6761\u91CC\u7684\u6309\u94AE\u7EC4\uFF1A\u8DDF\u7740 nav-action-button \u7684\u5C3A\u5BF8\u8D70 */
 .blog-pub-navwrap { display: inline-flex; align-items: center; padding: 0 4px; }
-
-/* \u6DF1\u8272\u4E3B\u9898\u4E0B\u7528\u4EAE\u4E00\u6863\u7684\u84DD\uFF0C\u5426\u5219 #2570cc \u538B\u5728\u6DF1\u5E95\u4E0A\u53D1\u95F7\u3002
-   \uFF08.theme-dark \u662F Obsidian \u6302\u5728 body \u4E0A\u7684\uFF0C\u4E0D\u9700\u8981\u63D2\u4EF6\u81EA\u5DF1\u5224\u65AD\u3002\uFF09 */
-body.theme-dark .blog-pub-sw.on { background: #5b9bf8; }
 `;
 function getUtilityProcess() {
   try {
