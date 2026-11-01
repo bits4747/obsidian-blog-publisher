@@ -1,0 +1,53 @@
+name: Release plugin
+
+# 打 tag 即发版：tag 名必须与 obsidian-plugin/manifest.json 的 version 完全一致
+# （官方要求，否则社区插件目录无法解析版本）。
+on:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 安装插件依赖
+        run: npm --prefix obsidian-plugin ci
+
+      - name: 打包插件
+        run: npm run plugin -- --no-deploy
+
+      - name: 校验 tag 与 manifest 版本一致
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          ver=$(node -p "require('./obsidian-plugin/manifest.json').version")
+          test "$tag" = "$ver" || { echo "::error::tag $tag 与 manifest version $ver 不一致"; exit 1; }
+
+      - name: 生成构建溯源证明
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            obsidian-plugin/main.js
+            obsidian-plugin/manifest.json
+
+      - name: 创建 Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          gh release create "$tag" \
+            --title="$tag" \
+            --notes="见 [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/$tag/CHANGELOG.md)。" \
+            obsidian-plugin/main.js obsidian-plugin/manifest.json

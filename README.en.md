@@ -19,24 +19,17 @@ You don't need a second vault. Private and public notes live together — going 
 
 ## Installation
 
-No need to clone the repo or build anything yourself. Download the three files from [Releases](https://github.com/bits4747/obsidian-blog-publisher/releases/latest):
+In Obsidian, open Settings → Community plugins → Browse and search for **Note Blog Publisher**.
 
-| File | Purpose |
-|---|---|
-| `main.js` | The plugin itself |
-| `worker.js` | Background core (publishing and syncing run in a child process, off Obsidian's main thread) |
-| `manifest.json` | Plugin manifest |
-
-Put them in your vault's plugin directory. The directory name must be exactly `blog-publisher`:
+Manual install: download `main.js` and `manifest.json` from [Releases](https://github.com/bits4747/obsidian-blog-publisher/releases/latest) and put them in your vault's plugin directory. The directory name must be exactly `note-blog-publisher`:
 
 ```
-<your vault>/.obsidian/plugins/blog-publisher/
+<your vault>/.obsidian/plugins/note-blog-publisher/
 ├── main.js
-├── worker.js
 └── manifest.json
 ```
 
-Then enable "Blog Publisher" in Obsidian settings → Community plugins (turn off Safe mode first).
+Then enable "Note Blog Publisher" in Obsidian settings → Community plugins (turn off Safe mode first).
 
 ### Requirements
 
@@ -50,7 +43,7 @@ If clicking does nothing after enabling, first check that `git --version` and `n
 
 ### Updating
 
-Download the same three files again and overwrite them (restart Obsidian to apply). The plugin does not auto-update — it isn't on the community plugin registry.
+Download the same two files again and overwrite them (restart Obsidian to apply).
 
 ## Getting started
 
@@ -237,7 +230,7 @@ No. Appearance is CSS only (see "Why CSS only" above). Adding a section is a fea
 Set Custom domain in the GitHub repo's Settings → Pages and point your DNS at it. That's done on GitHub; the publisher isn't involved.
 
 **"Failed to load plugin" when installing?**
-Check that `main.js`, `worker.js`, and `manifest.json` are all in `<vault>/.obsidian/plugins/blog-publisher/` with the directory name unchanged. Then confirm Git is installed (publishing needs it) and that community plugins are enabled.
+Check that `main.js` and `manifest.json` are both in `<vault>/.obsidian/plugins/note-blog-publisher/` with the directory name unchanged. Then confirm Git is installed (publishing needs it) and that community plugins are enabled.
 
 **Can I preview the site locally?**
 Run `npm run build` then `npm run preview`, and open `http://localhost:8080`. This needs the source repo — not required for plugin users.
@@ -263,6 +256,16 @@ It contains `connections.json` (blog connections), `local.json` (GitHub token an
 The GitHub token in `local.json` is stored **encrypted by the OS**: Windows uses DPAPI (CryptProtectData, CurrentUser scope), macOS uses the Keychain, and the ciphertext lives in the `githubTokenEnc` field — only your own account on this machine can decrypt it. Linux has no dependency-free equivalent and falls back to a plain-text `githubToken` field; there, any program that can read your user directory can get it. To revoke access entirely, delete the token on GitHub.
 
 To move it elsewhere (USB drive, sync folder), set the `OBSIDIAN_BLOG_DATA` environment variable and restart Obsidian.
+
+### Why it writes outside the vault
+
+The plugin reads and writes files outside your vault for three reasons:
+
+- **The cloned repo can't live in the vault.** Publishing needs a full working copy of the site repo (with `node_modules` and build output, often several hundred MB). Inside the vault it would be indexed as notes, re-uploaded by any sync service, and would pollute search results.
+- **Data has to survive a vault switch.** One vault maps to one blog. Keeping connections, tokens, and the note mirror outside the vault means switching vaults doesn't require re-authorizing, and the token never gets synced along with your notes.
+- **The token shouldn't sit next to your notes.** A vault is a directory that gets synced, backed up, and shared. Storing the token elsewhere and encrypting it shrinks the exposure.
+
+Beyond that one data directory, the plugin only reads the vault you currently have open (and only notes with `public: true` plus the attachments they reference) and the files it generated itself inside the repo working copy. It does not read your Documents, your Desktop, or any other directory.
 
 ## How it works
 
@@ -299,7 +302,7 @@ npm run dev        # dev server → http://localhost:3010
 npm run build      # full build (generate content + static export + move output)
 npm run preview    # preview the build → http://localhost:8080
 npm run typecheck  # type-check site and plugin
-npm run plugin     # bundle the Obsidian plugin (main.js / worker.js)
+npm run plugin     # bundle the Obsidian plugin (single-file main.js, background service included)
 npm run presets    # regenerate built-in presets from themes/*.css
 npm test           # end-to-end regression tests
 ```
@@ -365,7 +368,7 @@ obsidian-blog-publisher/
 │
 ├── obsidian-plugin/             the Obsidian plugin (reuses the core and UI above)
 │   ├── manifest.json / versions.json / package.json / esbuild.config.mjs
-│   ├── main.js / worker.js      build output (these two are what the Release ships)
+│   ├── main.js                  build output (what the Release ships; single file with plugin + background service)
 │   └── src/
 │       ├── main.ts              plugin entry: starts the core via utilityProcess, opens the view
 │       ├── worker-entry.ts      the core in a child process (git calls are synchronous and must not block the main thread)

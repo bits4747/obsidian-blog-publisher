@@ -349,12 +349,19 @@ export default class BlogPublisherPlugin extends Plugin {
         materializeTemplate(nodeFs, nodePath, this.toolRoot)
       }
 
-      // manifest.dir 是相对库根的路径（如 ".obsidian/plugins/blog-publisher"），
+      // 后台服务就住在 main.js 里，不再是一个独立的 worker.js。
+      //
+      // 官方社区目录安装时只下载 main.js / manifest.json / styles.css 三个文件，
+      // 多带一个 worker.js 就没法从 Obsidian 里直接装。所以构建时把两段 bundle
+      // 合成一个文件：子进程带着 BLOG_PUBLISHER_START 启动时只跑后台服务那段，
+      // 否则只跑插件本体那段（见 esbuild.config.mjs 的 compose()）。
+      //
+      // manifest.dir 是相对库根的路径（如 ".obsidian/plugins/note-blog-publisher"），
       // 而子进程要求绝对路径，所以要拼上库的绝对路径。
       const basePath = (this.app.vault.adapter as unknown as { basePath?: string }).basePath || ''
       const workerPath = basePath
-        ? nodePath.join(basePath, this.manifest.dir || '', 'worker.js')
-        : nodePath.join(this.manifest.dir || '', 'worker.js')
+        ? nodePath.join(basePath, this.manifest.dir || '', 'main.js')
+        : nodePath.join(this.manifest.dir || '', 'main.js')
       const startEnv = { ...process.env, BLOG_PUBLISHER_START: JSON.stringify({ toolRoot: this.toolRoot, dataDir: root, port: 0, lang: this.lang }) }
 
       const port = await new Promise<number>((resolve, reject) => {

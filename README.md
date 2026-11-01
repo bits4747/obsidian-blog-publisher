@@ -19,24 +19,17 @@
 
 ## 安装
 
-不需要克隆仓库，也不用自己打包。到 [Releases](https://github.com/bits4747/obsidian-blog-publisher/releases/latest) 下载最新版的三个文件：
+在 Obsidian 里打开 设置 → 第三方插件 → 浏览，搜索 **Note Blog Publisher** 安装即可。
 
-| 文件 | 说明 |
-|---|---|
-| `main.js` | 插件本体 |
-| `worker.js` | 后台内核（发布、同步跑在子进程里，不占 Obsidian 主线程） |
-| `manifest.json` | 插件清单 |
-
-放进库的插件目录，目录名必须正好是 `blog-publisher`：
+手动安装：到 [Releases](https://github.com/bits4747/obsidian-blog-publisher/releases/latest) 下载 `main.js` 与 `manifest.json` 两个文件，放进库的插件目录，目录名必须是 `note-blog-publisher`：
 
 ```
-<你的库>/.obsidian/plugins/blog-publisher/
+<你的库>/.obsidian/plugins/note-blog-publisher/
 ├── main.js
-├── worker.js
 └── manifest.json
 ```
 
-然后在 Obsidian 设置 → 第三方插件里启用「博客发布器」（需要先关掉「安全模式」）。
+然后在 Obsidian 设置 → 第三方插件里启用「Note Blog Publisher」（需要先关掉「安全模式」）。
 
 ### 前置条件
 
@@ -50,7 +43,7 @@
 
 ### 手动更新
 
-新版本发布后，把上面三个文件重新下载覆盖即可（Obsidian 重启后生效）。插件不会自动更新——它没上架社区插件商店。
+新版本发布后，把上面两个文件重新下载覆盖即可（Obsidian 重启后生效）。
 
 ## 第一次使用
 
@@ -237,7 +230,7 @@ GitHub Actions 要跑 1~2 分钟。发布器的结果弹窗会显示「正在构
 在 GitHub 仓库的 Settings → Pages 里填 Custom domain，再把 DNS 指过去。这一步在 GitHub 上做，发布器不涉及。
 
 **安装插件时报「无法加载」？**
-先确认 `main.js`、`worker.js`、`manifest.json` 三个文件都在 `<库>/.obsidian/plugins/blog-publisher/` 里，目录名不要改。再确认本机装了 Git（发布要推送），Obsidian 处于「第三方插件」已开启的状态。
+先确认 `main.js` 与 `manifest.json` 两个文件都在 `<库>/.obsidian/plugins/note-blog-publisher/` 里，目录名不要改。再确认本机装了 Git（发布要推送），Obsidian 处于「第三方插件」已开启的状态。
 
 **能在本地先看看站点效果吗？**
 `npm run build` 之后 `npm run preview`，打开 `http://localhost:8080`。这需要源码仓库，不是插件使用者的必需步骤。
@@ -263,6 +256,16 @@ GitHub Actions 要跑 1~2 分钟。发布器的结果弹窗会显示「正在构
 `local.json` 里的 GitHub 令牌用**系统加密**保存：Windows 走 DPAPI（CryptProtectData，作用域 CurrentUser），macOS 走 Keychain，密文存在 `local.json` 的 `githubTokenEnc` 字段里，只有你这个本机账号能解开。Linux 没有免依赖的等价物，会退回明文的 `githubToken` 字段——在那种环境下，任何能读你用户目录的程序都能拿到它。想彻底撤掉授权，去 GitHub 删掉该 token。
 
 想改到别处（U 盘、同步盘）：设环境变量 `OBSIDIAN_BLOG_DATA` 后重启 Obsidian。
+
+### 为什么写在库之外
+
+插件需要读写库以外的文件，原因有三：
+
+- **克隆下来的仓库不能放进库里。** 发布要 `git clone` 一份完整的站点仓库工作副本（含 `node_modules` 与构建产物，通常几百 MB），放进库里会被 Obsidian 当成笔记索引、被同步盘反复上传，也会污染搜索结果。
+- **数据要在换库后仍然可用。** 一个库对应一个博客，连接、令牌、镜像放在库外，换库不用重新授权、不会把令牌跟着笔记一起同步出去。
+- **令牌不该跟笔记放一起。** 库是常被同步、备份、分享的目录，令牌放库外再加密，泄露面小得多。
+
+除了这一个数据目录，插件只读取你当前打开的库（且只读 `public: true` 的笔记及其引用的附件），以及仓库工作副本里由它自己生成的文件。它不读文档、不读桌面、不扫描其他目录。
 
 ## 工作原理
 
@@ -299,7 +302,7 @@ npm run dev        # 开发服务器 → http://localhost:3010
 npm run build      # 完整构建（生成内容 + 静态导出 + 搬运产物）
 npm run preview    # 预览构建产物 → http://localhost:8080
 npm run typecheck  # 站点与插件的类型检查
-npm run plugin     # 打包 Obsidian 插件（main.js / worker.js）
+npm run plugin     # 打包 Obsidian 插件（单文件 main.js，含后台服务）
 npm run presets    # 从 themes/*.css 重新生成内置预设
 npm test           # 端到端回归测试
 ```
@@ -365,7 +368,7 @@ obsidian-blog-publisher/
 │
 ├── obsidian-plugin/             Obsidian 插件（复用上面的内核与界面）
 │   ├── manifest.json / versions.json / package.json / esbuild.config.mjs
-│   ├── main.js / worker.js      构建产物（Release 里上传的就是这两个）
+│   ├── main.js                  构建产物（Release 里上传的就是这个，单文件含插件与后台服务）
 │   └── src/
 │       ├── main.ts              插件入口：utilityProcess 起内核、开视图
 │       ├── worker-entry.ts      内核跑在子进程里（git 是同步调用，不能占主线程）

@@ -61,15 +61,14 @@ jobs:
       - name: 类型检查（站点 + 插件）
         run: npm run typecheck
 
-      - name: 打包插件（确保 main.js / worker.js 可产出）
+      - name: 打包插件（确保单文件 main.js 可产出）
         run: npm run plugin
 
       - name: 确认产物非空
         run: |
-          for f in obsidian-plugin/main.js obsidian-plugin/worker.js; do
-            test -s "$f" || { echo "::error::$f 没有产出或为空"; exit 1; }
-          done
-          echo "main.js $(wc -c < obsidian-plugin/main.js) 字节，worker.js $(wc -c < obsidian-plugin/worker.js) 字节"
+          f=obsidian-plugin/main.js
+          test -s "$f" || { echo "::error::$f 没有产出或为空"; exit 1; }
+          echo "main.js $(wc -c < "$f") 字节"
 
   build:
     needs: check

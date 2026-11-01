@@ -1,9 +1,9 @@
 {
-  "id": "blog-publisher",
-  "name": "博客发布器",
+  "id": "note-blog-publisher",
+  "name": "Note Blog Publisher",
   "version": "1.0.0",
   "minAppVersion": "1.5.0",
-  "description": "把 Obsidian 笔记发布成静态博客：图形化选择哪些笔记公开、一键推送到 GitHub、自动同步、变更流水与上线进度。",
+  "description": "Publish selected notes as a static blog: toggle which notes are public from the file explorer, push to GitHub in one click, auto-sync on save, and track build status.",
   "author": "bits47",
   "authorUrl": "https://github.com/bits4747",
   "isDesktopOnly": true
