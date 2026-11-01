@@ -44,7 +44,7 @@ If clicking does nothing after enabling, first check that `git --version` and `n
 
 ### Updating
 
-Download the same two files again and overwrite them (restart Obsidian to apply).
+Download the same three files again and overwrite them (restart Obsidian to apply).
 
 ## Getting started
 
