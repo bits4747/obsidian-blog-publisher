@@ -13283,7 +13283,6 @@ var BlogPublisherPlugin = class extends import_obsidian2.Plugin {
     );
   }
   async onload() {
-    console.log("[blog-publisher] loading");
     this.lang = hostLang(this.app);
     this.t = strings(this.lang);
     this.manifest.name = this.lang === "zh" ? "\u535A\u5BA2\u53D1\u5E03\u5668" : "Blog Publisher";
@@ -13345,7 +13344,6 @@ var BlogPublisherPlugin = class extends import_obsidian2.Plugin {
       const root = dataRoot();
       this.toolRoot = nodePath.join(root, "site-template");
       if (!templateReady(nodeFs, nodePath, this.toolRoot)) {
-        console.log("[blog-publisher] \u9996\u6B21\u94FA\u5F00\u7AD9\u70B9\u6A21\u677F \u2192", this.toolRoot);
         materializeTemplate(nodeFs, nodePath, this.toolRoot);
       }
       const basePath = this.app.vault.adapter.basePath || "";
@@ -13402,8 +13400,6 @@ var BlogPublisherPlugin = class extends import_obsidian2.Plugin {
           } else if (m.type === "error") {
             clearTimeout(timer);
             reject(new Error(m.error || this.t.unknownError));
-          } else if (m.type === "log") {
-            console.log("[blog-publisher] " + m.text);
           }
         });
         c.on("error", (e) => {
@@ -13416,7 +13412,6 @@ var BlogPublisherPlugin = class extends import_obsidian2.Plugin {
         });
       });
       this.port = port;
-      console.log("[blog-publisher] \u670D\u52A1\u5DF2\u5C31\u7EEA\uFF0C\u7AEF\u53E3", port);
       return port;
     })();
     try {

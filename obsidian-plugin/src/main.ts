@@ -257,8 +257,6 @@ export default class BlogPublisherPlugin extends Plugin {
   }
 
   async onload() {
-    console.log('[blog-publisher] loading')
-
     this.lang = hostLang(this.app)
     this.t = strings(this.lang)
 
@@ -345,7 +343,6 @@ export default class BlogPublisherPlugin extends Plugin {
       const root = dataRoot()
       this.toolRoot = nodePath.join(root, 'site-template')
       if (!templateReady(nodeFs, nodePath, this.toolRoot)) {
-        console.log('[blog-publisher] 首次铺开站点模板 →', this.toolRoot)
         materializeTemplate(nodeFs, nodePath, this.toolRoot)
       }
 
@@ -424,8 +421,6 @@ export default class BlogPublisherPlugin extends Plugin {
           } else if (m.type === 'error') {
             clearTimeout(timer)
             reject(new Error(m.error || this.t.unknownError))
-          } else if (m.type === 'log') {
-            console.log('[blog-publisher] ' + m.text)
           }
         })
         c.on('error', (e: Error) => {
@@ -439,7 +434,6 @@ export default class BlogPublisherPlugin extends Plugin {
       })
 
       this.port = port
-      console.log('[blog-publisher] 服务已就绪，端口', port)
       return port
     })()
 
