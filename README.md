@@ -1,4 +1,4 @@
-# Obsidian 博客
+# Note Blog Publisher
 
 [English](README.en.md)
 

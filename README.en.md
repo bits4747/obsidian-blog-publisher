@@ -1,4 +1,4 @@
-# Obsidian Blog
+# Note Blog Publisher
 
 [中文](README.md)
 
