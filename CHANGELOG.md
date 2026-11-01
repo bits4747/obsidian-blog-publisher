@@ -10,20 +10,19 @@
 - 插件改为单文件分发：`worker.js` 并入 `main.js`（1.17 MB），官方安装与手动安装都只需 `main.js` + `manifest.json` 两个文件。同一份 bundle 用 `BLOG_PUBLISHER_START` 环境变量区分角色——有它就以后台服务身份运行，没有就走插件本体。
 - 插件 id 改为 `note-blog-publisher`，名称改为 **Note Blog Publisher**（原 `blog-publisher` 已被社区目录占用）。插件目录名随之改变，从旧版升级需要把文件挪到 `.obsidian/plugins/note-blog-publisher/`。
 - 新增 `.github/workflows/release.yml`：打 tag 触发，校验 tag 与 `manifest.json` 的 version 一致后打包、生成构建溯源证明、创建 Release 并附上两个资产。
+- `manifest.json` 与 `versions.json` 移到仓库根目录：社区目录只读默认分支根目录那一份清单，放在 `obsidian-plugin/` 子目录里会导致提交被拒。`release.yml` 与装库脚本随之改路径。
 
 ### 文档
 - README 安装段改为「社区插件目录搜索安装」为主、手动安装为辅；补「为什么数据写在库之外」一节，逐条说明克隆仓库、跨库复用、令牌隔离三个原因，并声明除该数据目录外只读取当前库的公开笔记。
 - README 与 CHANGELOG 的项目结构树、命令说明同步单文件产物。
+- README 把「几点需要知道的」并入常见问题，逐条改写成问句（`site-template/` 的作用与能否删除、文件树开关为何不响应、界面语言与明暗为何不能单独设、公开状态存在哪）
+- README 令牌说明改为「系统加密保存」，并补 Linux 回退明文的前提
+- README 项目结构树对齐实际文件：补 `.editorconfig` / `.gitattributes` / `CHANGELOG.en.md` / `CONTRIBUTING*.md` / `versions.json` / `main.js` / `worker.js`，CI 段改为反映 `deploy.yml` 里 `check` / `verify` / `build` / `deploy` 四个 job 的双重用途（站点仓库构建部署、插件仓库类型检查+打包）
 
 ### 安全
 - GitHub 令牌不再明文落盘：Windows 用 DPAPI（`CryptProtectData`，CurrentUser 作用域）、macOS 用 Keychain 加密，密文存在 `local.json` 的 `githubTokenEnc` 字段，只有本机当前账号能解开。旧格式的明文 `githubToken` 在首次读取时自动迁移成密文并删除原字段；迁移失败（系统命令不可用）则保持原样，不会让用户丢掉令牌。Linux 没有免依赖的等价物，仍退回明文并在 README 写明。
 - 修掉一个更隐蔽的令牌泄露：`git()` 与 `preflightRemote()` 原先把令牌拼进命令行参数（`-c http.extraHeader=Authorization: Basic ...`），会出现在进程列表里、也可能被工具的错误输出带出来。改用 git 官方的 `GIT_CONFIG_COUNT` / `GIT_CONFIG_KEY_0` / `GIT_CONFIG_VALUE_0` 环境变量注入，配置照样生效但不出现在 argv。
 - 令牌解密结果在内存里缓存，避免每次 git 调用都起一次子进程。
-
-### 文档
-- README 把「几点需要知道的」并入常见问题，逐条改写成问句（`site-template/` 的作用与能否删除、文件树开关为何不响应、界面语言与明暗为何不能单独设、公开状态存在哪）
-- README 令牌说明改为「系统加密保存」，并补 Linux 回退明文的前提
-- README 项目结构树对齐实际文件：补 `.editorconfig` / `.gitattributes` / `CHANGELOG.en.md` / `CONTRIBUTING*.md` / `versions.json` / `main.js` / `worker.js`，CI 段改为反映 `deploy.yml` 里 `check` / `verify` / `build` / `deploy` 四个 job 的双重用途（站点仓库构建部署、插件仓库类型检查+打包）
 
 ## [1.0.0] - 2026-10-30
 

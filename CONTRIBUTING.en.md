@@ -12,7 +12,7 @@ Use the [issue templates](https://github.com/bits4747/obsidian-blog-publisher/is
 
 | What to include | Where to get it |
 |---|---|
-| Version | Bottom right of the manager, or `version` in `obsidian-plugin/manifest.json` |
+| Version | Bottom right of the manager, or `version` in the root `manifest.json` |
 | OS | Windows / macOS / Linux, with the version |
 | Which step failed | One of: connect / authorize / pick notes / publish / update source |
 | The full manager log | Expand Details after clicking publish; **don't truncate the error text** |

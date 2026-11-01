@@ -17,7 +17,7 @@ body:
     id: version
     attributes:
       label: 版本号 / Version
-      description: 管理器右下角，或 obsidian-plugin/manifest.json 里的 version / Bottom right of the manager, or `version` in obsidian-plugin/manifest.json
+      description: 管理器右下角，或仓库根 manifest.json 里的 version / Bottom right of the manager, or `version` in the root `manifest.json`
       placeholder: 1.0.0
     validations:
       required: true

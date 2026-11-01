@@ -355,6 +355,7 @@ obsidian-blog-publisher/
 ├── README.md / README.en.md     中文 / 英文说明
 ├── CHANGELOG.md / .en.md        版本变更
 ├── CONTRIBUTING.md / .en.md     贡献指南
+├── manifest.json / versions.json  插件清单与最低版本映射（社区目录只读根目录这一份）
 ├── LICENSE / .editorconfig / .gitattributes / .gitignore
 ├── package.json                 依赖与脚本入口
 ├── next.config.ts               Next 配置（output: 'export'，支持 basePath）
@@ -378,7 +379,7 @@ obsidian-blog-publisher/
 ├── tools/preview/               预览图生成链路（示例内容 → 截图 → 打包）
 │
 ├── obsidian-plugin/             Obsidian 插件（复用上面的内核与界面）
-│   ├── manifest.json / versions.json / package.json / esbuild.config.mjs
+│   ├── package.json / esbuild.config.mjs
 │   ├── main.js                  构建产物（Release 里上传的就是这个，单文件含插件与后台服务）
 │   └── src/
 │       ├── main.ts              插件入口：utilityProcess 起内核、开视图

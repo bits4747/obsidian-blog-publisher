@@ -10,20 +10,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), version
 - The plugin now ships as a single file: `worker.js` is folded into `main.js` (1.17 MB), so both the community-directory install and the manual install need only `main.js` and `manifest.json`. The same bundle serves two roles, selected by the `BLOG_PUBLISHER_START` environment variable — set it and it runs as the background service, omit it and it runs as the plugin itself.
 - Plugin id is now `note-blog-publisher` and the name is **Note Blog Publisher** (`blog-publisher` was already taken in the community directory). The plugin directory name changed accordingly; upgrading from an older build means moving the files to `.obsidian/plugins/note-blog-publisher/`.
 - Added `.github/workflows/release.yml`: pushing a tag verifies that the tag matches the `version` in `manifest.json`, bundles the plugin, generates a build provenance attestation, and creates a Release with both assets.
+- `manifest.json` and `versions.json` moved to the repository root: the community directory reads only the root manifest on the default branch, so keeping it under `obsidian-plugin/` would get the submission rejected. `release.yml` and the vault-deploy step follow the new path.
 
 ### Documentation
 - README installation now leads with the community directory and keeps manual install as the fallback; added a "Why it writes outside the vault" section covering the three reasons (cloned repo, cross-vault reuse, token isolation) and stating that beyond that one data directory the plugin only reads public notes from the vault you have open.
 - README and CHANGELOG project trees and command descriptions updated for the single-file output.
+- README: "Worth knowing" folded into the FAQ and rewritten as questions (what `site-template/` is and whether it can be deleted, why the explorer switches don't respond, why interface language and theme can't be set separately, where the public flag lives)
+- README: token section now says "encrypted by the OS" and notes the Linux plain-text fallback
+- README: project layout aligned with the real tree (added `.editorconfig` / `.gitattributes` / `CHANGELOG.en.md` / `CONTRIBUTING*.md` / `versions.json` / `main.js` / `worker.js`); the CI entry now reflects the four jobs in `deploy.yml` (`check` / `verify` / `build` / `deploy`) serving both repos — build and deploy in a site repo, typecheck and bundle in the plugin repo
 
 ### Security
 - The GitHub token is no longer stored in plain text: Windows uses DPAPI (`CryptProtectData`, CurrentUser scope) and macOS uses the Keychain. The ciphertext lives in the `githubTokenEnc` field of `local.json`, decryptable only by your own account on this machine. The old plain-text `githubToken` field is migrated to ciphertext and deleted on first read; if migration fails (system command unavailable) the original is left untouched, so you never lose the token. Linux has no dependency-free equivalent and still falls back to plain text, as documented in the README.
 - Fixed a subtler token leak: `git()` and `preflightRemote()` used to pass the token on the command line (`-c http.extraHeader=Authorization: Basic ...`), which shows up in the process list and can be echoed by tool error output. They now inject it through git's official `GIT_CONFIG_COUNT` / `GIT_CONFIG_KEY_0` / `GIT_CONFIG_VALUE_0` environment variables — same effect, nothing in argv.
 - The decrypted token is cached in memory so each git call doesn't spawn a subprocess.
-
-### Documentation
-- README: "Worth knowing" folded into the FAQ and rewritten as questions (what `site-template/` is and whether it can be deleted, why the explorer switches don't respond, why interface language and theme can't be set separately, where the public flag lives)
-- README: token section now says "encrypted by the OS" and notes the Linux plain-text fallback
-- README: project layout aligned with the real tree (added `.editorconfig` / `.gitattributes` / `CHANGELOG.en.md` / `CONTRIBUTING*.md` / `versions.json` / `main.js` / `worker.js`); the CI entry now reflects the four jobs in `deploy.yml` (`check` / `verify` / `build` / `deploy`) serving both repos — build and deploy in a site repo, typecheck and bundle in the plugin repo
 
 ## [1.0.0] - 2026-10-30
 

@@ -12,7 +12,7 @@
 
 | 要带什么 | 怎么拿 |
 |---|---|
-| 版本号 | 管理器页面右下角，或 `obsidian-plugin/manifest.json` 的 `version` |
+| 版本号 | 管理器页面右下角，或仓库根 `manifest.json` 的 `version` |
 | 操作系统 | Windows / macOS / Linux 具体版本 |
 | 卡在哪一步 | 「建连接 / 授权 / 选笔记 / 发布 / 更新源码」中的哪一步 |
 | 管理器的完整日志 | 点发布后展开的 Details；报错原文**不要截断** |

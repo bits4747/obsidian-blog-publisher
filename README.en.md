@@ -355,6 +355,7 @@ obsidian-blog-publisher/
 ├── README.md / README.en.md     Chinese / English docs
 ├── CHANGELOG.md / .en.md        release notes
 ├── CONTRIBUTING.md / .en.md     contribution guide
+├── manifest.json / versions.json  plugin manifest and minimum-version map (the community directory reads only this root copy)
 ├── LICENSE / .editorconfig / .gitattributes / .gitignore
 ├── package.json                 dependencies and scripts
 ├── next.config.ts               Next config (output: 'export', supports basePath)
@@ -378,7 +379,7 @@ obsidian-blog-publisher/
 ├── tools/preview/               preview generation chain (sample content → screenshots → packing)
 │
 ├── obsidian-plugin/             the Obsidian plugin (reuses the core and UI above)
-│   ├── manifest.json / versions.json / package.json / esbuild.config.mjs
+│   ├── package.json / esbuild.config.mjs
 │   ├── main.js                  build output (what the Release ships; single file with plugin + background service)
 │   └── src/
 │       ├── main.ts              plugin entry: starts the core via utilityProcess, opens the view
