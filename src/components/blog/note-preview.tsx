@@ -104,10 +104,9 @@ export function NotePreviewPopup({ slug, heading, anchor, onClose, onKeepOpen }:
       if (!el) return
       el.scrollIntoView({ block: 'start' })
       const node = el as HTMLElement
-      node.style.transition = 'background-color 0.3s'
-      node.style.backgroundColor = 'color-mix(in srgb, var(--primary) 18%, transparent)'
+      node.classList.add('preview-heading-flash')
       window.setTimeout(() => {
-        node.style.backgroundColor = ''
+        node.classList.remove('preview-heading-flash')
       }, 1600)
     }, 120)
     return () => window.clearTimeout(timer)

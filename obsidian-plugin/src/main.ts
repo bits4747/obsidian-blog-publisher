@@ -37,7 +37,7 @@ interface ChildHandle {
  */
 function getUtilityProcess(): { fork: (p: string, a: string[], o?: Record<string, unknown>) => any } | null {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-var-requires -- Electron 的内置模块没有 npm 包可供静态 import，必须在运行时按名字取
     const electron = require('electron') as { remote?: { require?: (m: string) => any }; utilityProcess?: unknown }
     const main = electron.remote?.require ? (electron.remote.require('electron') as { utilityProcess?: unknown }) : null
     const up = (main?.utilityProcess ?? electron.utilityProcess) as { fork?: unknown } | undefined
@@ -423,16 +423,13 @@ class BlogPublisherView extends ItemView {
     const root = this.contentEl
     root.empty()
     root.addClass('blog-publisher-root')
-    root.style.padding = '0'
-    root.style.overflow = 'hidden'
 
     const loading = root.createDiv({ text: this.plugin.t.loading, cls: 'blog-publisher-loading' })
-    loading.style.padding = '20px'
 
     try {
       const port = await this.plugin.ensureServer()
       loading.remove()
-      const frame = root.createEl('iframe')
+      const frame = root.createEl('iframe', { cls: 'blog-publisher-frame' })
       // embed=1：Obsidian 左侧已经是文件树，界面里那套文件夹网格是重复的，藏掉。
       // lang/theme：界面不再自己放「中英」「明暗」按钮，改为跟宿主走 ——
       // 首帧就用这两个参数定好，之后变化靠 postMessage 热更新（不刷新 iframe）。
@@ -445,10 +442,6 @@ class BlogPublisherView extends ItemView {
       const vaultPath = (this.app.vault.adapter as unknown as { basePath?: string }).basePath || ''
       const vq = vaultPath ? '&vault=' + encodeURIComponent(vaultPath) : ''
       frame.src = `http://127.0.0.1:${port}/?embed=1&lang=${lang}&theme=${theme}${vq}`
-      frame.style.width = '100%'
-      frame.style.height = '100%'
-      frame.style.border = '0'
-      frame.style.display = 'block'
       // iframe 里要能用剪贴板 / 下载等能力，但不需要额外权限
       frame.setAttribute('allow', 'clipboard-write')
       this.frame = frame
@@ -466,7 +459,7 @@ class BlogPublisherView extends ItemView {
       }, 2000)
     } catch (e) {
       loading.setText(this.plugin.t.startFail(String((e as Error)?.message || e)))
-      loading.style.color = 'var(--text-error)'
+      loading.addClass('is-error')
     }
   }
 

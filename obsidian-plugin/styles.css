@@ -58,3 +58,10 @@
 
 /* 顶部工具条里的按钮组：跟着 nav-action-button 的尺寸走 */
 .blog-pub-navwrap { display: inline-flex; align-items: center; padding: 0 4px; }
+
+/* ---------- 插件视图容器 ---------- */
+/* 视图里只有一个 iframe，撑满整个面板；不留内边距，否则会露出面板底色。 */
+.blog-publisher-root { padding: 0; overflow: hidden; }
+.blog-publisher-loading { padding: 20px; }
+.blog-publisher-loading.is-error { color: var(--text-error); }
+.blog-publisher-frame { width: 100%; height: 100%; border: 0; display: block; }
