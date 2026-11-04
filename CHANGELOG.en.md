@@ -4,6 +4,11 @@
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [Semantic Versioning](https://semver.org).
 
+## [1.0.5] - 2026-11-04
+
+### Fixed
+- The root `tsconfig.json` used to include `obsidian-plugin/` in its `include` list, but the plugin's dependencies live in `obsidian-plugin/node_modules`, which a site-side `npm ci` never installs — so type checking inside `next build` failed with `Cannot find module 'obsidian'` in a clean environment. That directory is now excluded; the plugin's own type check still runs as the second command of `npm run typecheck` (`-p obsidian-plugin/tsconfig.json`).
+
 ## [1.0.4] - 2026-11-04
 
 ### Changed

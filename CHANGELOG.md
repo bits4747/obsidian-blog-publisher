@@ -4,6 +4,11 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.0.5] - 2026-11-04
+
+### 修复
+- 根 `tsconfig.json` 的 `include` 原先把 `obsidian-plugin/` 也扫进去，但插件依赖装在 `obsidian-plugin/node_modules`，站点侧 `npm ci` 不会装它，所以干净环境里 `next build` 的类型检查会报 `Cannot find module 'obsidian'`。现在把该目录排除，插件自己的类型检查仍走 `npm run typecheck` 的第二条命令（`-p obsidian-plugin/tsconfig.json`）。
+
 ## [1.0.4] - 2026-11-04
 
 ### 变更

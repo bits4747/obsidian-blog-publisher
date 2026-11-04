@@ -257,8 +257,9 @@ if (FINALIZE_ONLY) {
   process.exit(0)
 }
 
-const rels = fsSync.existsSync(CONTENT) ? walk(CONTENT) : []
-if (rels.length === 0) {
+const hasContentDir = fsSync.existsSync(CONTENT)
+const rels = hasContentDir ? walk(CONTENT) : []
+if (hasContentDir && rels.length === 0) {
   console.log('[build-content] content/ 为空：先在 Obsidian 里用博客发布器推送公开笔记')
 }
 
@@ -272,7 +273,6 @@ const assetRels = rels.filter((p) => !isPublicMd(p) && ASSET_EXTS.has(path.extna
 // （本项目自己的仓库就是这样，content/ 由发布器在用户仓库里生成），
 // 没有可发布的站点，也就不存在「绿灯发出空站点」的风险。
 if (mdRels.length === 0) {
-  const hasContentDir = fsSync.existsSync(CONTENT)
   if (!hasContentDir) {
     console.log('[build-content] 没有 content/ 目录：这是源码仓库，跳过内容构建（无站点可发布）')
   } else {

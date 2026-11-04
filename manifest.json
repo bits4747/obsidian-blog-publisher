@@ -1,7 +1,7 @@
 {
   "id": "note-blog-publisher",
   "name": "Note Blog Publisher",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "minAppVersion": "1.5.0",
   "description": "Publish selected notes as a static blog: toggle which notes are public from the file explorer, push to GitHub in one click, auto-sync on save, and track build status.",
   "author": "bits47",
