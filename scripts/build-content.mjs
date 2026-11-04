@@ -267,12 +267,21 @@ const assetRels = rels.filter((p) => !isPublicMd(p) && ASSET_EXTS.has(path.extna
 
 // 没有任何公开笔记时**拒绝构建**：历史上真的发生过 CI 绿灯发布出一个空站点
 // （content/ 从未填充，构建照常 exit 0）。空站点比构建失败更难发现。
+//
+// 例外：content/ 目录本身不存在。这说明当前 checkout 是**不含任何笔记的源码仓库**
+// （本项目自己的仓库就是这样，content/ 由发布器在用户仓库里生成），
+// 没有可发布的站点，也就不存在「绿灯发出空站点」的风险。
 if (mdRels.length === 0) {
-  console.error(
-    '[build-content] content/ 里没有任何公开笔记 —— 拒绝构建空站点。' +
-      '先在 Obsidian 里用博客发布器把笔记标为公开并发布；确实要构建空站请设 ALLOW_EMPTY=1。'
-  )
-  if (!process.env.ALLOW_EMPTY) process.exit(1)
+  const hasContentDir = fsSync.existsSync(CONTENT)
+  if (!hasContentDir) {
+    console.log('[build-content] 没有 content/ 目录：这是源码仓库，跳过内容构建（无站点可发布）')
+  } else {
+    console.error(
+      '[build-content] content/ 里没有任何公开笔记 —— 拒绝构建空站点。' +
+        '先在 Obsidian 里用博客发布器把笔记标为公开并发布；确实要构建空站请设 ALLOW_EMPTY=1。'
+    )
+    if (!process.env.ALLOW_EMPTY) process.exit(1)
+  }
 }
 
 // 附件目录每次全量重建：不清掉上一次的附件，取消引用的旧图会一直留在产物里。

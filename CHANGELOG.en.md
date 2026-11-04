@@ -4,6 +4,21 @@
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows [Semantic Versioning](https://semver.org).
 
+## [1.0.4] - 2026-11-04
+
+### Changed
+- The root `README.md` now holds the English documentation and the Chinese one moved to `README.zh.md` (previously `README.en.md`). The community directory only reads the root file, where English is required; the two files link to each other at the top.
+- `scripts/build-content.mjs` skips content building when the `content/` directory does not exist: that is a source-only checkout with no notes (notes are written into the user's repository by the publisher), not an empty site. A `content/` directory with no public notes still refuses to build.
+
+### Fixed
+- Style assignments in `obsidian-plugin/src/main.ts` became CSS classes (`blog-publisher-root` / `blog-publisher-frame` / `blog-publisher-loading`) shipped in `styles.css`, so users can override them with a CSS snippet; the note-page heading flash likewise uses `.preview-heading-flash`.
+- Disabled lint rules in `src/main.ts` now carry a reason.
+
+## [1.0.3] - 2026-11-04
+
+### Fixed
+- The plugin view's iframe and loading hint no longer assign `element.style.*` one by one but use CSS classes; the loading element gets an `is-error` class instead of an inline colour.
+
 ## [1.0.2] - 2026-11-01
 
 ### Changed

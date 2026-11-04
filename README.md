@@ -1,127 +1,127 @@
 # Note Blog Publisher
 
-[English](README.en.md)
+[中文](README.zh.md)
 
-把 Obsidian 笔记发布成 GitHub Pages 静态博客。
+Publish your Obsidian notes as a static blog on GitHub Pages.
 
-不用为了发布另建一个库：私人笔记和公开笔记放在一起，公开与否只是 frontmatter 里的一个 `public: true`。发布器逐篇勾选、一键推送，站点由 GitHub Actions 自动构建部署。
+You don't need a second vault. Private and public notes live together — going public is just `public: true` in the frontmatter. Toggle notes one by one in the publisher, push once, and GitHub Actions builds and deploys the site.
 
-![博客首页](docs/screenshots/home.png)
+![Blog home](docs/screenshots/home.png)
 
-## 优势一览
+## Highlights
 
-- **同一个库，公私有别**——`public: true` 的笔记才会被读取、才会进仓库；私密笔记不参与构建
-- **公开开关长在文件树上**——每篇笔记右边一个小开关，文件夹标题栏有「全部公开 / 全部私密」，不用另开网页
-- **复刻 Obsidian 的阅读体验**——双链、嵌入、callout、公式、标签、块引用、悬浮预览、可拖拽大纲
-- **自定义外观**——粘贴一段 CSS 就能换配色与首页排版，内置六套预设（加「默认」共七项）带预览图，不用改代码
-- **纯静态**——无数据库、无账号、无服务端，构建产物可以直接丢到任何静态托管
-- **中英双语**——界面跟随 Obsidian 的语言设置，站点可随时切换
+- **One vault, public and private side by side** — only notes marked `public: true` are read and committed; private notes never enter the build
+- **The toggle lives in the file explorer** — a small switch next to every note, plus "Publish all / Make all private" on each folder header. No separate web page needed
+- **An Obsidian-like reading experience** — wikilinks, embeds, callouts, math, tags, block references, hover previews, a draggable outline
+- **Custom appearance** — paste a snippet of CSS to change colors and home layout. Six built-in presets (seven including the default), each with a preview image. No code changes
+- **Pure static** — no database, no accounts, no server. The build output drops onto any static host
+- **Bilingual** — the interface follows Obsidian's language setting; the site can be switched at any time
 
-## 安装
+## Installation
 
-在 Obsidian 里打开 设置 → 第三方插件 → 浏览，搜索 **Note Blog Publisher** 安装即可。
+In Obsidian, open Settings → Community plugins → Browse and search for **Note Blog Publisher**.
 
-手动安装：到 [Releases](https://github.com/bits4747/obsidian-blog-publisher/releases/latest) 下载 `main.js`、`manifest.json` 与 `styles.css` 三个文件，放进库的插件目录，目录名必须是 `note-blog-publisher`：
+Manual install: download `main.js`, `manifest.json`, and `styles.css` from [Releases](https://github.com/bits4747/obsidian-blog-publisher/releases/latest) and put them in your vault's plugin directory. The directory name must be exactly `note-blog-publisher`:
 
 ```
-<你的库>/.obsidian/plugins/note-blog-publisher/
+<your vault>/.obsidian/plugins/note-blog-publisher/
 ├── main.js
 ├── manifest.json
 └── styles.css
 ```
 
-然后在 Obsidian 设置 → 第三方插件里启用「Note Blog Publisher」（需要先关掉「安全模式」）。
+Then enable "Note Blog Publisher" in Obsidian settings → Community plugins (turn off Safe mode first).
 
-### 前置条件
+### Requirements
 
-| 需要 | 为什么 |
+| Needed | Why |
 |---|---|
-| **Git**（[下载](https://git-scm.com)） | 发布、拉取都靠它，插件不自带 git |
-| **Node.js** | 后台内核跑在子进程里。Obsidian 自带 Electron 时优先用它的 `utilityProcess`，拿不到时退回系统 `node`——两条路都走不通就会「插件装上了但点了没反应」 |
-| GitHub 账号 | 站点托管在 GitHub Pages |
+| **Git** ([download](https://git-scm.com)) | Publishing and fetching go through it; the plugin does not bundle git |
+| **Node.js** | The background core runs in a child process. It prefers Obsidian's bundled `utilityProcess`; if that's unavailable it falls back to the system `node`. If neither works you get "plugin installed, but clicking does nothing" |
+| A GitHub account | The site is hosted on GitHub Pages |
 
-如果启用后点击没反应，先确认 `git --version` 和 `node -v` 在终端里都能正常输出。
+If clicking does nothing after enabling, first check that `git --version` and `node -v` both print something in a terminal.
 
-### 手动更新
+### Updating
 
-新版本发布后，把上面三个文件重新下载覆盖即可（Obsidian 重启后生效）。
+Download the same three files again and overwrite them (restart Obsidian to apply).
 
-## 第一次使用
+## Getting started
 
-### 1. 建连接
+### 1. Create a connection
 
-点右上角「设置」：本地库默认就是当前打开的这个库，填个博客名，再选「帮我新建一个仓库」，填仓库名点「在 GitHub 上创建」。
+Click "Settings" in the top right. The local vault defaults to the one you have open. Give the blog a name, choose "Create a repo for me", enter a repo name, and click "Create on GitHub".
 
-已经有仓库的话，切到「我已经有仓库了」粘贴地址即可。Pages 不必手动开——首次发布成功后会自动启用，已经开过的不会重复创建。
+If you already have a repo, switch to "I already have a repo" and paste the URL. You don't need to enable Pages manually — it's turned on automatically after the first successful publish, and an existing Pages site is never recreated.
 
-博客名同时是发布器里的显示名、网页标题和站点左上角的站名。
+The blog name doubles as the display name in the publisher, the page title, and the site name in the top-left corner.
 
-### 2. 授权
+### 2. Authorize
 
-点「GitHub 授权」，按弹窗里的步骤生成 **Personal access token (classic)**，勾选这两个 scope：
+Click "GitHub access" and follow the dialog to create a **Personal access token (classic)** with these two scopes:
 
-| Scope | 用途 |
+| Scope | Purpose |
 |---|---|
-| `repo` | 推送内容、创建仓库 |
-| `workflow` | 首次建站要把 `.github/workflows/deploy.yml` 推上去；GitHub 规定含 workflow 文件的推送必须带这个权限 |
+| `repo` | Push content, create repositories |
+| `workflow` | The first deploy pushes `.github/workflows/deploy.yml`; GitHub requires this scope for any push that touches a workflow file |
 
-> 只勾 `repo` 不够——推送会被 GitHub 拒绝，报错是 `refusing to allow a Personal Access Token to create or update workflow`。
+> `repo` alone is not enough — the push is rejected with `refusing to allow a Personal Access Token to create or update workflow`.
 
-有效期建议选「No expiration」。令牌过期后发布、建仓库、自动建站会一起失败，而报错信息看不出是过期。
+Set the expiration to "No expiration". An expired token makes publishing, repo creation, and automatic Pages setup all fail together, and the error message doesn't tell you it expired.
 
-**令牌怎么存的**：用系统自带的加密保存（Windows DPAPI / macOS Keychain），密文写在 `local.json` 里，只有你这个本机账号能解开，不进仓库、不上传。Linux 没有免依赖的等价物，退回明文并在下文说明。想撤掉授权，去 GitHub 的 Settings → Developer settings → Tokens 里删除该 token 即可。
+**How the token is stored**: encrypted with the OS keychain (Windows DPAPI / macOS Keychain). The ciphertext sits in `local.json` and only your own account on this machine can decrypt it; it is never committed or uploaded. Linux has no dependency-free equivalent and falls back to plain text, as described below. To revoke access, delete the token in GitHub's Settings → Developer settings → Tokens.
 
-### 3. 选笔记并发布
+### 3. Pick notes and publish
 
-打开要公开的笔记的开关，点「⟳ 发布到 GitHub」。等 1~2 分钟，访问 `https://你的用户名.github.io/仓库名/`。
+Turn on the switch for the notes you want public, then click "⟳ Publish to GitHub". Wait 1–2 minutes and visit `https://<your-username>.github.io/<repo-name>/`.
 
-## 发布器界面
+## The publisher
 
-点左侧栏的图标，或命令面板里的「打开博客发布器」，主区域会开一个标签页。界面的语言与明暗跟随 Obsidian。
+Click the icon in the left ribbon, or run "Open Blog Publisher" from the command palette, and a tab opens in the main area. The interface's language and light/dark theme follow Obsidian.
 
-![博客发布器](docs/screenshots/manager.png)
+![Blog publisher](docs/screenshots/manager.png)
 
-| 功能 | 说明 |
+| Feature | Description |
 |---|---|
-| 单库 | 一个 Obsidian 库对应一个博客。首屏只有一行信息条：库名 · 仓库 · 篇数 · 打开网页 · 设置 |
-| 逐篇开关 | 每篇一个开关，写进 frontmatter，改完提示「已把《标题》设为公开」 |
-| 批量操作 | 文件夹标题栏有「全部公开 / 全部私密」，顶部另有全局按钮 |
-| 搜索筛选 | 按标题和路径过滤，先筛再批量 |
-| 折叠 | 每个文件夹可收起，另有「一键展开 / 一键收起」 |
-| 变更三栏 | 新增 / 修改 / 删除三类改动分三栏列出，新增的可以在这一栏直接开公开开关。只列**需要你手动处理**的：自动同步开关开着的类别由后台自己发，不进三栏；如果最近一次自动同步推送失败，那几类会重新回到三栏提醒 |
-| 自动同步 | 三类改动各一个开关，勾选后该类改动自动发布，不必再点「发布」；默认「修改」开，「新增 / 删除」关。改了文件约 2.5 秒后自动提交推送，但**只在 Obsidian 开着时生效** |
-| 同步流水 | 自动同步那一行下方列出最近几次后台动作：开始推送的时刻、动了哪些文件、推没推上去、成功更新的时刻、两者相隔多久。推送失败、构建失败、构建超时都各留一条记录。存本地配置，重启不丢 |
-| 结果弹窗 | 每次「发布 / 更新源码 / 保存外观」都在右上角弹一张卡片，从转圈开始，最后定格成 ✓ 或 ✗，失败可展开日志。**没有关闭按钮，也不会自动消失，点卡片任意位置才收起** |
-| 构建诊断 | 推送成功后不只看线上产物，还会查 GitHub Actions 这次的结论：卡住或失败会明确说「构建失败」「构建超时」，并可直接点开 Actions 页面 |
-| 上线进度 | 手动发布后轮询线上 `data/index.json`，弹窗里显示「GitHub 正在构建部署…已等 N 秒」；部署完成变成「已上线（用时 N 秒）」并附打开链接；4 分钟仍未上线会提示去 Actions 查看 |
-| 自定义外观 | 「外观」按钮打开 CSS 编辑框，内置七项预设（默认 + 六套）带预览图，可一键填入再改。详见下一节 |
+| Single vault | One Obsidian vault maps to one blog. The top row shows vault name · repo · note count · open site · settings |
+| Per-note toggle | One switch per note, written into the frontmatter. Confirms with "Set *title* to public" |
+| Bulk actions | "Publish all / Make all private" on every folder header, plus global buttons at the top |
+| Search and filter | Filter by title and path; narrow down first, then act in bulk |
+| Collapse | Every folder collapses; "Expand all / Collapse all" for the whole tree |
+| Three change columns | Added / modified / deleted are listed separately, and added notes can be made public right there. Only changes **you need to handle** appear — categories with auto-sync on are pushed by the background process and drop out of these columns; if the last auto-sync push failed, those categories come back |
+| Auto-sync | One switch per change category. When on, that category publishes itself without pressing Publish. Default: modified on, added/deleted off. Fires about 2.5 seconds after a file changes, but **only while Obsidian is running** |
+| Sync log | Below the auto-sync row, the last few background actions: when the push started, which files changed, whether it landed, when the site finished updating, and the gap between. Failed pushes, failed builds, and build timeouts each leave a record. Stored locally, survives restarts |
+| Result card | Every publish / source update / appearance save pops a card in the top right, starting as a spinner and settling on ✓ or ✗ with an expandable log. **No close button and no auto-dismiss — click anywhere on the card to dismiss it** |
+| Build diagnostics | After a push it checks the GitHub Actions run, not just the live output. Stuck or failed builds are reported as "build failed" or "build timed out", with a direct link to the Actions page |
+| Deploy progress | After a manual publish it polls the live `data/index.json` and shows "GitHub is building… N seconds elapsed", turning into "Live (took N seconds)" with a link. After 4 minutes it points you to Actions |
+| Custom appearance | The "Appearance" button opens the CSS editor with seven presets (default + six) and preview images, ready to fill in and edit. See the next section |
 
-## 自定义外观
+## Custom appearance
 
-站点的**功能**与**外观**是分开的：功能由源码里的 React 组件实现，外观集中在两处可覆盖的地方——CSS 变量（颜色、圆角、字体）和 `data-region` 选择器（首页与列表的排版）。所以不用改一行代码，写 CSS 就能换一套皮肤。
+A site's **behavior** and its **appearance** are separate here: behavior comes from React components in the source, appearance is concentrated in two overridable places — CSS variables (colors, radius, fonts) and `data-region` selectors (home and list layout). So you can reskin the site without touching a line of code.
 
-发布器右上角点「外观」，从下拉框里选一套预设（鼠标停在名字上能看简介，选中后下方显示这套的**预览图**），它会填进编辑框，再改成自己的。自己写的 CSS 无法预渲染，所以选「自定义」时不显示预览图。
+Click "Appearance" in the publisher's top right and pick a preset from the dropdown (hover for a description; the selected one shows a **preview image** below). It fills the editor, and you edit from there. Hand-written CSS can't be pre-rendered, so "Custom" shows no preview.
 
-![外观面板](docs/screenshots/theme.png)
+![Appearance panel](docs/screenshots/theme.png)
 
-### 内置预设
+### Built-in presets
 
-| 预设 | 首页排版 | 配色 |
+| Preset | Home layout | Palette |
 |---|---|---|
-| 默认 | 三列卡片 | 蓝白 |
-| 墨绿 | 三列纸卡 | 暖纸底 + 松墨绿，全衬线 |
-| 樱粉 | 单列大卡片，标题居中放大 | 极浅粉白 + 玫红 |
-| 黑白 | 单列纯文字索引表 | 纯白纯黑，零圆角 |
-| 树形 | 文件树，竖线导轨 + 拐角连接符 | 绿灰纸感 |
-| 方格 | 大小方块拼贴，第一块占主位 | 六色循环 |
-| 霓虹 | 编号目录行 | 近黑底 + 青/品红描边，等宽字体 |
+| Default | Three-column cards | Blue on white |
+| Ink green | Three-column paper cards | Warm paper with pine green, all serif |
+| Sakura | Single-column large cards, centered enlarged titles | Very pale pink with rose |
+| Mono | Single-column plain-text index | Pure white and black, no radius |
+| Tree | File tree with vertical guide lines and corner connectors | Green-grey paper |
+| Mosaic | Mixed-size blocks, first block takes the lead | Six-color cycle |
+| Neon | Numbered index rows | Near-black with cyan/magenta outlines, monospace |
 
-### 写自己的 CSS
+### Writing your own CSS
 
 ```css
-/* 颜色：覆盖 :root 里的变量；深色模式在 .dark 下 */
+/* Colors: override the variables on :root; dark mode lives under .dark */
 :root {
-  --primary: oklch(0.48 0.11 155);   /* 强调色：链接、按钮 */
+  --primary: oklch(0.48 0.11 155);   /* accent: links, buttons */
   --background: oklch(0.99 0.004 250);
   --radius: 0.625rem;
 }
@@ -129,303 +129,303 @@
   --primary: oklch(0.72 0.155 252);
 }
 
-/* 首页与列表的排版：这几块有 data-region，可以改几列 / 卡片还是树状 */
-[data-region="folders"] { display: grid !important; grid-template-columns: repeat(3, minmax(0,1fr)); }  /* 首页文件夹 */
-[data-region="list"]    { }                      /* 笔记列表 */
-[data-region="tags"]    { }                      /* 标签栏 */
-[data-region="article"] { }                      /* 正文排版 */
+/* Home and list layout: these blocks expose data-region, so you can change column count, cards vs tree */
+[data-region="folders"] { display: grid !important; grid-template-columns: repeat(3, minmax(0,1fr)); }  /* home folders */
+[data-region="list"]    { }                      /* note list */
+[data-region="tags"]    { }                      /* tag bar */
+[data-region="article"] { }                      /* article typography */
 
-/* 字体 */
+/* Fonts */
 body { font-family: "Songti SC", Georgia, serif; }
 ```
 
-按钮旁边的「写作指南」会打开说明弹窗，里面列了可覆盖的变量、`data-region` 选择器和字号写法，还能一键把「颜色 / 圆角」那段插进编辑框。
+The "Writing guide" button next to it opens a dialog listing the overridable variables, `data-region` selectors, and how to write font sizes, with a one-click insert of the color/radius block.
 
-三条要记住的：
+Three things to remember:
 
-- **宽度不归主题管**：顶栏、正文、页脚、首页统一读 `--content-w`（默认 `78rem`），每套预设都不写 `max-width`。想整体加宽或收窄就改这一个值，所有页面一起变。
-- **字号要写 `var(--fsu)`**：`--fsu` 是「跟随阅读字号的 1rem」。根字号是故意不动的（否则一放大字号，栏宽和控件跟着变形），所以主题里的字号写成 `calc(1.1 * var(--fsu))` 才会跟着滑块走。
-- **清空 = 恢复默认**：框里留空保存会删掉 `theme.css`，回到默认主题。
+- **Width is not the theme's business**: the top bar, article, footer, and home all read `--content-w` (default `78rem`), and no preset writes `max-width`. Change that one value to widen or narrow everything at once.
+- **Font sizes must use `var(--fsu)`**: `--fsu` is "1rem that follows the reading size". The root font size is deliberately left alone (otherwise zooming would distort column widths and controls), so write `calc(1.1 * var(--fsu))` to follow the slider.
+- **Empty means default**: saving an empty box deletes `theme.css` and restores the default theme.
 
-保存写进仓库工作副本的 `public/theme.css`，还没上线；「保存并发布」只提交推送这一个文件，不会带上你还没准备好的笔记。上限 200 KB；全是注释等于没写，按「无自定义外观」处理。保存后 1~2 分钟生效，URL 带内容哈希绕开 GitHub Pages 的缓存。
+Saving writes `public/theme.css` in the repo working copy but doesn't deploy. "Save and publish" commits and pushes only that one file, without dragging along notes you weren't ready to publish. The limit is 200 KB; comments only count as no custom appearance. Changes take effect in 1–2 minutes, and the URL carries a content hash to bypass GitHub Pages caching.
 
-### 为什么只给 CSS，不给整页模板
+### Why CSS only, not a full page template
 
-站点是 Next 静态导出，页面结构在 React 里编译好了。让用户改 HTML 等于把模板引擎暴露出去，安全与升级成本都不是这个项目该承担的。CSS 足以改颜色、字体、间距、显隐、位置（flex/grid 都能覆盖），而且样式表永远没法被执行成 HTML/JS——`theme.css` 是以 `<link>` 外链引入的，不是内联 `<style>`，一个 `</style>` 也逃不出去。
+The site is a Next static export; the page structure is compiled into React. Letting users edit HTML would mean exposing a template engine, and the security and upgrade costs aren't something this project should take on. CSS is enough for colors, fonts, spacing, visibility, and position (flex/grid are both overridable), and a stylesheet can never be executed as HTML/JS — `theme.css` is loaded via a `<link>`, not an inline `<style>`, so even a `</style>` can't escape.
 
-和博客园那种「整套皮肤代码（HTML + CSS + JS）」相比：自由度更低，但站点升级时皮肤不会失效，也不会被注入脚本。代价是改不了 DOM 结构（比如加一个新栏目）。
+Compared to platforms that hand you a whole skin (HTML + CSS + JS): less freedom, but your skin won't break when the site upgrades, and no scripts can be injected. The trade-off is that you can't change DOM structure — adding a new section, for example.
 
-## 博客站点
+## The blog
 
-阅读体验以复刻 Obsidian 的呈现为目标。
+The reading experience aims to reproduce how Obsidian renders notes.
 
-![笔记页](docs/screenshots/note.png)
+![Note page](docs/screenshots/note.png)
 
-### 首页
+### Home
 
-- 顶部显示 `共 N 篇公开`
-- **逐层下钻 + 面包屑**：首页只列当前层的子文件夹（卡片）和该层直属笔记，点文件夹进入下一层，面包屑 `全部 › 父 › 当前` 可点回任意一层，文件夹可套任意多层
-- 当前层用 `?folder=` 深链，刷新、分享、前进后退都回到同一层；笔记页也带来源，点「返回」回到进来时那一层
-- 标签栏筛选，显示 `标签筛选：（N 篇）`
-- 搜索匹配标题、正文、路径、标签四个字段，可与标签筛选叠加；命中正文的结果带一行上下文片段，点开后自动滚到那句话并高亮
-- 更新及时性：索引按分钟级 URL 取，即使 HTML 被 Pages 缓存 10 分钟也能在 1 分钟内看到新内容
+- Shows `N public` at the top
+- **Drill-down with breadcrumbs**: the home lists only the current level's subfolders (cards) and its own notes. Click a folder to descend; the breadcrumb `All › Parent › Current` jumps back to any level. Folders nest arbitrarily deep
+- The current level is deep-linked via `?folder=`, so refresh, share, and back/forward all return to the same level. Note pages remember where you came from, and "Back" returns to that level
+- Tag bar filtering, showing `Tag filter: (N notes)`
+- Search matches title, body, path, and tags, and stacks with tag filtering. Body matches include a context snippet; opening one scrolls to that line and highlights it
+- Freshness: the index is fetched with a minute-level URL, so even if Pages caches the HTML for 10 minutes you see new content within one
 
-### 笔记页
+### Note page
 
-- `N 字` 字数、发布日期、标签
-- 右侧可拖拽悬浮大纲，当前章节高亮，可拖动、可调宽
-- 字号缩放 80%~160%（右下角滑杆）：**只缩放文字**，不动版面——栏宽、卡片尺寸、控件大小全都不变
-- 全站统一内容宽度 `--content-w`（默认 `78rem`），顶栏、正文、页脚、首页共用
+- `N words`, publish date, tags
+- A draggable floating outline on the right, with the current section highlighted; drag it, resize it
+- Font zoom 80%–160% (bottom-right slider): **text only** — column width, card sizes, and controls stay put
+- One content width site-wide (`--content-w`, default `78rem`) shared by the top bar, article, footer, and home
 
-### 支持的 Obsidian 语法
+### Supported Obsidian syntax
 
-| 语法 | 效果 |
+| Syntax | Result |
 |---|---|
-| `[[笔记]]` | 可点击跳转，悬停弹出预览浮窗 |
-| 出链 / 反链 | 文末列出「链接到本文的笔记」与「本文的出链」 |
-| 未创建 / 未公开 | 出链里区分这两种目标，指向私密笔记的会显示锁 |
-| `![[附件]]` | 图片等附件正常显示 |
-| `[!note]` 等 | 13 种 callout 类型 |
-| `==高亮==` | 高亮 |
-| `#标签` | 可点击筛选。纯数字（`#2427` 这类题目编号）与 3~8 位十六进制（`#ff0000` 这类颜色值）不算标签；链接文字里的 `#xxx` 也不解析 |
-| `^块引用` | 定位到具体段落，目标不存在时回退为全文 |
-| `$公式$` | KaTeX 渲染，大纲里的公式同样渲染 |
+| `[[Note]]` | Clickable, with a hover preview popup |
+| Outlinks / backlinks | Lists "Linked from" and "Links out" at the end of each note |
+| Uncreated / private | Outlinks distinguish the two; links to private notes show a lock |
+| `![[attachment]]` | Images and other attachments render inline |
+| `[!note]` etc. | 13 callout types |
+| `==highlight==` | Highlight |
+| `#tag` | Clickable filter. Pure numbers (`#2427`, problem IDs) and 3–8 digit hex values (`#ff0000`, colors) are not tags; `#xxx` inside link text is not parsed either |
+| `^block-ref` | Jumps to a specific paragraph, falling back to the whole note if the target is gone |
+| `$math$` | Rendered with KaTeX — including math in the outline |
 
-站点支持中英切换与明暗主题，阅读偏好（字号、折叠、筛选）本地记住。
+The site supports Chinese/English switching and light/dark themes, and remembers reading preferences (font size, collapsed folders, filters) locally.
 
-## 插件做了哪些事
+## What the plugin does
 
-- 左侧文件树里，每篇笔记右边一个小开关（24×13），点一下就能改公开状态——写的就是 frontmatter 里的 `public` 字段
-- 每个文件夹标题右边有 `已公开数/总数` 和「公开」「私密」两个按钮，点哪个就是整夹变成哪个状态。用两个按钮而不是一个开关，是因为开关只有一个方向，一个部分公开的文件夹点下去只能被推断成「全公开」
-- 文件树顶部工具条有同样的按钮，管全库，点下去会先弹一次确认
-- 三种状态：全公开、全私密、部分公开（两个都不点亮，配合行尾的 `3/6` 计数一眼看出是混合状态）
-- 主区域开的「博客发布器」标签页里是完整的发布界面，功能与上一节列的一致
+- In the file explorer, every note gets a small switch (24×13) on the right. Clicking it flips the public state — it writes the `public` field in the frontmatter
+- Every folder header shows `published/total` plus two buttons, "Publish" and "Make private". Two buttons rather than one switch, because a single switch has one direction and a partially public folder could only be inferred as "all public"
+- The toolbar above the file tree has the same buttons for the whole vault, with a confirmation prompt
+- Three states: all public, all private, and partially public (neither button lit, with a `3/6` count at the end of the row)
+- The "Blog Publisher" tab in the main area is the full publishing interface, matching the previous section
 
-## 常见问题
+## FAQ
 
-**发布后网站没变？**
-GitHub Actions 要跑 1~2 分钟。发布器的结果弹窗会显示「正在构建部署…已等 N 秒」，完成后变成「已上线（用时 N 秒）」。超过 4 分钟还没上线，弹窗会提示去仓库的 Actions 页面看构建日志。
+**Published, but the site didn't change?**
+GitHub Actions takes 1–2 minutes. The result card shows "GitHub is building… N seconds elapsed" and switches to "Live (took N seconds)". After 4 minutes it points you to the repo's Actions page.
 
-**`site-template/` 是干什么的？能删吗？**
-首次启用时插件会把站点源码模板（42 个文件，约 408 KB）铺到数据目录的 `site-template/`，之后「更新源码」用它推送站点代码。不用手动删——模板带内容指纹，升级插件后会自动重铺。
+**What is `site-template/` for? Can I delete it?**
+On first enable the plugin lays down the site source template (42 files, about 408 KB) into `site-template/` in the data directory; "Update source" uses it to push site code. There's no need to delete it — the template carries a content fingerprint, so upgrading the plugin re-lays it automatically.
 
-**文件树上的开关点了没反应？**
-开关只在**当前库就是发布器配置的那个库**时生效。库对不上会提示一次并停用，因为发布器一次只服务一个库。
+**The switches in the file explorer don't respond?**
+They only work when **the current vault is the one configured in the publisher**. If the vault doesn't match you get a notice and they're disabled, because the publisher serves one vault at a time.
 
-**界面语言和明暗能单独设吗？**
-不能，跟随 Obsidian：简体/繁体中文都算中文，其它语言算英文；明暗也跟着 Obsidian 的主题走。
+**Can I set the interface language and theme separately?**
+No, they follow Obsidian: Simplified and Traditional Chinese both count as Chinese, everything else is English; the theme follows Obsidian's too.
 
-**公开状态存在哪？换电脑还在吗？**
-写进每篇笔记 frontmatter 里的 `public` 字段，所以公开状态跟着笔记走——换了库、换了电脑，打开还是原来的状态。
+**Where is the public flag stored? Will it survive a move?**
+In each note's frontmatter as the `public` field, so it travels with the note — switch vaults or machines and it's still whatever you set.
 
-**发布失败，说是推送失败？**
-先看弹窗里展开的日志。最常见的是令牌过期——症状是发布、建仓库、自动建站一起失败，报错信息看不出原因。重新生成一个 token 再粘进去即可。
+**Publishing fails with a push error?**
+Read the expanded log first. The most common cause is an expired token — publishing, repo creation, and automatic Pages setup all fail together, and the message doesn't say why. Generate a new token and paste it in.
 
-**私密笔记会被读取或上传吗？**
-不会。构建时只读 `public: true` 的笔记，以及它们引用的附件。私密笔记的正文、标题、路径都不会出现在仓库里。
+**Are private notes read or uploaded?**
+No. The build reads only notes with `public: true` and the attachments they reference. Private notes' bodies, titles, and paths never appear in the repo.
 
-**能改页面结构吗？比如加一个栏目。**
-不能。外观只开放 CSS（见上文「为什么只给 CSS」）。加栏目属于功能改动，要改 React 源码。
+**Can I change the page structure, like adding a section?**
+No. Appearance is CSS only (see "Why CSS only" above). Adding a section is a feature change and means editing the React source.
 
-**想用自己的域名。**
-在 GitHub 仓库的 Settings → Pages 里填 Custom domain，再把 DNS 指过去。这一步在 GitHub 上做，发布器不涉及。
+**Can I use my own domain?**
+Set Custom domain in the GitHub repo's Settings → Pages and point your DNS at it. That's done on GitHub; the publisher isn't involved.
 
-**安装插件时报「无法加载」？**
-先确认 `main.js`、`manifest.json` 与 `styles.css` 三个文件都在 `<库>/.obsidian/plugins/note-blog-publisher/` 里，目录名不要改。再确认本机装了 Git（发布要推送），Obsidian 处于「第三方插件」已开启的状态。
+**"Failed to load plugin" when installing?**
+Check that `main.js`, `manifest.json`, and `styles.css` are all in `<vault>/.obsidian/plugins/note-blog-publisher/` with the directory name unchanged. Then confirm Git is installed (publishing needs it) and that community plugins are enabled.
 
-**能在本地先看看站点效果吗？**
-`npm run build` 之后 `npm run preview`，打开 `http://localhost:8080`。这需要源码仓库，不是插件使用者的必需步骤。
+**Can I preview the site locally?**
+Run `npm run build` then `npm run preview`, and open `http://localhost:8080`. This needs the source repo — not required for plugin users.
 
-**可以跑多个博客吗？**
-可以。一个 Obsidian 库对应一个博客，在库里配一条连接即可。换库就是换博客，发布器会按当前打开的库自动对上它的连接——插件里没有「切换」按钮，因为 Obsidian 一次只开一个库。
+**Can I run several blogs?**
+Yes. One Obsidian vault maps to one blog; configure a connection inside that vault. Switching vaults switches blogs — the publisher matches the connection to the vault you have open. There's no "switch" button in the plugin because Obsidian opens one vault at a time.
 
-**自动同步在关掉发布器后还会跑吗？**
-不会，这是有意的：自动推 git 不该在没人看着的时候跑。
+**Does auto-sync keep running after I close the publisher?**
+No, deliberately: auto-pushing git shouldn't happen unattended.
 
-## 数据存放位置
+## Where data lives
 
-源码目录只放程序代码。个人数据（连接、令牌、笔记镜像、构建产物）都在系统用户目录：
+The source directory holds only program code. Personal data (connections, tokens, note mirror, build output) lives in your system user directory:
 
-| 系统 | 路径 |
+| OS | Path |
 |---|---|
 | Windows | `%APPDATA%\obsidian-blog` |
 | macOS | `~/Library/Application Support/obsidian-blog` |
 | Linux | `~/.config/obsidian-blog` |
 
-内含 `connections.json`（博客连接清单）、`local.json`（GitHub 令牌、各连接的本地库路径）、`repos/<连接id>/`（仓库工作副本）、`content/`（公开笔记镜像）、`build/`（构建产物）。
+It contains `connections.json` (blog connections), `local.json` (GitHub token and each connection's local vault path), `repos/<connection-id>/` (repo working copies), `content/` (mirror of public notes), and `build/` (build output).
 
-`local.json` 里的 GitHub 令牌用**系统加密**保存：Windows 走 DPAPI（CryptProtectData，作用域 CurrentUser），macOS 走 Keychain，密文存在 `local.json` 的 `githubTokenEnc` 字段里，只有你这个本机账号能解开。Linux 没有免依赖的等价物，会退回明文的 `githubToken` 字段——在那种环境下，任何能读你用户目录的程序都能拿到它。想彻底撤掉授权，去 GitHub 删掉该 token。
+The GitHub token in `local.json` is stored **encrypted by the OS**: Windows uses DPAPI (CryptProtectData, CurrentUser scope), macOS uses the Keychain, and the ciphertext lives in the `githubTokenEnc` field — only your own account on this machine can decrypt it. Linux has no dependency-free equivalent and falls back to a plain-text `githubToken` field; there, any program that can read your user directory can get it. To revoke access entirely, delete the token on GitHub.
 
-想改到别处（U 盘、同步盘）：设环境变量 `OBSIDIAN_BLOG_DATA` 后重启 Obsidian。
+To move it elsewhere (USB drive, sync folder), set the `OBSIDIAN_BLOG_DATA` environment variable and restart Obsidian.
 
-### 为什么写在库之外
+### Why it writes outside the vault
 
-插件需要读写库以外的文件，原因有三：
+The plugin reads and writes files outside your vault for three reasons:
 
-- **克隆下来的仓库不能放进库里。** 发布要 `git clone` 一份完整的站点仓库工作副本（含 `node_modules` 与构建产物，通常几百 MB），放进库里会被 Obsidian 当成笔记索引、被同步盘反复上传，也会污染搜索结果。
-- **数据要在换库后仍然可用。** 一个库对应一个博客，连接、令牌、镜像放在库外，换库不用重新授权、不会把令牌跟着笔记一起同步出去。
-- **令牌不该跟笔记放一起。** 库是常被同步、备份、分享的目录，令牌放库外再加密，泄露面小得多。
+- **The cloned repo can't live in the vault.** Publishing needs a full working copy of the site repo (with `node_modules` and build output, often several hundred MB). Inside the vault it would be indexed as notes, re-uploaded by any sync service, and would pollute search results.
+- **Data has to survive a vault switch.** One vault maps to one blog. Keeping connections, tokens, and the note mirror outside the vault means switching vaults doesn't require re-authorizing, and the token never gets synced along with your notes.
+- **The token shouldn't sit next to your notes.** A vault is a directory that gets synced, backed up, and shared. Storing the token elsewhere and encrypting it shrinks the exposure.
 
-除了这一个数据目录，插件只读取你当前打开的库（且只读 `public: true` 的笔记及其引用的附件），以及仓库工作副本里由它自己生成的文件。它不读文档、不读桌面、不扫描其他目录。
+Beyond that one data directory, the plugin only reads the vault you currently have open (and only notes with `public: true` plus the attachments they reference) and the files it generated itself inside the repo working copy. It does not read your Documents, your Desktop, or any other directory.
 
-### 网络访问
+### Network access
 
-插件只访问 GitHub，没有别的远程服务，也没有任何统计上报：
+The plugin talks to GitHub only — no other remote service, and no usage reporting of any kind:
 
-| 目标 | 用途 |
+| Target | Purpose |
 |---|---|
-| `api.github.com` | 建仓库、读写仓库变量、开 Pages、查 Actions 运行状态与构建结果、校验令牌 |
-| `github.com` | `git clone` / `git push` 推送笔记与站点源码 |
+| `api.github.com` | Create the repo, read and write repo variables, enable Pages, check Actions run and build status, verify the token |
+| `github.com` | `git clone` / `git push` to upload your notes and the site source |
 
-两者都只在你自己点了「发布」「建仓库」「刷新状态」或开了自动同步之后才发生，令牌由你提供、存在本机。除了 GitHub 的接口请求，插件不发送任何数据；它不收集使用情况，也不上传笔记内容到别处——笔记只推到你自己的仓库。
+Both happen only after you click Publish, Create repository, or Refresh status, or when auto-sync is on. The token is yours and stays on your machine. Apart from those GitHub requests the plugin sends nothing: it collects no usage data and uploads note content nowhere except your own repository.
 
-## 工作原理
+## How it works
 
 ```
-你的 Obsidian 库（私人笔记 + 公开笔记混放）
-   │  ① 只读取 public: true 的笔记及其引用的附件
+Your Obsidian vault (private and public notes mixed together)
+   │  ① reads only notes with public: true, plus the attachments they reference
    ▼
-博客发布器（Obsidian 里的插件，后台子进程跑同一套内核）
+Blog Publisher (Obsidian plugin; the same core runs in a background child process)
    │  ② git add / commit / push
    ▼
-GitHub 内容仓库（Markdown 原文）
-   │  ③ GitHub Actions 跑 npm run build
+GitHub content repo (Markdown source)
+   │  ③ GitHub Actions runs npm run build
    ▼
 GitHub Pages
 ```
 
-仓库里只存 Markdown 原文，diff 就是笔记的改动，可读可回滚。代价是发布后要等 CI 跑完。
+The repo stores Markdown source only, so the diff is exactly your note changes — readable and revertible. The cost is waiting for CI after each publish.
 
-## 本地开发
+## Development
 
-这套代码同时是站点源码和一个 Obsidian 插件。改站点样式、Markdown 管线或发布逻辑，都在这个仓库里做。
+This codebase is both the site source and an Obsidian plugin. Site styling, the Markdown pipeline, and publishing logic all live here.
 
-插件是独立的 npm 包（`obsidian`、`esbuild` 只它用），所以装完根目录还要装一次它的依赖，否则 `npm run typecheck` / `npm run plugin` 会报找不到 `obsidian`：
+The plugin is a separate npm package (`obsidian` and `esbuild` are only used there), so after installing the root you need its dependencies too — otherwise `npm run typecheck` and `npm run plugin` fail to resolve `obsidian`:
 
 ```bash
 npm ci
 npm --prefix obsidian-plugin ci
 ```
 
-之后：
+Then:
 
 ```bash
-npm run dev        # 开发服务器 → http://localhost:3010
-npm run build      # 完整构建（生成内容 + 静态导出 + 搬运产物）
-npm run preview    # 预览构建产物 → http://localhost:8080
-npm run typecheck  # 站点与插件的类型检查
-npm run plugin     # 打包 Obsidian 插件（单文件 main.js，含后台服务）
-npm run presets    # 从 themes/*.css 重新生成内置预设
-npm test           # 端到端回归测试
+npm run dev        # dev server → http://localhost:3010
+npm run build      # full build (generate content + static export + move output)
+npm run preview    # preview the build → http://localhost:8080
+npm run typecheck  # type-check site and plugin
+npm run plugin     # bundle the Obsidian plugin (single-file main.js, background service included)
+npm run presets    # regenerate built-in presets from themes/*.css
+npm test           # end-to-end regression tests
 ```
 
-调试发布逻辑时可以在浏览器里开同一个界面，比反复重载插件快：
+When debugging publishing logic, you can open the same interface in a browser instead of reloading the plugin repeatedly:
 
 ```bash
 npm run dev:manager   # → http://localhost:3457
 ```
 
-它跑的是插件用的同一份内核（`scripts/manager-core.mjs`），只把界面换成浏览器打开，方便看请求与日志。`npm test` 也是靠它起实例的。**它不是给使用者准备的使用方式**——插件形态下界面就在 Obsidian 里，不需要另挂进程。
+It runs the same core the plugin uses (`scripts/manager-core.mjs`), just with the UI in a browser so requests and logs are easier to see. `npm test` starts an instance the same way. **This is not how end users run it** — inside the plugin the UI lives in Obsidian and no extra process is needed.
 
-`npm run dev` 需要内容已生成——全新克隆先跑一次 `npm run build`，或用发布器连一个库。
+`npm run dev` needs content to exist — on a fresh clone run `npm run build` once, or connect a vault through the publisher.
 
-### 改内置预设
+### Changing built-in presets
 
-预设的 CSS 源文件在 `themes/`，**不要直接改 `scripts/theme-presets.mjs`**（它是生成物）。改完 `themes/*.css` 后跑 `npm run presets` 重新生成；预设的中英文名与简介写在 `scripts/gen-theme-presets.mjs` 的 `META` 里。
+Preset CSS sources live in `themes/`. **Don't edit `scripts/theme-presets.mjs`** — it's generated. Edit `themes/*.css`, then run `npm run presets`; the presets' Chinese and English names and descriptions live in `META` in `scripts/gen-theme-presets.mjs`.
 
-预览图是「用示例笔记构建一遍站点 → 逐套注入 CSS 截图 → 压成 base64 模块」五步产物，链路在 `tools/preview/`：
+Preview images come from a five-step chain (build the site with sample notes → inject each preset and screenshot → pack into a base64 module), under `tools/preview/`:
 
 ```bash
-node tools/preview/make-preview-content.mjs      # 1. 造示例笔记（站名「示例博客」）
-npm run build                                    # 2. 构建
-node tools/preview/preview-serve.mjs _preview/site 3480 &   # 3. 起预览服务（保持运行）
-node tools/preview/gen-theme-previews.mjs _preview/site _preview/shots   # 4. 无头 Chrome 截图
-python tools/preview/pack-theme-previews.py      # 5. 压成 scripts/theme-previews.mjs
+node tools/preview/make-preview-content.mjs      # 1. generate sample notes (site name "示例博客")
+npm run build                                    # 2. build
+node tools/preview/preview-serve.mjs _preview/site 3480 &   # 3. start preview server (keep running)
+node tools/preview/gen-theme-previews.mjs _preview/site _preview/shots   # 4. headless Chrome screenshots
+python tools/preview/pack-theme-previews.py      # 5. pack into scripts/theme-previews.mjs
 ```
 
-第 3 步需要本机装了 Chrome（不在默认路径时用 `CHROME` 环境变量指定），第 4 步需要 Python 的 Pillow。示例内容是刻意造的假笔记：预览图会打包进插件随源码分发，不能出现任何真实笔记。
+Step 3 needs Chrome installed (point `CHROME` at it if it's not in the default location); step 4 needs Python's Pillow. The sample content is deliberately fake — the previews ship inside the plugin alongside the source, so no real notes may appear.
 
-`npm test`（即 `bash scripts/e2e-run.sh`）用独立的临时数据目录起一个服务实例跑完整回归，不会碰你已有的连接、令牌与本地库。**不要直接跑 `node scripts/e2e-test.mjs`**：它会建/删连接，没有临时数据目录时会把测试连接写进你真实的配置目录（脚本现在会直接拒绝运行并提示改用上面的命令）。
+`npm test` (i.e. `bash scripts/e2e-run.sh`) runs the full regression against a separate temporary data directory and never touches your existing connections, tokens, or vaults. **Don't run `node scripts/e2e-test.mjs` directly**: it creates and deletes connections, and without a temporary data directory it would write test connections into your real config (the script now refuses to run and tells you to use the command above).
 
-部署到自己的服务器：`npm run build` 后，把用户数据目录下 `build/site/` 的内容拷到任意静态服务器。
+Deploying to your own server: after `npm run build`, copy the contents of `build/site/` from the user data directory to any static server.
 
-## 项目结构
+## Project layout
 
 ```
 obsidian-blog-publisher/
-├── README.md / README.en.md     中文 / 英文说明
-├── CHANGELOG.md / .en.md        版本变更
-├── CONTRIBUTING.md / .en.md     贡献指南
-├── manifest.json / versions.json  插件清单与最低版本映射（社区目录只读根目录这一份）
+├── README.md / README.zh.md     English / Chinese docs
+├── CHANGELOG.md / .en.md        release notes
+├── CONTRIBUTING.md / .en.md     contribution guide
+├── manifest.json / versions.json  plugin manifest and minimum-version map (the community directory reads only this root copy)
 ├── LICENSE / .editorconfig / .gitattributes / .gitignore
-├── package.json                 依赖与脚本入口
-├── next.config.ts               Next 配置（output: 'export'，支持 basePath）
+├── package.json                 dependencies and scripts
+├── next.config.ts               Next config (output: 'export', supports basePath)
 ├── .github/
-│   ├── workflows/deploy.yml     CI：站点仓库构建部署 / 插件仓库类型检查+打包
-│   └── ISSUE_TEMPLATE/          issue 模板
-├── docs/screenshots/            README 用的截图
+│   ├── workflows/deploy.yml     CI: build+deploy in a site repo, typecheck+bundle in the plugin repo
+│   └── ISSUE_TEMPLATE/          issue templates
+├── docs/screenshots/            screenshots used by the READMEs
 │
 ├── scripts/
-│   ├── manager-core.mjs         ★ 发布内核（HTTP 服务 + 全部接口，插件与本地调试共用）
-│   ├── ui-template.mjs          ★ 界面 HTML/CSS/JS（插件与本地调试共用同一份）
-│   ├── manager.mjs              本地调试入口：在 Obsidian 外起内核（e2e 也用它）
-│   ├── build-content.mjs        ★ 内容编译器（Markdown → JSON）+ 产物搬运
-│   ├── theme-presets.mjs        内置外观预设（由 themes/*.css 生成）
-│   ├── theme-previews.mjs       预设预览图（base64 PNG）
-│   ├── serve.mjs                本地静态预览服务器
-│   ├── e2e-test.mjs             端到端回归测试
-│   └── e2e-run.sh               测试一键运行（独立临时数据目录）
+│   ├── manager-core.mjs         ★ publishing core (HTTP server + all endpoints, shared by plugin and local debugging)
+│   ├── ui-template.mjs          ★ UI HTML/CSS/JS (the same copy for plugin and local debugging)
+│   ├── manager.mjs              local debugging entry: runs the core outside Obsidian (e2e uses it too)
+│   ├── build-content.mjs        ★ content compiler (Markdown → JSON) + output mover
+│   ├── theme-presets.mjs        built-in appearance presets (generated from themes/*.css)
+│   ├── theme-previews.mjs       preset preview images (base64 PNG)
+│   ├── serve.mjs                local static preview server
+│   ├── e2e-test.mjs             end-to-end regression tests
+│   └── e2e-run.sh               one-shot test runner (separate temp data directory)
 │
-├── themes/                      六套外观预设的 CSS 源文件
-├── tools/preview/               预览图生成链路（示例内容 → 截图 → 打包）
+├── themes/                      CSS sources for the six appearance presets
+├── tools/preview/               preview generation chain (sample content → screenshots → packing)
 │
-├── obsidian-plugin/             Obsidian 插件（复用上面的内核与界面）
+├── obsidian-plugin/             the Obsidian plugin (reuses the core and UI above)
 │   ├── package.json / esbuild.config.mjs
-│   ├── main.js                  构建产物（Release 里上传的就是这个，单文件含插件与后台服务）
-│   ├── styles.css               文件树开关与批量按钮的样式（Release 里一起上传）
+│   ├── main.js                  build output (what the Release ships; single file with plugin + background service)
+│   ├── styles.css               styling for the explorer toggle and batch buttons (shipped with the Release)
 │   └── src/
-│       ├── main.ts              插件入口：utilityProcess 起内核、开视图
-│       ├── worker-entry.ts      内核跑在子进程里（git 是同步调用，不能占主线程）
-│       ├── explorer.ts          原生文件树上的公开控件
-│       └── template.ts          首次运行把站点源码模板铺到数据目录
+│       ├── main.ts              plugin entry: starts the core via utilityProcess, opens the view
+│       ├── worker-entry.ts      the core in a child process (git calls are synchronous and must not block the main thread)
+│       ├── explorer.ts          public/private controls on the native file explorer
+│       └── template.ts          lays the site source template into the data directory on first run
 │
 └── src/
-    ├── app/                     根布局、入口页、全局样式（明暗主题变量）
-    ├── components/blog/         ★ 应用外壳 / 首页 / 详情页 / 悬浮预览 / Markdown 管线
-    ├── components/ui/           shadcn/ui 基础组件
+    ├── app/                     root layout, entry page, global styles (light/dark variables)
+    ├── components/blog/         ★ app shell / home / note page / hover preview / Markdown pipeline
+    ├── components/ui/           shadcn/ui primitives
     └── lib/
-        ├── wikilink.mjs         ★ Obsidian 语法解析的唯一实现（构建期与渲染期共用）
-        ├── obsidian.ts          ★ 数据模型：标题提取、公式切分、路径映射
-        ├── remark-obsidian.ts   ★ remark 插件：wikilink / 嵌入 / callout / 高亮 / 标签
-        ├── rehype-safety.ts     安全净化：挡危险链接与内联脚本
-        ├── api.ts / store.ts    站点取数与视图状态
-        └── i18n.ts / site.ts    中英文字典、站名与 basePath 解析
+        ├── wikilink.mjs         ★ the single implementation of Obsidian syntax parsing (shared by build and render)
+        ├── obsidian.ts          ★ data model: heading extraction, math splitting, path mapping
+        ├── remark-obsidian.ts   ★ remark plugin: wikilink / embed / callout / highlight / tag
+        ├── rehype-safety.ts     sanitizer: blocks dangerous links and inline scripts
+        ├── api.ts / store.ts    site data fetching and view state
+        └── i18n.ts / site.ts    Chinese/English dictionaries, site name and basePath resolution
 ```
 
-★ = 核心文件
+★ = core file
 
-## 技术栈
+## Tech stack
 
-| 层 | 选型 | 理由 |
+| Layer | Choice | Why |
 |---|---|---|
-| 框架 | Next.js 16（App Router，静态导出） | 组件化写 UI，同时能导出成纯静态文件 |
-| UI | React 19 + Tailwind CSS v4 + shadcn/ui | 无运行时样式引擎，产物小 |
-| Markdown | react-markdown + remark/rehype 插件链 | 标准 AST 管线，Obsidian 语法以插件接入 |
-| 公式 | KaTeX | 能同步渲染，大纲也要用 |
-| 状态 | zustand + persist | 阅读偏好持久化，无账号体系 |
-| 发布界面 | 原生 JS（内嵌在 ui-template.mjs） | 本地工具，不值得再引一套构建链 |
-| 部署 | GitHub Actions + Pages | 免费，无需服务器 |
+| Framework | Next.js 16 (App Router, static export) | Component-based UI that still exports to plain static files |
+| UI | React 19 + Tailwind CSS v4 + shadcn/ui | No runtime style engine, small output |
+| Markdown | react-markdown + a remark/rehype plugin chain | Standard AST pipeline; Obsidian syntax plugs in |
+| Math | KaTeX | Renders synchronously — the outline needs it too |
+| State | zustand + persist | Reading preferences persist without accounts |
+| Publishing UI | Plain JS embedded in `ui-template.mjs` | A local tool doesn't justify another build chain |
+| Deployment | GitHub Actions + Pages | Free, no server needed |
 
-渲染管线：`remark-gfm`（表格 / 任务列表 / 删除线）→ `remark-math`（公式）→ **`remark-obsidian`**（双链 / 嵌入 / callout / 高亮 / 标签）→ `rehype-raw` → **`rehype-safety`**（安全净化）→ `rehype-highlight`（代码高亮）→ `rehype-katex`（公式渲染）。加粗的两个是本项目插件。
+Render pipeline: `remark-gfm` (tables / task lists / strikethrough) → `remark-math` (math) → **`remark-obsidian`** (wikilinks / embeds / callouts / highlights / tags) → `rehype-raw` → **`rehype-safety`** (sanitizing) → `rehype-highlight` (code highlighting) → `rehype-katex` (math rendering). The two in bold are this project's own plugins.
 
-## 许可
+## License
 
 [MIT](LICENSE) © 2026 bits47
 
-可自由使用、修改、商用、再发布，唯一要求是保留版权声明。软件按「原样」提供，不承担担保责任。
+Free to use, modify, sell, and redistribute — the only requirement is keeping the copyright notice. Provided as-is, without warranty.
 
-MIT 只覆盖本项目的代码——你用这个工具生成的博客站点与笔记内容，版权归你所有。
+MIT covers this project's code only — the blog sites and notes you generate with it are yours.
 
-## 致谢
+## Credits
 
-构建于 Next.js、React、Tailwind CSS、KaTeX、remark/rehype 生态之上。
+Built on Next.js, React, Tailwind CSS, KaTeX, and the remark/rehype ecosystem.

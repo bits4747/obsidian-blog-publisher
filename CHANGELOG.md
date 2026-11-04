@@ -4,6 +4,21 @@
 
 格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.0.4] - 2026-11-04
+
+### 变更
+- 根目录 `README.md` 改为英文正文，中文说明移到 `README.zh.md`（原 `README.en.md`）。社区目录只扫根目录那一份，英文是必需项；两份文件顶部互相链接。
+- `scripts/build-content.mjs` 在 `content/` 目录不存在时跳过内容构建：这是不含任何笔记的源码仓库（笔记由发布器写进用户仓库），不该按「拒绝构建空站点」处理。`content/` 存在但没有公开笔记时仍然拒绝构建。
+
+### 修复
+- `obsidian-plugin/src/main.ts` 的样式赋值改为 CSS 类（`blog-publisher-root` / `blog-publisher-frame` / `blog-publisher-loading`），写进 `styles.css` 的这几条规则随插件样式表下发，用户可以用 CSS 片段覆盖；笔记页的标题高亮同理改为 `.preview-heading-flash` 类。
+- `src/main.ts` 里禁用的 lint 规则补上原因说明。
+
+## [1.0.3] - 2026-11-04
+
+### 修复
+- 插件视图的 iframe 与加载提示不再逐条赋值 `element.style.*`，改用 CSS 类；`loading` 出错时加 `is-error` 类而不是直接写颜色。
+
 ## [1.0.2] - 2026-11-01
 
 ### 变更

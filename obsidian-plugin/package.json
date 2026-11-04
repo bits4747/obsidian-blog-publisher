@@ -1,6 +1,6 @@
 {
   "name": "obsidian-blog-publisher",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "把 Obsidian 笔记发布成静态博客：图形化选哪些笔记公开、一键推送 GitHub、自动同步、流水与上线进度",
   "main": "main.js",
   "scripts": {
