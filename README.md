@@ -4,7 +4,7 @@
 
 Publish your Obsidian notes as a static blog on GitHub Pages.
 
-You don't need a second vault. Private and public notes live together — going public is just `public: true` in the frontmatter. Toggle notes one by one in the publisher, push once, and GitHub Actions builds and deploys the site.
+You don't need a second vault. Private and public notes live together — going public is just `public: true` in the frontmatter. Flip the switch next to a note in Obsidian's file explorer, push once, and GitHub Actions builds and deploys the site.
 
 ![Blog home](docs/screenshots/home.png)
 
@@ -73,7 +73,7 @@ Set the expiration to "No expiration". An expired token makes publishing, repo c
 
 ### 3. Pick notes and publish
 
-Turn on the switch for the notes you want public, then click "⟳ Publish to GitHub". Wait 1–2 minutes and visit `https://<your-username>.github.io/<repo-name>/`.
+Turn on the switch next to the notes you want public in Obsidian's file explorer, then click "⟳ Publish to GitHub". Wait 1–2 minutes and visit `https://<your-username>.github.io/<repo-name>/`.
 
 ## The publisher
 
@@ -84,10 +84,8 @@ Click the icon in the left ribbon, or run "Open Blog Publisher" from the command
 | Feature | Description |
 |---|---|
 | Single vault | One Obsidian vault maps to one blog. The top row shows vault name · repo · note count · open site · settings |
-| Per-note toggle | One switch per note, written into the frontmatter. Confirms with "Set *title* to public" |
-| Bulk actions | "Publish all / Make all private" on every folder header, plus global buttons at the top |
-| Search and filter | Filter by title and path; narrow down first, then act in bulk |
-| Collapse | Every folder collapses; "Expand all / Collapse all" for the whole tree |
+| Per-note toggle | In Obsidian's own file explorer: one Public/Private switch per note, written into the frontmatter. There is no second file tree inside the publisher |
+| Bulk actions | Every folder row carries "Publish all / Make all private" and a count like `3/3`, so a whole folder flips in one click |
 | Three change columns | Added / modified / deleted are listed separately, and added notes can be made public right there. Only changes **you need to handle** appear — categories with auto-sync on are pushed by the background process and drop out of these columns; if the last auto-sync push failed, those categories come back |
 | Auto-sync | One switch per change category. When on, that category publishes itself without pressing Publish. Default: modified on, added/deleted off. Fires about 2.5 seconds after a file changes, but **only while Obsidian is running** |
 | Sync log | Below the auto-sync row, the last few background actions: when the push started, which files changed, whether it landed, when the site finished updating, and the gap between. Failed pushes, failed builds, and build timeouts each leave a record. Stored locally, survives restarts |
@@ -363,7 +361,7 @@ obsidian-blog-publisher/
 ├── .github/
 │   ├── workflows/deploy.yml     CI: build+deploy in a site repo, typecheck+bundle in the plugin repo
 │   └── ISSUE_TEMPLATE/          issue templates
-├── docs/screenshots/            screenshots used by the READMEs
+├── docs/screenshots/            screenshots used by the READMEs (English; `zh/` holds the Chinese set)
 │
 ├── scripts/
 │   ├── manager-core.mjs         ★ publishing core (HTTP server + all endpoints, shared by plugin and local debugging)
